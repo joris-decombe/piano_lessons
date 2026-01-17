@@ -67,12 +67,19 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-zinc-950 px-4 py-6 md:px-8">
+    <div className="flex h-screen w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 relative overflow-hidden">
 
-      {/* Header / Title */}
-      <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-100">Gnossienne No. 1</h1>
-        <div className="text-sm text-zinc-400">Erik Satie</div>
+      {/* Portrait Warning Overlay */}
+      <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
+        <div className="text-4xl mb-4">↻</div>
+        <h2 className="text-2xl font-bold text-white mb-2">Please Rotate Your Device</h2>
+        <p className="text-zinc-400">Piano Lessons works best in landscape mode.</p>
+      </div>
+
+      {/* Header / Title - Hidden in mobile landscape to save space */}
+      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0">
+        <h1 className="text-xl font-bold text-zinc-100">Gnossienne No. 1</h1>
+        <div className="text-xs text-zinc-400">Claude Debussy</div>
       </header>
 
       {/* Main Visual Area */}

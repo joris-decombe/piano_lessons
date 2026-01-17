@@ -42,11 +42,11 @@ export function Controls({
     };
 
     return (
-        <div className="flex w-full flex-col gap-4 rounded-xl bg-white/10 p-4 backdrop-blur-md dark:bg-black/20">
+        <div className="relative w-full bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-700/50 p-3 md:p-4 shadow-xl">
 
-            {/* Progress Bar */}
-            <div className="flex w-full items-center gap-2">
-                <span className="text-xs font-mono text-gray-500 dark:text-gray-400 w-10 text-right">
+            {/* Progress Bar - Compact */}
+            <div className="flex items-center gap-2 md:gap-4 mb-2 md:mb-4">
+                <span className="text-xs font-mono text-zinc-400 w-10 text-right">
                     {formatTime(currentTime)}
                 </span>
                 <input
@@ -62,12 +62,13 @@ export function Controls({
                     {formatTime(duration)}
                 </span>
             </div>
+            {/* Controls Row */}
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-6">
 
-            <div className="flex items-center justify-between">
-                {/* Play/Pause */}
+                {/* Play/Pause Button */}
                 <button
                     onClick={onTogglePlay}
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-indigo-500 active:scale-95"
+                    className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
                 >
                     {isPlaying ? (
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
