@@ -8,10 +8,13 @@ import { Controls } from "@/components/piano/Controls";
 
 export default function Home() {
   const [hasStarted, setHasStarted] = useState(false);
+  
+  const BASE_PATH = '/piano_lessons';
+
   // Song Management
   const songs = [
-    { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Claude Debussy', url: '/gnossienne1.mid' },
-    { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: '/twinkle.mid' },
+    { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/gnossienne1.mid` },
+    { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid` },
   ];
   const [currentSong, setCurrentSong] = useState(songs[0]);
 

@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 import path from 'path';
 import fs from 'fs';
 
-const baseURL = 'http://localhost:3000/';
+const baseURL = 'http://localhost:3000/piano_lessons/';
 const screenshotDir = path.join('.github', 'screenshots');
 
 // Ensure screenshot directory exists
