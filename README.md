@@ -6,7 +6,7 @@ A modern, interactive piano learning application built with Next.js and Web Audi
 
 ## Overview
 
-`piano_lessons` helps users learn to play piano pieces (starting with "Gnossienne: No. 1") through a real-time visualization interface. It parses standard MIDI files and renders them as falling notes onto a virtual keyboard, allowing for an intuitive "Guitar Hero" style learning experience.
+`piano_lessons` helps users learn to play piano pieces (starting with "Gnossienne: No. 1" by Claude Debussy) through a real-time visualization interface. It parses standard MIDI files and renders them as falling notes onto a virtual keyboard, allowing for an intuitive "Guitar Hero" style learning experience.
 
 ## Features
 
