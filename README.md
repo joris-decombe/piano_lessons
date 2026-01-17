@@ -1,61 +1,76 @@
-# Project: piano_lessons
+# Piano Lessons
 
-## Project Overview
-`piano_lessons` is a Next.js web application designed to be an interactive piano learning tool. Its primary goal is to help users learn to play "Gnossienne: No. 1" by Erik Satie through a real-time visualization interface.
+A modern, interactive piano learning application built with Next.js and Web Audio.
 
-The application visualizes MIDI data as "falling notes" (waterfall style) onto a virtual keyboard, allowing users to follow along with the music. It includes playback controls (speed, pause, replay) and utilizes modern web audio technologies for accurate sound reproduction.
+![Landing Page](.github/screenshots/01-landing.png)
 
-## Architecture & Technology
-*   **Framework:** Next.js 16 (App Router)
-*   **Language:** TypeScript
-*   **Styling:** Tailwind CSS 4 (using `@tailwindcss/postcss`)
-*   **Audio Engine:** `tone` (Tone.js) for synthesis and scheduling.
-*   **MIDI Parsing:** `@tonejs/midi` for converting MIDI files into JSON/JavaScript objects.
-*   **UI/Animation:** `framer-motion` for smooth visual transitions, with `clsx` and `tailwind-merge` for class management.
+## Overview
 
-## Key Files & Directories
-*   `src/app/`: Contains the Next.js App Router pages and layouts.
-*   `public/`: Intended location for static assets, specifically `gnossienne1.mid`.
-*   `package.json`: Defines dependencies and scripts.
-*   `../download_midi.py`: A Python utility script (located in the parent directory) used to attempt downloading the required MIDI file from various mirrors.
+`piano_lessons` helps users learn to play piano pieces (starting with "Gnossienne: No. 1") through a real-time visualization interface. It parses standard MIDI files and renders them as falling notes onto a virtual keyboard, allowing for an intuitive "Guitar Hero" style learning experience.
 
-## Building and Running
+## Features
+
+- **Real-time MIDI Visualization:** "Waterfall" style note rendering synchronized with audio.
+- **Interactive Controls:** Play, pause, seek, and adjust playback speed (0.5x - 2.0x).
+- **Customizable Visuals:** Split-hand coloring (Left/Right) or unified themes.
+- **Responsive Design:** Works on desktop and tablets (landscape mode recommended).
+- **Modern Tech Stack:** Built with Next.js 16, React 19, and Tone.js.
+
+## Screenshots
+
+### Landing Page
+Choose your piece to begin practicing.
+
+![Landing Page](.github/screenshots/01-landing.png)
+
+### Player View (Idle)
+The main interface features a virtual keyboard and a waterfall display area.
+
+![Player Idle](.github/screenshots/02-player-idle.png)
+
+### Active Lesson
+Notes fall in sync with the audio. Active keys light up on the virtual keyboard.
+
+![Active Lesson](.github/screenshots/03-player-active.png)
+
+## Getting Started
 
 ### Prerequisites
-*   Node.js and npm
-*   `uv` (for running the Python helper script)
+*   Node.js (v18+)
+*   npm
 
-### Commands
-**Development Server:**
+### Installation
+
 ```bash
+# Clone the repository
+git clone https://github.com/joris-decombe/piano_lessons.git
+cd piano_lessons
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# Runs on http://localhost:3000
 ```
 
-**Build for Production:**
-```bash
-npm run build
-```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-**Start Production Server:**
-```bash
-npm run start
-```
+## Development
 
-**Linting:**
-```bash
-npm run lint
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development instructions, including how to update screenshots and manage MIDI files.
 
-**MIDI Setup:**
-The application relies on `public/gnossienne1.mid`. Use the helper script in the parent directory to attempt a download:
-```bash
-uv run ../download_midi.py
-```
-*(Note: As of setup, valid mirrors for the MIDI file are being investigated due to 404 errors.)*
+## Release Process
 
-## Development Conventions
-*   **Styling:** Use Tailwind CSS utility classes. Avoid custom CSS files where possible.
-*   **Type Safety:** Strict TypeScript usage is encouraged.
-*   **Components:** Functional components with React Hooks.
-*   **State Management:** Local React state for UI controls; Tone.js internal state for audio transport.
+See [RELEASE.md](RELEASE.md) for versioning and release workflow details.
+
+## Tech Stack
+
+*   **Framework:** Next.js 16 (App Router)
+*   **Audio:** Tone.js & @tonejs/midi
+*   **Styling:** Tailwind CSS 4
+*   **Animation:** Framer Motion
+*   **Testing:** Playwright (for screenshot generation)
+
+## License
+
+This project is open source.
