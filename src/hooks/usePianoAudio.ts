@@ -18,7 +18,13 @@ interface NoteEvent {
     velocity: number;
 }
 
-export function usePianoAudio(midiUrl: string) {
+export interface SongSource {
+    url?: string;
+    abc?: string;
+    type: 'midi' | 'abc';
+}
+
+export function usePianoAudio(source: SongSource) {
     const [state, setState] = useState<PianoAudioState>({
         isLoaded: false,
         isPlaying: false,
@@ -38,6 +44,8 @@ export function usePianoAudio(midiUrl: string) {
         let part: Tone.Part | null = null;
 
         async function init() {
+            if (!source) return;
+
             // 1. Setup Sampler
             const sampler = new Tone.Sampler({
                 urls: {
@@ -79,9 +87,20 @@ export function usePianoAudio(midiUrl: string) {
             await Tone.loaded();
             samplerRef.current = sampler;
 
-            // 2. Load MIDI
-            const response = await fetch(midiUrl);
-            const arrayBuffer = await response.arrayBuffer();
+            // 2. Load MIDI or Parse ABC
+            let arrayBuffer: ArrayBuffer | Uint8Array;
+
+            if (source.type === 'abc' && source.abc) {
+                const { abcToMidiBuffer } = await import('@/lib/abc-loader');
+                arrayBuffer = abcToMidiBuffer(source.abc);
+            } else if (source.type === 'midi' && source.url) {
+                const response = await fetch(source.url);
+                arrayBuffer = await response.arrayBuffer();
+            } else {
+                console.error("Invalid source", source);
+                return;
+            }
+
             const midi = new Midi(arrayBuffer);
 
             if (!mounted) return;
@@ -108,6 +127,8 @@ export function usePianoAudio(midiUrl: string) {
                     });
                 });
             });
+
+            // Debug logs removed
 
             part = new Tone.Part((time, value: NoteEvent) => {
                 sampler.triggerAttackRelease(
@@ -137,7 +158,7 @@ export function usePianoAudio(midiUrl: string) {
             if (part) part.dispose();
             Tone.Transport.cancel();
         };
-    }, [midiUrl]);
+    }, [source]);
     // Sync Loop for UI
     useEffect(() => {
         let animationFrame: number;

@@ -15,7 +15,9 @@ interface Song {
     id: string;
     title: string;
     artist: string;
-    url: string;
+    url?: string;
+    abc?: string;
+    type: 'midi' | 'abc';
 }
 
 interface SongSettings {
