@@ -12,57 +12,21 @@ This file provides guidance to AI agents (like Gemini, Claude, etc.) when workin
 - **Interactivity:** Play, pause, restart, and variable playback speed (0.5x to 1.5x).
 - **Responsive Design:** Built with Tailwind CSS for various screen sizes.
 
-## Branch Protection Workaround (Admin Only)
+## Administrator Access
 
-The `main` branch is protected. If you are an administrator and need to merge a PR (e.g., specific documentation updates or hotfixes) without the required reviews or checks, use the following "Break Glass" procedure via the GitHub CLI:
+The `main` branch protection is configured with `"enforce_admins": false`.
 
-1. **Disable "Enforce Admins" & "Require Approvals":**
-   ```bash
-   # Save relaxed protection payload
-   echo '{
-     "required_status_checks": { "strict": true, "contexts": ["lint-and-build"] },
-     "enforce_admins": false,
-     "required_pull_request_reviews": null,
-     "restrictions": null,
-     "required_linear_history": true,
-     "allow_force_pushes": false,
-     "allow_deletions": false,
-     "required_conversation_resolution": true
-   }' > relaxed.json
+This means that while the rules (reviews, linear history, CI checks) are enforced for standard contributors, **administrators can bypass these checks** when necessary.
 
-   # Apply relaxed rules
-   gh api -X PUT repos/:owner/:repo/branches/main/protection --input relaxed.json
-   ```
+### Merging PRs as Admin
+If you are an administrator and need to merge a PR that doesn't satisfy all checks (e.g., your own PR which you cannot approve):
 
-2. **Merge the PR:**
-   ```bash
-   gh pr merge <PR_NUMBER> --squash --delete-branch
-   ```
+```bash
+# Use the --admin flag to forcefully merge
+gh pr merge <PR_NUMBER> --squash --delete-branch --admin
+```
 
-3. **Re-Enable Strict Protection:**
-   ```bash
-   # Save strict protection payload
-   echo '{
-     "required_status_checks": { "strict": true, "contexts": ["lint-and-build"] },
-     "enforce_admins": true,
-     "required_pull_request_reviews": {
-       "dismiss_stale_reviews": true,
-       "require_code_owner_reviews": false,
-       "required_approving_review_count": 1
-     },
-     "restrictions": null,
-     "required_linear_history": true,
-     "allow_force_pushes": false,
-     "allow_deletions": false,
-     "required_conversation_resolution": true
-   }' > strict.json
-
-   # Apply strict rules
-   gh api -X PUT repos/:owner/:repo/branches/main/protection --input strict.json
-   
-   # Cleanup
-   rm relaxed.json strict.json
-   ```
+No need to disable/re-enable protection rules.
 
 ## Development Commands
 
