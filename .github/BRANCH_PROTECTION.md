@@ -30,8 +30,10 @@ Ensures all PR comments are addressed before merging.
 #### ✅ Require linear history
 Prevents merge commits, keeping the history clean and readable.
 
-#### ✅ Do not allow bypassing the above settings
-Administrators must follow the same rules.
+#### ❌ Do not allow bypassing the above settings
+**Note:** `"enforce_admins": false` is configured.
+- **Contributors**: Must follow all rules.
+- **Administrators**: Can bypass rules (e.g., merge own PRs) using the `--admin` flag or UI override.
 
 #### ✅ Restrict who can push to matching branches
 Only allow PRs to merge into `main` (no direct pushes).
