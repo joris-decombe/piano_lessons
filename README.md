@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project: piano_lessons
 
-## Getting Started
+## Project Overview
+`piano_lessons` is a Next.js web application designed to be an interactive piano learning tool. Its primary goal is to help users learn to play "Gnossienne: No. 1" by Erik Satie through a real-time visualization interface.
 
-First, run the development server:
+The application visualizes MIDI data as "falling notes" (waterfall style) onto a virtual keyboard, allowing users to follow along with the music. It includes playback controls (speed, pause, replay) and utilizes modern web audio technologies for accurate sound reproduction.
 
+## Architecture & Technology
+*   **Framework:** Next.js 16 (App Router)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS 4 (using `@tailwindcss/postcss`)
+*   **Audio Engine:** `tone` (Tone.js) for synthesis and scheduling.
+*   **MIDI Parsing:** `@tonejs/midi` for converting MIDI files into JSON/JavaScript objects.
+*   **UI/Animation:** `framer-motion` for smooth visual transitions, with `clsx` and `tailwind-merge` for class management.
+
+## Key Files & Directories
+*   `src/app/`: Contains the Next.js App Router pages and layouts.
+*   `public/`: Intended location for static assets, specifically `gnossienne1.mid`.
+*   `package.json`: Defines dependencies and scripts.
+*   `../download_midi.py`: A Python utility script (located in the parent directory) used to attempt downloading the required MIDI file from various mirrors.
+
+## Building and Running
+
+### Prerequisites
+*   Node.js and npm
+*   `uv` (for running the Python helper script)
+
+### Commands
+**Development Server:**
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Runs on http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Build for Production:**
+```bash
+npm run build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Start Production Server:**
+```bash
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Linting:**
+```bash
+npm run lint
+```
 
-## Learn More
+**MIDI Setup:**
+The application relies on `public/gnossienne1.mid`. Use the helper script in the parent directory to attempt a download:
+```bash
+uv run ../download_midi.py
+```
+*(Note: As of setup, valid mirrors for the MIDI file are being investigated due to 404 errors.)*
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development Conventions
+*   **Styling:** Use Tailwind CSS utility classes. Avoid custom CSS files where possible.
+*   **Type Safety:** Strict TypeScript usage is encouraged.
+*   **Components:** Functional components with React Hooks.
+*   **State Management:** Local React state for UI controls; Tone.js internal state for audio transport.
