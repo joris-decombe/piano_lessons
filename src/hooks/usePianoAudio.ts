@@ -11,6 +11,13 @@ export interface PianoAudioState {
     midi: Midi | null;
 }
 
+interface NoteEvent {
+    time: number | string;
+    note: string;
+    duration: number;
+    velocity: number;
+}
+
 export function usePianoAudio(midiUrl: string) {
     const [state, setState] = useState<PianoAudioState>({
         isLoaded: false,
@@ -90,7 +97,7 @@ export function usePianoAudio(midiUrl: string) {
             baseBpmRef.current = initialBpm;
             Tone.Transport.bpm.value = initialBpm;
 
-            const notes: any[] = [];
+            const notes: NoteEvent[] = [];
             midi.tracks.forEach((track) => {
                 track.notes.forEach((note) => {
                     notes.push({
@@ -102,7 +109,7 @@ export function usePianoAudio(midiUrl: string) {
                 });
             });
 
-            part = new Tone.Part((time, value: any) => {
+            part = new Tone.Part((time, value: NoteEvent) => {
                 sampler.triggerAttackRelease(
                     value.note,
                     value.duration,
@@ -118,6 +125,8 @@ export function usePianoAudio(midiUrl: string) {
                 isLoaded: true,
                 duration: midi.duration,
                 midi: midi,
+                currentTick: 0,
+                currentTime: 0
             }));
         }
 

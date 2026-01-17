@@ -53,7 +53,7 @@ export function Keyboard({ activeNotes }: KeyboardProps) {
     };
 
     return (
-        <div className="relative flex h-48 w-full justify-center rounded-b-xl bg-transparent">
+        <div className="relative flex h-48 landscape:h-32 w-full justify-center rounded-b-xl bg-transparent">
             <div className="flex h-full w-full max-w-[1200px] flex-row items-stretch justify-between">
                 {keys.map((key) => {
                     const { isActive, color } = getActiveState(key.note);

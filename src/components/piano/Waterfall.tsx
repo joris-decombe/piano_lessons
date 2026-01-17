@@ -60,6 +60,16 @@ export function Waterfall({ midi, currentTime, currentTick, windowSizeSeconds = 
         const windowSizeTicks = 6 * PPQ; // Was 24 * PPQ before.
 
         midi.tracks.forEach((track, trackIndex) => {
+            // Filter out empty tracks
+            if (track.notes.length === 0) return;
+
+            // Filter out Drum Channel (Channel 10 is usually mapped to index 9, or check instrument)
+            // Tone.js MIDI puts percussion in `track.instrument.percussion` (boolean) usually, 
+            // or checks channel. Let's rely on instrument info if available.
+            if (track.instrument.percussion) return;
+
+            console.log(`Track ${trackIndex}: ${track.name}, Notes: ${track.notes.length}, Instrument: ${track.instrument.name}`);
+
             // Color Logic
             let noteColor = "#22d3ee"; // Fallback
             if (activeColors) {

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 interface VisualSettings {
     splitHands: boolean;
@@ -11,6 +11,19 @@ interface VisualSettings {
     setUnifiedColor: (val: string) => void;
 }
 
+interface Song {
+    id: string;
+    title: string;
+    artist: string;
+    url: string;
+}
+
+interface SongSettings {
+    songs: Song[];
+    currentSong: Song;
+    onSelectSong: (song: Song) => void;
+}
+
 interface ControlsProps {
     isPlaying: boolean;
     onTogglePlay: () => void;
@@ -20,6 +33,7 @@ interface ControlsProps {
     playbackRate: number;
     onSetPlaybackRate: (rate: number) => void;
     visualSettings: VisualSettings;
+    songSettings?: SongSettings;
 }
 
 export function Controls({
@@ -31,9 +45,11 @@ export function Controls({
     playbackRate,
     onSetPlaybackRate,
     visualSettings,
+    songSettings,
 }: ControlsProps) {
 
     const progressBarRef = useRef<HTMLInputElement>(null);
+    const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
 
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -80,6 +96,48 @@ export function Controls({
                         </svg>
                     )}
                 </button>
+
+                {/* Song Selector */}
+                {songSettings && (
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsSongMenuOpen(!isSongMenuOpen)}
+                            className="flex items-center gap-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                        >
+                            <span className="text-xs font-semibold text-gray-500 whitespace-nowrap max-w-[100px] truncate">
+                                {songSettings.currentSong.title}
+                            </span>
+                            <svg className={`w-3 h-3 text-gray-400 transition-transform ${isSongMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isSongMenuOpen && (
+                            <>
+                                {/* Backdrop to close on click outside */}
+                                <div className="fixed inset-0 z-40" onClick={() => setIsSongMenuOpen(false)} />
+
+                                <div className="absolute bottom-full left-0 mb-2 w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl overflow-hidden transition-all z-50">
+                                    {songSettings.songs.map(song => (
+                                        <button
+                                            key={song.id}
+                                            onClick={() => {
+                                                songSettings.onSelectSong(song);
+                                                setIsSongMenuOpen(false);
+                                            }}
+                                            className={`w-full text-left px-4 py-2 text-xs transition-colors ${song.id === songSettings.currentSong.id
+                                                ? "bg-indigo-600/20 text-indigo-400"
+                                                : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                                }`}
+                                        >
+                                            <div className="font-bold">{song.title}</div>
+                                            <div className="opacity-70 text-[10px]">{song.artist}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
 
                 {/* Speed Control Slider */}
                 <div className="flex items-center gap-2 bg-black/5 dark:bg-white/5 py-1 px-3 rounded-full w-48">
