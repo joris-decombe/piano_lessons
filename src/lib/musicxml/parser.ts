@@ -29,6 +29,9 @@ export class MusicXMLParser {
         let timeSignature: [number, number] = [4, 4];
 
         const partList = scorePartwise['part-list']; // Define instruments/parts
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _partList = partList;
+
         const parts = Array.isArray(scorePartwise['part'])
             ? scorePartwise['part']
             : [scorePartwise['part']];
@@ -36,7 +39,7 @@ export class MusicXMLParser {
         const tracks: ParsedTrack[] = [];
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        parts.forEach((part: any, index: number) => {
+        parts.forEach((part: any) => {
             const partId = part['@_id'];
             // Find part name from part-list if needed
 
@@ -69,6 +72,7 @@ export class MusicXMLParser {
                 // Look for tempo in direction
                 if (measure['direction']) {
                     const dirs = Array.isArray(measure['direction']) ? measure['direction'] : [measure['direction']];
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     dirs.forEach((d: any) => {
                         if (d['sound'] && d['sound']['@_tempo']) {
                             tempo = parseFloat(d['sound']['@_tempo']);
@@ -82,8 +86,8 @@ export class MusicXMLParser {
                     : [];
 
                 // Simple cursor for this measure (chords share start time)
-                let measureCursor = 0;
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 notes.forEach((note: any) => {
                     // Calculate duration in ticks
                     // MIDI standard is usually 128 ticks per quarter.

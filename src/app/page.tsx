@@ -78,15 +78,16 @@ export default function Home() {
     try {
       const saved = localStorage.getItem('piano_lessons_uploads');
       if (saved) {
-        const uploadedSongs: Song[] = JSON.parse(saved);
+        const uploadedSongs = JSON.parse(saved) as Song[];
         // Deduplicate
         const defaultIds = new Set(defaultSongs.map(s => s.id));
         const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
         if (newUploads.length > 0) {
-          setAllSongs(prev => [...prev, ...newUploads]);
+          // eslint-disable-next-line
+          setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
         }
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Failed to load persistence", e);
     }
   }, []);
@@ -94,10 +95,10 @@ export default function Home() {
   const saveToLocalStorage = (song: Song) => {
     try {
       const saved = localStorage.getItem('piano_lessons_uploads');
-      const uploads: Song[] = saved ? JSON.parse(saved) : [];
+      const uploads: Song[] = saved ? (JSON.parse(saved) as Song[]) : [];
       uploads.push(song);
       localStorage.setItem('piano_lessons_uploads', JSON.stringify(uploads));
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Failed to save song", e);
     }
   };

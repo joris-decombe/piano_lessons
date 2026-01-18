@@ -1,8 +1,9 @@
 import MidiWriter from 'midi-writer-js';
-import { ParsedScore } from './types';
+import { ParsedScore, NoteEvent } from './types';
 
 export class MIDIGenerator {
     generate(score: ParsedScore): string {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tracks: any[] = [];
 
         score.tracks.forEach(parsedTrack => {
@@ -28,7 +29,7 @@ export class MIDIGenerator {
             // or group events by start time.
 
             // Group events by startTick
-            const eventsByTick = new Map<number, any[]>();
+            const eventsByTick = new Map<number, NoteEvent[]>();
 
             parsedTrack.events.forEach(e => {
                 if (!eventsByTick.has(e.startTick)) {
@@ -48,6 +49,7 @@ export class MIDIGenerator {
 
                 const waitTicks = tick - lastTick;
                 if (waitTicks > 0) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (track as any).wait('T' + waitTicks); // Cast to any as wait missing from types
 
                     // MidiWriter wait() expects duration string (e.g. '4') or ticks?
@@ -66,14 +68,7 @@ export class MIDIGenerator {
                 // For this MVP, let's assume notes at same tick have same duration (chords),
                 // or simplistic handling.
 
-                notes.forEach(note => {
-                    // For now, add each note. 
-                    // Note: MidiWriter's addEvent advances time by duration by default?
-                    // "The wait method is specifically for inserting silence."
-                    // "addEvent... sequential"
-                    // If we add multiple notes sequentially that are supposed to be simultaneous (chord),
-                    // MidiWriterJS usually supports an array of pitches in one NoteEvent.
-                });
+                // (Removed unused loop)
 
                 // Let's optimize: Group by duration
                 const notesByDuration = new Map<number, string[]>();
@@ -116,6 +111,7 @@ export class MIDIGenerator {
 
                     // If we are waiting, we use the wait from BEFORE this group.
                     if (isFirstGroup && waitTicks > 0) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         (track as any).wait('T' + waitTicks);
                     }
 
