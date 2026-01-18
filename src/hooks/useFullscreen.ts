@@ -21,9 +21,11 @@ export function useFullscreen() {
 
     // Check if fullscreen API is supported
     const isSupported = useCallback(() => {
+        // First, check if the fullscreen API is actually available
         const elem = document.documentElement as unknown as FullscreenAPI;
         const doc = document as DocumentWithFullscreen;
-        return !!(
+
+        const hasFullscreenAPI = !!(
             document.fullscreenEnabled ||
             elem.webkitRequestFullscreen ||
             elem.mozRequestFullScreen ||
@@ -32,6 +34,22 @@ export function useFullscreen() {
             doc.mozCancelFullScreen ||
             doc.msExitFullscreen
         );
+
+        // If API is not available at all, return false
+        if (!hasFullscreenAPI) {
+            return false;
+        }
+
+        // iPhone doesn't support fullscreen for non-video elements, even if API exists
+        // iPad does support it (since iOS 12.1/iPadOS)
+        // Note: For iPhones, users can use "Add to Home Screen" for a fullscreen-like experience
+        const isIPhone = /iPhone/i.test(navigator.userAgent) && !(/iPad/i.test(navigator.userAgent));
+
+        if (isIPhone) {
+            return false;
+        }
+
+        return true;
     }, []);
 
     // Get current fullscreen element (cross-browser)
