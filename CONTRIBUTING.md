@@ -63,12 +63,13 @@ This will:
 - New visual features (e.g., new color themes)
 - Major layout updates
 
-## Pull Request Workflow
-
-1. **Fork & Branch:** Create a feature branch from `main`.
-2. **Implement:** Write clean, typed code.
-3. **Test:** Ensure `npm run build` and `npm run lint` pass locally.
-4. **Submit:** Open a PR describing your changes.
+66: ## Pull Request Workflow
+67: 
+68: 1. **Fork & Branch:** Create a feature branch from `main`.
+69: 2. **Implement:** Write clean, typed code.
+70: 3. **Test:** Ensure `npm run build` and `npm run lint` pass locally.
+71: 4. **Verify Pipelines:** Push your branch and **WAIT** for the CI pipeline to pass on your fork/branch. Fix any deployment or build errors *before* opening a PR or marking it as ready for review.
+72: 5. **Submit:** Open a PR describing your changes.
 
 ## Code Style
 
