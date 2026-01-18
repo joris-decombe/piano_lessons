@@ -221,7 +221,7 @@ export default function Home() {
 
           {/* Client-Side Conversion: Always enabled now */}
           <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
 
             <div className="flex w-full justify-between items-start">
               <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>

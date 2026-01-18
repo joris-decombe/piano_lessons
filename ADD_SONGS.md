@@ -51,5 +51,5 @@ You can upload MusicXML files (`.xml`, `.musicxml`) directly through the applica
 
 1.  Click the **"Add New Song"** card on the main screen.
 2.  Select your MusicXML file.
-3.  The file will be automatically converted to MIDI and loaded.
-4.  **Persistence:** Uploaded songs are saved to your local browser storage and will be available on your next visit.
+3.  The file will be processed locally in your browser (converted to MIDI).
+4.  **Privacy & Persistence:** Files never leave your device. Uploaded songs are saved to your local browser storage and will be available on your next visit.
