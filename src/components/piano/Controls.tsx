@@ -114,7 +114,7 @@ export function Controls({
                 <div className="flex-1 min-w-0 pr-2 flex items-center gap-3">
                     {songSettings && (
                         <div className="text-xs text-zinc-400 truncate max-w-[150px] md:max-w-[200px]">
-                            <span className="font-semibold text-zinc-200">{songSettings.currentSong.title}</span>
+                            <span className="font-semibold text-zinc-200" data-testid="current-song-title">{songSettings.currentSong.title}</span>
                             <span className="hidden md:inline text-zinc-500 mx-1">•</span>
                             <span className="hidden md:inline">{songSettings.currentSong.artist}</span>
                         </div>

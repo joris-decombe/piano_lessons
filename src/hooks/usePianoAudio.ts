@@ -306,6 +306,24 @@ export function usePianoAudio(source: SongSource) {
         }
     };
 
+    const stop = () => {
+        if (Tone.Transport.state === "started") {
+            Tone.Transport.stop();
+        }
+        // Also reset internal state
+        Tone.Transport.seconds = 0;
+        lastProcessedTickRef.current = 0;
+        rebuildActiveNotes(0);
+
+        setState((prev) => ({
+            ...prev,
+            isPlaying: false,
+            currentTime: 0,
+            currentTick: 0,
+            activeNotes: []
+        }));
+    };
+
     const seek = (time: number) => {
         Tone.Transport.seconds = time;
         // Use Tone's internal tick calculation which respects the tempo map
@@ -331,6 +349,7 @@ export function usePianoAudio(source: SongSource) {
         ...state,
         duration: state.duration / playbackRate,
         togglePlay,
+        stop,
         seek,
         playbackRate,
         setPlaybackRate: changeSpeed,

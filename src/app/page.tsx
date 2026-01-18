@@ -239,17 +239,31 @@ export default function Home() {
         <p className="text-zinc-400">Piano Lessons works best in landscape mode.</p>
       </div>
 
+      {/* Return to Home Button */}
+      <button
+        onClick={() => {
+          audio.stop();
+          setHasStarted(false);
+        }}
+        className="absolute top-4 left-4 z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
+        aria-label="Return to Song List"
+      >
+        <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </button>
+
       {/* Header / Title - Hidden in mobile landscape to save space */}
-      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-bold text-zinc-100">Gnossienne No. 1</h1>
-        <div className="text-xs text-zinc-400">Claude Debussy</div>
+      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
+        <h1 className="text-xl font-bold text-zinc-100">{currentSong.title}</h1>
+        <div className="text-xs text-zinc-400">{currentSong.artist}</div>
       </header>
 
       {/* Main Visual Area */}
       <main className="relative flex-1 min-h-0 w-full flex flex-col">
 
         {/* Waterfall Container */}
-        <div className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
+        <div data-testid="waterfall-container" className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
           <Waterfall
             midi={audio.midi}
             currentTick={audio.currentTick}
