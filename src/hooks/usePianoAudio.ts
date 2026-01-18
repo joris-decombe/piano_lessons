@@ -284,9 +284,9 @@ export function usePianoAudio(source: SongSource) {
             lastProcessedTickRef.current = Math.floor(Tone.Transport.ticks);
             animationFrame = requestAnimationFrame(syncLoop);
         } else {
-             // Ensure isPlaying is false when transport is not started
+            // Ensure isPlaying is false when transport is not started
             if (Tone.Transport.state !== 'started') {
-                 setState(prev => ({...prev, isPlaying: false}));
+                setState(prev => ({ ...prev, isPlaying: false }));
             }
         }
 
@@ -308,8 +308,8 @@ export function usePianoAudio(source: SongSource) {
 
     const seek = (time: number) => {
         Tone.Transport.seconds = time;
-        // Use Tone's internal tick calculation which respects the tempo map
-        const newTick = Tone.Transport.ticks;
+        // manually update tick state for immediate UI feedback.
+        const newTick = Math.floor(time * (Tone.Transport.PPQ / 60) * (baseBpmRef.current * playbackRate));
         lastProcessedTickRef.current = newTick;
 
         const newActiveNotes = rebuildActiveNotes(newTick);
