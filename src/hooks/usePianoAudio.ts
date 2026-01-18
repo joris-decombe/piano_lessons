@@ -284,9 +284,9 @@ export function usePianoAudio(source: SongSource) {
             lastProcessedTickRef.current = Math.floor(Tone.Transport.ticks);
             animationFrame = requestAnimationFrame(syncLoop);
         } else {
-             // Ensure isPlaying is false when transport is not started
+            // Ensure isPlaying is false when transport is not started
             if (Tone.Transport.state !== 'started') {
-                 setState(prev => ({...prev, isPlaying: false}));
+                setState(prev => ({ ...prev, isPlaying: false }));
             }
         }
 

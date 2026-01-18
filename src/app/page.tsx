@@ -252,9 +252,7 @@ export default function Home() {
         <div className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
           <Waterfall
             midi={audio.midi}
-            currentTime={audio.currentTime}
             currentTick={audio.currentTick}
-            windowSizeSeconds={3 * (1 / audio.playbackRate)}
             activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
           />
           {/* Hit Line Separator */}
@@ -291,6 +289,7 @@ export default function Home() {
           }}
         />
       </footer>
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </div>
   );
 }
