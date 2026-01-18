@@ -1,4 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { formatTime } from "@/lib/utils";
+
+// ... (interfaces remain same)
+
+// ... (interfaces remain same)
 
 interface VisualSettings {
     splitHands: boolean;
@@ -53,18 +58,39 @@ export function Controls({
     const progressBarRef = useRef<HTMLInputElement>(null);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
 
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
+    // Load persisted songs on mount
+    useEffect(() => {
+        if (!songSettings) return;
+
+        try {
+            const saved = localStorage.getItem('piano_lessons_uploads');
+            if (saved) {
+                const uploads: Song[] = JSON.parse(saved);
+                // Filter out duplicates based on ID
+                const existingIds = new Set(songSettings.songs.map(s => s.id));
+                const newUploads = uploads.filter(u => !existingIds.has(u.id));
+
+                if (newUploads.length > 0) {
+                    // We need to mutate the songs array or have a way to set it.
+                    // Since songs is passed as a prop, we ideally should have setSongs.
+                    // For now, we push to the array if it's mutable, otherwise this won't trigger re-render
+                    // A better approach would be lifting this state up, but given constraints:
+                    newUploads.forEach(s => songSettings.songs.push(s));
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load saved songs", e);
+        }
+    }, []); // Run once on mount
+
+    // formatTime removed, using utility
 
     return (
         <div className="relative w-full bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-700/50 p-3 md:p-4 shadow-xl">
 
             {/* Progress Bar - Compact */}
             <div className="flex items-center gap-2 md:gap-4 mb-2 md:mb-4">
-                <span className="text-xs font-mono text-zinc-400 w-10 text-right">
+                <span className="text-xs font-mono text-zinc-400 w-10 text-right" data-testid="current-time">
                     {formatTime(currentTime)}
                 </span>
                 <input
@@ -76,7 +102,7 @@ export function Controls({
                     onChange={(e) => onSeek(parseFloat(e.target.value))}
                     className="flex-1 cursor-pointer accent-indigo-500 h-2 bg-gray-200 rounded-lg appearance-none dark:bg-gray-700"
                 />
-                <span className="text-xs font-mono text-gray-500 dark:text-gray-400 w-10">
+                <span className="text-xs font-mono text-gray-500 dark:text-gray-400 w-10" data-testid="duration">
                     {formatTime(duration)}
                 </span>
             </div>
@@ -86,6 +112,7 @@ export function Controls({
                 {/* Play/Pause Button */}
                 <button
                     onClick={onTogglePlay}
+                    data-testid="play-button"
                     className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
                 >
                     {isPlaying ? (

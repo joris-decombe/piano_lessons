@@ -6,9 +6,7 @@ import { twMerge } from "tailwind-merge";
 
 interface WaterfallProps {
     midi: Midi | null;
-    currentTime: number;
     currentTick: number; // Add this
-    windowSizeSeconds?: number;
     activeColors?: {
         split: boolean;
         left: string;
@@ -17,9 +15,9 @@ interface WaterfallProps {
     };
 }
 
-const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+// NOTES constant removed as it was unused
 
-export function Waterfall({ midi, currentTime, currentTick, windowSizeSeconds = 3, activeColors }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
