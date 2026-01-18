@@ -2,6 +2,8 @@
 
 A modern, interactive piano learning application built with Next.js and Web Audio.
 
+[**Live Demo**](https://joris-decombe.github.io/piano_lessons/)
+
 ![Landing Page](.github/screenshots/01-landing.png)
 
 ## Overview
@@ -70,7 +72,6 @@ See [RELEASE.md](RELEASE.md) for versioning and release workflow details.
 *   **Framework:** Next.js 16 (App Router)
 *   **Audio:** Tone.js & @tonejs/midi
 *   **Styling:** Tailwind CSS 4
-*   **Animation:** Framer Motion
 *   **Animation:** Framer Motion
 *   **Testing:** Vitest (Unit) & Playwright (E2E)
 
