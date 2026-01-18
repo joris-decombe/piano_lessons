@@ -307,6 +307,19 @@ export function usePianoAudio(source: SongSource) {
                 await Tone.context.resume();
             }
 
+            // CRITICAL: Ensure sampler is loaded before playing (iOS needs this)
+            if (!samplerRef.current) {
+                console.error('Sampler not loaded yet - please wait');
+                return;
+            }
+
+            // Log audio state for debugging
+            console.log('Audio state:', {
+                contextState: Tone.context.state,
+                transportState: Tone.Transport.state,
+                samplerLoaded: !!samplerRef.current
+            });
+
             if (Tone.Transport.state === "started") {
                 Tone.Transport.pause();
                 setState((prev) => ({ ...prev, isPlaying: false }));

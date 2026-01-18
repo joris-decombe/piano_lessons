@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { Midi } from "@tonejs/midi";
 import { twMerge } from "tailwind-merge";
 
@@ -17,7 +17,7 @@ interface WaterfallProps {
 
 
 
-export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
+export const Waterfall = memo(function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
@@ -123,7 +123,7 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
         // then note[i] started too early to possibly overlap (since its duration <= maxDuration).
 
         while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - lookbackTicks) {
-             renderStartIdx--;
+            renderStartIdx--;
         }
 
         const active: { id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string }[] = [];
@@ -135,21 +135,21 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
             if (note.ticks > endTime) break;
 
             if (note.ticks + note.durationTicks > currentTick) {
-                 const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
-                    const heightPct = (note.durationTicks / windowSizeTicks) * 100;
+                const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
+                const heightPct = (note.durationTicks / windowSizeTicks) * 100;
 
-                    const { left, width, isBlack } = getNotePosition(note.midi);
+                const { left, width, isBlack } = getNotePosition(note.midi);
 
-                    active.push({
-                        id: `${note.name}-${note.ticks}`,
-                        left: `${left}%`,
-                        width: `${width}%`,
-                        bottom: `${bottomPct}%`,
-                        height: `${heightPct}%`,
-                        isBlack,
-                        name: note.name,
-                        color: note.color
-                    });
+                active.push({
+                    id: `${note.name}-${note.ticks}`,
+                    left: `${left}%`,
+                    width: `${width}%`,
+                    bottom: `${bottomPct}%`,
+                    height: `${heightPct}%`,
+                    isBlack,
+                    name: note.name,
+                    color: note.color
+                });
             }
         }
 
@@ -184,4 +184,4 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
             ))}
         </div>
     );
-}
+});

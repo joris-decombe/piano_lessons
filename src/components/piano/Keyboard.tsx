@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { Key } from "./Key";
 
 const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
@@ -14,7 +14,7 @@ interface KeyboardProps {
     activeNotes: (string | ActiveNote)[]; // List of active note names or objects
 }
 
-export function Keyboard({ activeNotes }: KeyboardProps) {
+export const Keyboard = memo(function Keyboard({ activeNotes }: KeyboardProps) {
     // Generate 88 keys starting from A0
     // ... (memo gen is same)
     const keys = useMemo(() => {
@@ -71,4 +71,4 @@ export function Keyboard({ activeNotes }: KeyboardProps) {
             </div>
         </div>
     );
-}
+});
