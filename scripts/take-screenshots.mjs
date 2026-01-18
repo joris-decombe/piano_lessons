@@ -68,11 +68,11 @@ async function takeScreenshots() {
     try {
       await page.screenshot({ path: 'error-screenshot.png' });
       console.log('Saved error-screenshot.png');
-    } catch {
-      process.exit(1);
-    } finally {
-      await browser.close();
-    }
+    } catch { }
+    process.exit(1);
+  } finally {
+    await browser.close();
   }
+}
 
-  takeScreenshots().catch(console.error);
+takeScreenshots().catch(console.error);
