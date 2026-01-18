@@ -54,18 +54,20 @@ export function usePianoAudio(source: SongSource) {
      */
     const rebuildActiveNotes = (targetTick: number) => {
         activeNotesRef.current.clear();
-        for (let tick = 0; tick <= targetTick; tick++) {
-            if (noteTimelineRef.current.has(tick)) {
-                const events = noteTimelineRef.current.get(tick)!;
-                events.forEach(event => {
-                    const key = `${event.note}-${event.track}`;
-                    if (event.type === 'start') {
-                        activeNotesRef.current.set(key, { note: event.note, track: event.track });
-                    } else {
-                        activeNotesRef.current.delete(key);
-                    }
-                });
-            }
+        const relevantTicks = Array.from(noteTimelineRef.current.keys())
+            .filter(tick => tick <= targetTick)
+            .sort((a, b) => a - b);
+
+        for (const tick of relevantTicks) {
+            const events = noteTimelineRef.current.get(tick)!;
+            events.forEach(event => {
+                const key = `${event.note}-${event.track}`;
+                if (event.type === 'start') {
+                    activeNotesRef.current.set(key, { note: event.note, track: event.track });
+                } else {
+                    activeNotesRef.current.delete(key);
+                }
+            });
         }
         return Array.from(activeNotesRef.current.values());
     };
@@ -306,8 +308,8 @@ export function usePianoAudio(source: SongSource) {
 
     const seek = (time: number) => {
         Tone.Transport.seconds = time;
-        // manually update tick state for immediate UI feedback.
-        const newTick = Math.floor(time * (Tone.Transport.PPQ / 60) * (baseBpmRef.current * playbackRate));
+        // Use Tone's internal tick calculation which respects the tempo map
+        const newTick = Tone.Transport.ticks;
         lastProcessedTickRef.current = newTick;
 
         const newActiveNotes = rebuildActiveNotes(newTick);
