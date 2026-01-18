@@ -104,6 +104,7 @@ export function Controls({
                             step={0.1}
                             value={currentTime}
                             onChange={(e) => onSeek(parseFloat(e.target.value))}
+                            aria-label="Seek"
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
                     </div>
@@ -127,6 +128,7 @@ export function Controls({
                 <button
                     onClick={onTogglePlay}
                     data-testid="play-button"
+                    aria-label={isPlaying ? "Pause" : "Play"}
                     className="flex-shrink-0 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
                 >
                     {isPlaying ? (
@@ -147,6 +149,8 @@ export function Controls({
                     </span>
                     <button
                         onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                        aria-label="Settings"
+                        aria-expanded={isSettingsOpen}
                         className={`p-2 rounded-full transition-colors ${isSettingsOpen ? 'bg-zinc-800 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -167,6 +171,8 @@ export function Controls({
                                 <div className="relative">
                                     <button
                                         onClick={() => setIsSongMenuOpen(!isSongMenuOpen)}
+                                        aria-label="Select song"
+                                        aria-expanded={isSongMenuOpen}
                                         className="w-full flex items-center justify-between bg-black/20 p-2 rounded-lg text-sm text-zinc-200 hover:bg-black/40 transition-colors"
                                     >
                                         <span className="truncate">{songSettings.currentSong.title}</span>
@@ -208,6 +214,7 @@ export function Controls({
                                 step={0.1}
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
+                                aria-label="Playback speed"
                                 className="w-full cursor-pointer h-1.5 bg-zinc-700 rounded-lg appearance-none accent-indigo-600"
                             />
                         </div>
@@ -232,13 +239,13 @@ export function Controls({
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
                                         <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
-                                            <input type="color" value={visualSettings.leftColor} onChange={(e) => visualSettings.setLeftColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+                                            <input type="color" aria-label="Left hand color" value={visualSettings.leftColor} onChange={(e) => visualSettings.setLeftColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
                                         </div>
                                         <span className="text-xs text-zinc-400">Left</span>
                                     </div>
                                     <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
                                         <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
-                                            <input type="color" value={visualSettings.rightColor} onChange={(e) => visualSettings.setRightColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+                                            <input type="color" aria-label="Right hand color" value={visualSettings.rightColor} onChange={(e) => visualSettings.setRightColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
                                         </div>
                                         <span className="text-xs text-zinc-400">Right</span>
                                     </div>
@@ -246,7 +253,7 @@ export function Controls({
                             ) : (
                                 <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
                                     <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
-                                        <input type="color" value={visualSettings.unifiedColor} onChange={(e) => visualSettings.setUnifiedColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+                                        <input type="color" aria-label="Unified color" value={visualSettings.unifiedColor} onChange={(e) => visualSettings.setUnifiedColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
                                     </div>
                                     <span className="text-xs text-zinc-400">Unified Color</span>
                                 </div>
