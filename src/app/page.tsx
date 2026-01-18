@@ -224,28 +224,31 @@ export default function Home() {
           ))}
 
           {/* Upload New Song Card */}
-          <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
 
-            <div className="flex w-full justify-between items-start">
-              <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>
-              <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="text-zinc-500 hover:text-cyan-400 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </button>
+          {process.env.NEXT_PUBLIC_IS_STATIC !== "true" && (
+            <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+              <div className="flex w-full justify-between items-start">
+                <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>
+                <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="text-zinc-500 hover:text-cyan-400 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </button>
+              </div>
+              <p className="text-zinc-400 font-medium">Import MusicXML files</p>
+
+              <label className="mt-6 flex items-center text-cyan-400 text-sm font-bold group-hover:text-cyan-300 cursor-pointer">
+                <span>Select .xml / .musicxml</span>
+                <input
+                  type="file"
+                  accept=".xml,.musicxml"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              </label>
             </div>
-            <p className="text-zinc-400 font-medium">Import MusicXML files</p>
-
-            <label className="mt-6 flex items-center text-cyan-400 text-sm font-bold group-hover:text-cyan-300 cursor-pointer">
-              <span>Select .xml / .musicxml</span>
-              <input
-                type="file"
-                accept=".xml,.musicxml"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-            </label>
-          </div>
+          )}
         </div>
 
         <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
