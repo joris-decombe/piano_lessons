@@ -4,7 +4,7 @@ test.describe('Duration Component', () => {
     test.beforeEach(async ({ page }) => {
         page.on('console', msg => console.log(`BROWSER LOG: ${msg.text()}`));
         page.on('pageerror', err => console.log(`BROWSER ERROR: ${err}`));
-        await page.goto('/');
+        await page.goto('/piano_lessons');
     });
 
     test('displays duration correctly for initial song', async ({ page }) => {
@@ -23,6 +23,10 @@ test.describe('Duration Component', () => {
     test('updates current time when playing', async ({ page }) => {
         // Select the first song to enter lesson view
         await page.getByText('Gnossienne No. 1').click();
+
+        // Wait for song to load (duration should not be 0:00)
+        const duration = page.getByTestId('duration');
+        await expect(duration).not.toHaveText('0:00', { timeout: 10000 });
 
         const playButton = page.getByTestId('play-button');
         await playButton.click();
