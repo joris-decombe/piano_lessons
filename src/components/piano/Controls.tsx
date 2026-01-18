@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { formatTime } from "@/lib/utils";
 
 // ... (interfaces remain same)
@@ -55,7 +55,6 @@ export function Controls({
     songSettings,
 }: ControlsProps) {
 
-    const progressBarRef = useRef<HTMLInputElement>(null);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
 
     // Load persisted songs on mount
@@ -81,7 +80,7 @@ export function Controls({
         } catch (e) {
             console.error("Failed to load saved songs", e);
         }
-    }, []); // Run once on mount
+    }, [songSettings]); // Load when settings are available
 
     // formatTime removed, using utility
 
