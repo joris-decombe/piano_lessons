@@ -73,6 +73,7 @@ export default function Home() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPWAHint, setShowPWAHint] = useState(false);
+  const [showSilentModeHint, setShowSilentModeHint] = useState(false);
 
   // Load persistence
   useEffect(() => {
@@ -178,6 +179,16 @@ export default function Home() {
     }
   }, []);
 
+  // Check if silent mode hint should show (iOS devices only)
+  useEffect(() => {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const dismissed = localStorage.getItem('silent_mode_hint_dismissed');
+
+    if (isIOS && !dismissed) {
+      setTimeout(() => setShowSilentModeHint(true), 0);
+    }
+  }, []);
+
 
   if (!hasStarted) {
     return (
@@ -245,6 +256,35 @@ export default function Home() {
             </label>
           </div>
         </div>
+
+        {/* Silent Mode Warning for iOS */}
+        {showSilentModeHint && (
+          <div className="fixed bottom-20 left-4 right-4 z-50 bg-amber-600/90 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-amber-500/50">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">📱</span>
+              <div className="flex-1">
+                <p className="text-sm text-white font-medium">
+                  iOS Tip: Turn off silent mode
+                </p>
+                <p className="text-xs text-amber-100 mt-1">
+                  Your device must not be in silent mode to hear audio
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSilentModeHint(false);
+                  localStorage.setItem('silent_mode_hint_dismissed', 'true');
+                }}
+                className="text-white/80 hover:text-white transition-colors"
+                aria-label="Dismiss"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* PWA Install Hint for iPhone */}
         {showPWAHint && (
