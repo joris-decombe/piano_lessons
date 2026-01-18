@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Piano Lessons - Gnossienne No. 1",
-  description: "Learn to play Erik Satie's Gnossienne No. 1",
+  title: "Piano Lessons",
+  description: "Learn to play piano with interactive lessons",
 };
 
 export default function RootLayout({
