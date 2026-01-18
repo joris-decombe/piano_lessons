@@ -34,10 +34,10 @@ async function takeScreenshots() {
     console.log('2/3 Player view (Idle)...');
     // Click on the first song card
     await page.click('text="Gnossienne No. 1"');
-    
+
     // Wait for the player to load (look for the keyboard or canvas)
     // The keyboard container has a class that likely contains "Keyboard" or just look for the footer controls
-    await page.waitForSelector('footer'); 
+    await page.waitForSelector('footer');
     await page.waitForTimeout(1000); // Give canvas a moment to init
 
     await page.screenshot({
@@ -66,13 +66,13 @@ async function takeScreenshots() {
     console.error('❌ Error taking screenshots:', error);
     // If we fail, try to take a debug screenshot
     try {
-        await page.screenshot({ path: 'error-screenshot.png' });
-        console.log('Saved error-screenshot.png');
-    } catch (e) {}
-    process.exit(1);
-  } finally {
-    await browser.close();
+      await page.screenshot({ path: 'error-screenshot.png' });
+      console.log('Saved error-screenshot.png');
+    } catch {
+      process.exit(1);
+    } finally {
+      await browser.close();
+    }
   }
-}
 
-takeScreenshots().catch(console.error);
+  takeScreenshots().catch(console.error);
