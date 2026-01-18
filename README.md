@@ -12,11 +12,23 @@ A modern, interactive piano learning application built with Next.js and Web Audi
 
 ## Features
 
-- **Real-time MIDI Visualization:** "Waterfall" style note rendering synchronized with audio.
-- **Interactive Controls:** Play, pause, seek, and adjust playback speed (0.5x - 2.0x).
-- **Customizable Visuals:** Split-hand coloring (Left/Right) or unified themes.
-- **Responsive Design:** Works on desktop and tablets (landscape mode recommended).
+- **Real-time MIDI Visualization:** "Waterfall" style note rendering synchronized with high-quality audio.
+- **Mobile Optimized:** Fullscreen mode (Android/iPad), PWA installation hints (iOS), and responsive landscape layout.
+- **File Support:** Practice with built-in songs or upload your own MIDI/MusicXML files.
+- **Branding:** Completely custom PWA icons and professional user interface.
 - **Modern Tech Stack:** Built with Next.js 16, React 19, and Tone.js.
+
+## Interactive Controls
+
+The application features a modern, minimalist control bar for a seamless learning experience:
+
+- **Playback:** Play/Pause toggle with synchronized audio and waterfall visualization.
+- **Seeking:** Integrated progress bar at the top of the control bar for precise navigation.
+- **Settings Menu:** 
+  - **Speed Control:** Adjustable playback rate (0.1x to 2.0x) for practicing difficult passages.
+  - **Visual Customization:** Toggle split-hand coloring and customize note colors for a personalized experience.
+- **Fullscreen:** Dedicated button for an immersive, distraction-free view on supported devices.
+- **Navigation:** Top-left button to stop playback and return to the song selection screen.
 
 ## Screenshots
 
