@@ -192,7 +192,14 @@ export default function Home() {
           {allSongs.map((song) => (
             <button
               key={song.id}
-              onClick={() => {
+              onClick={async () => {
+                // Start audio context on user interaction (iOS requirement)
+                try {
+                  const Tone = await import('tone');
+                  await Tone.start();
+                } catch (e) {
+                  console.error('Failed to start audio context:', e);
+                }
                 setCurrentSong(song);
                 setHasStarted(true);
               }}
