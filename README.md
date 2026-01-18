@@ -69,7 +69,22 @@ See [RELEASE.md](RELEASE.md) for versioning and release workflow details.
 *   **Audio:** Tone.js & @tonejs/midi
 *   **Styling:** Tailwind CSS 4
 *   **Animation:** Framer Motion
-*   **Testing:** Playwright (for screenshot generation)
+*   **Animation:** Framer Motion
+*   **Testing:** Vitest (Unit) & Playwright (E2E)
+
+## Testing
+
+### Unit Tests
+Run unit tests with Vitest:
+```bash
+npm test
+```
+
+### End-to-End Tests
+Run integration tests with Playwright:
+```bash
+npx playwright test
+```
 
 ## License
 
