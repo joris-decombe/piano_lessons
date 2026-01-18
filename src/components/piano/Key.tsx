@@ -1,4 +1,3 @@
-import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 interface KeyProps {
@@ -15,6 +14,7 @@ export function Key({ note, isBlack, isActive, activeColor, label }: KeyProps & 
 
     return (
         <div
+            data-note={note}
             className={twMerge(
                 "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border",
                 isBlack

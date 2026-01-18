@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // output: "export", // Disabled to support API routes
   basePath: "/piano_lessons",
   images: {
     unoptimized: true,

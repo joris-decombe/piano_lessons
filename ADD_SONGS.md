@@ -44,3 +44,12 @@ C D E F | G A B c |]` // Your ABC string here
 - Always specify **M** (Meter), **L** (Default Note Length), and **K** (Key).
 - Use **Q** (Tempo) to ensure correct playback speed (e.g., `Q: 1/4=120` for 120 BPM).
 - The visualizer currently maps the first voice/track found.
+
+## 3. Adding MusicXML Files
+
+You can upload MusicXML files (`.xml`, `.musicxml`) directly through the application interface.
+
+1.  Click the **"Add New Song"** card on the main screen.
+2.  Select your MusicXML file.
+3.  The file will be automatically converted to MIDI and loaded.
+4.  **Persistence:** Uploaded songs are saved to your local browser storage and will be available on your next visit.

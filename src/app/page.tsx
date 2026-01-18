@@ -1,36 +1,32 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
 
-export default function Home() {
-  const [hasStarted, setHasStarted] = useState(false);
+// Song Management
+interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  url?: string;
+  abc?: string;
+  type: 'midi' | 'abc';
+}
 
-  const BASE_PATH = '/piano_lessons';
+const BASE_PATH = '/piano_lessons';
 
-  // Song Management
-  // Song Management
-  interface Song {
-    id: string;
-    title: string;
-    artist: string;
-    url?: string;
-    abc?: string;
-    type: 'midi' | 'abc';
-  }
-
-  const songs: Song[] = [
-    { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi' },
-    { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi' },
-    {
-      id: 'ode_abc',
-      title: 'Ode to Joy (ABC)',
-      artist: 'Beethoven (Live Generated)',
-      type: 'abc',
-      abc: `T: Ode to Joy
+const defaultSongs: Song[] = [
+  { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi' },
+  { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi' },
+  {
+    id: 'ode_abc',
+    title: 'Ode to Joy (ABC)',
+    artist: 'Beethoven (Live Generated)',
+    type: 'abc',
+    abc: `T: Ode to Joy
 M: 4/4
 L: 1/4
 Q: 1/4=120
@@ -38,10 +34,120 @@ K: C
 E E F G | G F E D | C C D E | E3/2 D/2 D2 |
 E E F G | G F E D | C C D E | D3/2 C/2 C2 |
 D D E C | D E/2F/2 E C | D E/2F/2 E D | C D G,2 |
-E E F G | G F E D | C C D E | D3/2 C/2 C2 |]`
+E E F G | G F E D | C C D E | D3/2 C/2 C2 |`
+  }
+];
+
+function HelpModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6 max-w-md w-full shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-400 hover:text-white">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <h3 className="text-xl font-bold text-white mb-4">About MusicXML</h3>
+        <div className="space-y-3 text-sm text-zinc-300">
+          <p>MusicXML is a standard digital sheet music format that can be exported from most notation software.</p>
+          <p><strong>Where to find .musicxml files:</strong></p>
+          <ul className="list-disc pl-5 space-y-1 text-zinc-400">
+            <li><a href="https://musescore.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">MuseScore</a> (Export as MusicXML)</li>
+            <li><a href="https://imslp.org" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">IMSLP</a> (Petrucci Music Library)</li>
+            <li><a href="https://openscore.cc" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">OpenScore</a></li>
+          </ul>
+          <div className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-700/50 mt-4">
+            <p className="text-xs text-zinc-400"><strong>Note:</strong> We convert MusicXML to MIDI on our secure server. Your files are processed privately and not shared.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Home() {
+  const [allSongs, setAllSongs] = useState<Song[]>(defaultSongs);
+  const [currentSong, setCurrentSong] = useState<Song>(defaultSongs[0]);
+
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Load persistence
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('piano_lessons_uploads');
+      if (saved) {
+        const uploadedSongs: Song[] = JSON.parse(saved);
+        // Deduplicate
+        const defaultIds = new Set(defaultSongs.map(s => s.id));
+        const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
+        if (newUploads.length > 0) {
+          setAllSongs(prev => [...prev, ...newUploads]);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load persistence", e);
     }
-  ];
-  const [currentSong, setCurrentSong] = useState<Song>(songs[0]);
+  }, []);
+
+  const saveToLocalStorage = (song: Song) => {
+    try {
+      const saved = localStorage.getItem('piano_lessons_uploads');
+      const uploads: Song[] = saved ? JSON.parse(saved) : [];
+      uploads.push(song);
+      localStorage.setItem('piano_lessons_uploads', JSON.stringify(uploads));
+    } catch (e) {
+      console.error("Failed to save song", e);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.name.endsWith('.xml') || file.name.endsWith('.musicxml')) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/piano_lessons/api/musicxml', { // Use explicit path
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || 'Conversion failed');
+        }
+
+        const midiBlob = await response.blob();
+
+        // Convert to Base64 for storage
+        const reader = new FileReader();
+        reader.readAsDataURL(midiBlob);
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+
+          const newSong: Song = {
+            id: `upload-${Date.now()}`,
+            title: file.name.replace(/\.(xml|musicxml)$/i, ''),
+            artist: 'Uploaded (MusicXML)',
+            url: base64data,
+            type: 'midi'
+          };
+
+          setAllSongs(prev => [...prev, newSong]);
+          saveToLocalStorage(newSong);
+          setCurrentSong(newSong);
+          setHasStarted(true);
+        };
+      } catch (error) {
+        console.error('Error converting MusicXML:', error);
+        alert(error instanceof Error ? error.message : 'Failed to convert file');
+      }
+    } else {
+      alert("Please upload a .xml or .musicxml file.");
+    }
+  };
 
   const audio = usePianoAudio(currentSong);
 
@@ -93,8 +199,8 @@ E E F G | G F E D | C C D E | D3/2 C/2 C2 |]`
         <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Piano Lessons</h1>
         <p className="text-zinc-400 mb-12 z-10 text-lg">Select a piece to begin practicing</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
-          {songs.map((song) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4 pb-12">
+          {allSongs.map((song) => (
             <button
               key={song.id}
               onClick={() => {
@@ -116,7 +222,33 @@ E E F G | G F E D | C C D E | D3/2 C/2 C2 |]`
               </div>
             </button>
           ))}
+
+          {/* Upload New Song Card */}
+          <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+            <div className="flex w-full justify-between items-start">
+              <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>
+              <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="text-zinc-500 hover:text-cyan-400 transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </button>
+            </div>
+            <p className="text-zinc-400 font-medium">Import MusicXML files</p>
+
+            <label className="mt-6 flex items-center text-cyan-400 text-sm font-bold group-hover:text-cyan-300 cursor-pointer">
+              <span>Select .xml / .musicxml</span>
+              <input
+                type="file"
+                accept=".xml,.musicxml"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            </label>
+          </div>
         </div>
+
+        <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       </div>
     );
   }
@@ -144,9 +276,7 @@ E E F G | G F E D | C C D E | D3/2 C/2 C2 |]`
         <div className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
           <Waterfall
             midi={audio.midi}
-            currentTime={audio.currentTime}
             currentTick={audio.currentTick}
-            windowSizeSeconds={3 * (1 / audio.playbackRate)}
             activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
           />
           {/* Hit Line Separator */}
@@ -177,7 +307,7 @@ E E F G | G F E D | C C D E | D3/2 C/2 C2 |]`
             unifiedColor, setUnifiedColor
           }}
           songSettings={{
-            songs,
+            songs: allSongs,
             currentSong,
             onSelectSong: setCurrentSong
           }}
