@@ -59,6 +59,11 @@ npm run lint
 - **GitHub Pages:** Deploys automatically to GitHub Pages via GitHub Actions (`.github/workflows/deploy.yml`).
 - **Images:** Unoptimized images configured for static export compatibility.
 
+### Base Path Configuration
+- The application uses `basePath: "/piano_lessons"` in `next.config.ts`.
+- **CRITICAL:** All local development URLs must include this prefix (e.g., `http://localhost:3000/piano_lessons`).
+- Playwright `baseURL` must also include this prefix.
+
 ### Key Directories
 - `src/app/`: Next.js App Router pages.
 - `src/components/`: Reusable UI components (Piano, Controls, Visualization).

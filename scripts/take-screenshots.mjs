@@ -11,6 +11,16 @@ if (!fs.existsSync(screenshotDir)) {
   fs.mkdirSync(screenshotDir, { recursive: true });
 }
 
+async function hideDevTools(page) {
+  await page.addStyleTag({
+    content: `
+      nextjs-portal, #next-dev-toolbar, #__next-build-watcher { display: none !important; visibility: hidden !important; }
+      div[data-nextjs-toast="true"] { display: none !important; }
+      div[class*="Toast_toast"] { display: none !important; }
+    `
+  });
+}
+
 async function takeScreenshots() {
   const browser = await chromium.launch();
   const context = await browser.newContext({
@@ -25,6 +35,8 @@ async function takeScreenshots() {
     console.log('1/3 Landing page...');
     await page.goto(baseURL);
     await page.waitForLoadState('networkidle');
+    await hideDevTools(page);
+
     await page.screenshot({
       path: path.join(screenshotDir, '01-landing.png'),
       fullPage: true
@@ -38,7 +50,9 @@ async function takeScreenshots() {
     // Wait for the player to load (look for the keyboard or canvas)
     // The keyboard container has a class that likely contains "Keyboard" or just look for the footer controls
     await page.waitForSelector('footer');
-    await page.waitForTimeout(1000); // Give canvas a moment to init
+    // No canvas element in DOM (div-based), just wait for render
+    await page.waitForTimeout(3000);
+    await hideDevTools(page);
 
     await page.screenshot({
       path: path.join(screenshotDir, '02-player-idle.png'),
@@ -54,6 +68,7 @@ async function takeScreenshots() {
 
     // Wait for some notes to fall and keys to light up
     await page.waitForTimeout(4000);
+    await hideDevTools(page);
 
     await page.screenshot({
       path: path.join(screenshotDir, '03-player-active.png'),

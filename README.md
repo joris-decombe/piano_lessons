@@ -53,7 +53,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000/piano_lessons](http://localhost:3000/piano_lessons) in your browser.
+
+> **Note:** The application uses a `basePath` of `/piano_lessons`. All local URLs must include this prefix.
 
 ## Development
 
