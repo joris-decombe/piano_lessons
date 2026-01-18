@@ -299,13 +299,23 @@ export function usePianoAudio(source: SongSource) {
 
     // Controls
     const togglePlay = async () => {
-        await Tone.start();
-        if (Tone.Transport.state === "started") {
-            Tone.Transport.pause();
-            setState((prev) => ({ ...prev, isPlaying: false }));
-        } else {
-            Tone.Transport.start();
-            setState((prev) => ({ ...prev, isPlaying: true }));
+        try {
+            await Tone.start();
+
+            // Explicitly resume context if suspended (iOS fix)
+            if (Tone.context.state === 'suspended') {
+                await Tone.context.resume();
+            }
+
+            if (Tone.Transport.state === "started") {
+                Tone.Transport.pause();
+                setState((prev) => ({ ...prev, isPlaying: false }));
+            } else {
+                Tone.Transport.start();
+                setState((prev) => ({ ...prev, isPlaying: true }));
+            }
+        } catch (error) {
+            console.error('Audio playback error:', error);
         }
     };
 
