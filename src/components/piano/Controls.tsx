@@ -15,6 +15,10 @@ interface VisualSettings {
     setRightColor: (val: string) => void;
     unifiedColor: string;
     setUnifiedColor: (val: string) => void;
+    splitStrategy: 'tracks' | 'point';
+    setSplitStrategy: (val: 'tracks' | 'point') => void;
+    splitPoint: number;
+    setSplitPoint: (val: number) => void;
 }
 
 interface Song {
@@ -256,18 +260,57 @@ export function Controls({
                             </label>
 
                             {visualSettings.splitHands ? (
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
-                                        <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
-                                            <input type="color" aria-label="Left hand color" value={visualSettings.leftColor} onChange={(e) => visualSettings.setLeftColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+                                <div className="space-y-3">
+                                    {/* Strategy Selector */}
+                                    <div className="bg-black/20 p-2 rounded-lg space-y-2">
+                                        <div className="text-[10px] uppercase font-bold text-zinc-500">Separation Method</div>
+                                        <div className="flex bg-zinc-800 rounded-md p-0.5">
+                                            <button
+                                                className={`flex-1 text-xs py-1 rounded ${visualSettings.splitStrategy === 'tracks' ? 'bg-zinc-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                                                onClick={() => visualSettings.setSplitStrategy('tracks')}
+                                            >
+                                                Tracks
+                                            </button>
+                                            <button
+                                                className={`flex-1 text-xs py-1 rounded ${visualSettings.splitStrategy === 'point' ? 'bg-zinc-600 text-white' : 'text-zinc-400 hover:text-white'}`}
+                                                onClick={() => visualSettings.setSplitStrategy('point')}
+                                            >
+                                                Split Point
+                                            </button>
                                         </div>
-                                        <span className="text-xs text-zinc-400">Left</span>
+
+                                        {/* Split Point Slider */}
+                                        {visualSettings.splitStrategy === 'point' && (
+                                            <div className="pt-1 space-y-1">
+                                                <div className="flex justify-between text-xs text-zinc-400">
+                                                    <span>Split Note</span>
+                                                    <span>{visualSettings.splitPoint} (C{Math.floor(visualSettings.splitPoint / 12) - 1})</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={21}
+                                                    max={108}
+                                                    value={visualSettings.splitPoint}
+                                                    onChange={(e) => visualSettings.setSplitPoint(parseInt(e.target.value))}
+                                                    className="w-full h-1 bg-zinc-700 rounded-lg appearance-none accent-indigo-500"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
-                                        <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
-                                            <input type="color" aria-label="Right hand color" value={visualSettings.rightColor} onChange={(e) => visualSettings.setRightColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
+                                            <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
+                                                <input type="color" aria-label="Left hand color" value={visualSettings.leftColor} onChange={(e) => visualSettings.setLeftColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+                                            </div>
+                                            <span className="text-xs text-zinc-400">Left</span>
                                         </div>
-                                        <span className="text-xs text-zinc-400">Right</span>
+                                        <div className="flex items-center gap-2 bg-black/20 p-2 rounded-lg">
+                                            <div className="w-4 h-4 rounded-full border border-zinc-600 shadow-sm overflow-hidden flex-shrink-0">
+                                                <input type="color" aria-label="Right hand color" value={visualSettings.rightColor} onChange={(e) => visualSettings.setRightColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
+                                            </div>
+                                            <span className="text-xs text-zinc-400">Right</span>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
