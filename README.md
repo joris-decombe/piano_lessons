@@ -4,7 +4,7 @@ A modern, interactive piano learning application built with Next.js and Web Audi
 
 [**Live Demo**](https://joris-decombe.github.io/piano_lessons/)
 
-![Landing Page](.github/screenshots/01-landing.png)
+![Active Lesson](.github/screenshots/03-player-active.png)
 
 ## Overview
 
