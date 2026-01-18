@@ -7,6 +7,7 @@ import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
+import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
 
@@ -150,21 +151,43 @@ export default function Home() {
   const [leftColor, setLeftColor] = useState("#fb7185"); // Rose default
   const [rightColor, setRightColor] = useState("#22d3ee"); // Cyan default
   const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
+  const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
+  const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
+
+  // Auto-detect strategy on song load
+  useEffect(() => {
+    if (audio.midi) {
+      // If only 1 track (or very few tracks), default to Split Point
+      if (audio.midi.tracks.length <= 1) {
+        setSplitStrategy('point');
+      } else {
+        setSplitStrategy('tracks');
+      }
+    }
+  }, [audio.midi]);
 
   // activeNotes are now calculated efficiently in the usePianoAudio hook.
   // We just need to map them to colors for the Keyboard component.
   const coloredActiveNotes = useMemo(() => {
     return audio.activeNotes.map(activeNote => {
       let trackColor;
+
       if (splitHands) {
-        // Heuristic: Track 0 = Right Hand, Track 1+ = Left Hand
-        trackColor = activeNote.track === 0 ? rightColor : leftColor;
+        if (splitStrategy === 'point') {
+          // Split Point Strategy: Note based
+          // Notes < splitPoint = Left, Notes >= splitPoint = Right
+          const noteNumber = Tone.Frequency(activeNote.note).toMidi();
+          trackColor = noteNumber < splitPoint ? leftColor : rightColor;
+        } else {
+          // Track Strategy: Track 0 = Right, Track 1+ = Left
+          trackColor = activeNote.track === 0 ? rightColor : leftColor;
+        }
       } else {
         trackColor = unifiedColor;
       }
       return { note: activeNote.note, color: trackColor };
     });
-  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor]);
+  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
   // Check if PWA hint should show (iPhone only, not in standalone mode)
   useEffect(() => {
@@ -382,7 +405,9 @@ export default function Home() {
             splitHands, setSplitHands,
             leftColor, setLeftColor,
             rightColor, setRightColor,
-            unifiedColor, setUnifiedColor
+            unifiedColor, setUnifiedColor,
+            splitStrategy, setSplitStrategy,
+            splitPoint, setSplitPoint
           }}
           songSettings={{
             songs: allSongs,
