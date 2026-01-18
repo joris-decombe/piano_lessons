@@ -29,7 +29,7 @@ interface Note {
     durationTicks: number;
     midi: number;
     name: string;
-    color?: string;
+    color: string;
 }
 
 interface Track {
@@ -152,7 +152,8 @@ const generateMockMidi = (numTracks: number, notesPerTrack: number) => {
                 name: "C4",
                 midi: 60,
                 ticks: j * 100,
-                durationTicks: 50
+                durationTicks: 50,
+                color: "#22d3ee"
             });
         }
         tracks.push({
@@ -178,6 +179,6 @@ describe('Waterfall Render Logic', () => {
 
     bench('calculateVisibleNotes - Optimized', () => {
         const currentTick = 50000;
-        calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks, 480);
+        calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
     });
 });
