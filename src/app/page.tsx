@@ -8,6 +8,8 @@ import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 
+const BASE_PATH = '/piano_lessons';
+
 // Song Management
 interface Song {
   id: string;
@@ -17,8 +19,6 @@ interface Song {
   abc?: string;
   type: 'midi' | 'abc';
 }
-
-const BASE_PATH = '/piano_lessons';
 
 const defaultSongs: Song[] = [
   { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi' },
@@ -150,38 +150,20 @@ export default function Home() {
   const [rightColor, setRightColor] = useState("#22d3ee"); // Cyan default
   const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
 
-  // Determine active notes for visual feedback on Keyboard
-  // Note: Waterfall handles its own visual state based on time.
-  // Keyboard needs to know which keys are currently *sounding*.
-  // We can derive this from audio.midi + audio.currentTime
-
-  const activeNotes = useMemo(() => {
-    if (!audio.midi) return []; // Keep highlight on pause!
-
-    // Find notes that overlap with currentTick
-    const active: { note: string; color: string }[] = [];
-
-    audio.midi.tracks.forEach((track, trackIndex) => {
+  // activeNotes are now calculated efficiently in the usePianoAudio hook.
+  // We just need to map them to colors for the Keyboard component.
+  const coloredActiveNotes = useMemo(() => {
+    return audio.activeNotes.map(activeNote => {
       let trackColor;
       if (splitHands) {
-        // Simple heuristic: Track 0 is usually Right, Track 1+ is Left/Other
-        // Or cycle if more tracks?
-        // User requested Left/Right customization. 
-        // Assuming Track 0 = Right, Track 1 = Left for this MIDI.
-        trackColor = trackIndex === 0 ? rightColor : leftColor;
+        // Heuristic: Track 0 = Right Hand, Track 1+ = Left Hand
+        trackColor = activeNote.track === 0 ? rightColor : leftColor;
       } else {
         trackColor = unifiedColor;
       }
-
-      track.notes.forEach(note => {
-        // Use TICKS for exact sync
-        if (audio.currentTick >= note.ticks && audio.currentTick < note.ticks + note.durationTicks) {
-          active.push({ note: note.name, color: trackColor });
-        }
-      });
+      return { note: activeNote.note, color: trackColor };
     });
-    return active;
-  }, [audio.midi, audio.currentTick, splitHands, leftColor, rightColor, unifiedColor]);
+  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor]);
 
 
   if (!hasStarted) {
@@ -193,7 +175,7 @@ export default function Home() {
         <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Piano Lessons</h1>
         <p className="text-zinc-400 mb-12 z-10 text-lg">Select a piece to begin practicing</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
           {allSongs.map((song) => (
             <button
               key={song.id}
@@ -243,8 +225,6 @@ export default function Home() {
             </label>
           </div>
         </div>
-
-        <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
       </div>
     );
   }
@@ -272,7 +252,9 @@ export default function Home() {
         <div className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
           <Waterfall
             midi={audio.midi}
+            currentTime={audio.currentTime}
             currentTick={audio.currentTick}
+            windowSizeSeconds={3 * (1 / audio.playbackRate)}
             activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
           />
           {/* Hit Line Separator */}
@@ -281,7 +263,7 @@ export default function Home() {
 
         {/* Keyboard Container */}
         <div className="w-full shrink-0 z-50 landscape:h-auto">
-          <Keyboard activeNotes={activeNotes} />
+          <Keyboard activeNotes={coloredActiveNotes} />
         </div>
 
       </main>

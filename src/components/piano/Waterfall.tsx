@@ -6,7 +6,9 @@ import { twMerge } from "tailwind-merge";
 
 interface WaterfallProps {
     midi: Midi | null;
+    currentTime: number;
     currentTick: number; // Add this
+    windowSizeSeconds?: number;
     activeColors?: {
         split: boolean;
         left: string;
@@ -15,9 +17,9 @@ interface WaterfallProps {
     };
 }
 
-// NOTES constant removed as it was unused
+const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 
-export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
+export function Waterfall({ midi, currentTime, currentTick, windowSizeSeconds = 3, activeColors }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
@@ -65,8 +67,6 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
             // Tone.js MIDI puts percussion in `track.instrument.percussion` (boolean) usually, 
             // or checks channel. Let's rely on instrument info if available.
             if (track.instrument.percussion) return;
-
-            console.log(`Track ${trackIndex}: ${track.name}, Notes: ${track.notes.length}, Instrument: ${track.instrument.name}`);
 
             // Color Logic
             let noteColor = "#22d3ee"; // Fallback
