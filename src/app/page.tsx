@@ -85,7 +85,6 @@ export default function Home() {
         const defaultIds = new Set(defaultSongs.map(s => s.id));
         const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
         if (newUploads.length > 0) {
-          // eslint-disable-next-line
           setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
         }
       }
