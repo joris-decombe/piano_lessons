@@ -40,34 +40,23 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
     };
 
 
-    const visibleNotes = useMemo(() => {
-        if (!midi) return [];
+    const { allNotes, maxDuration } = useMemo(() => {
+        if (!midi) return { allNotes: [], maxDuration: 0 };
 
-        const active: { id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string }[] = [];
-        const PPQ = midi.header.ppq;
-        // Calculate window size in ticks. 
-        // We want roughly same visual amount of notes.
-        // Assuming 120BPM roughly for visual scale? Or dynamic?
-        // If we use static 3 seconds * 120bpm * ppq / 60?
-        // Actually, let's keep it simple: 
-        // 1 Beat = PPQ ticks.
-        // 3 seconds at 120bpm = 6 beats = 6 * PPQ.
-        // User said "Seeing too much" -> Reduce window.
-        // Try 8 beats (2 measures of 4/4) or 6 beats?
-        // Let's try 6 beats for a balanced view (similar to Synthesia default zoom).
-        const windowSizeTicks = 6 * PPQ; // Was 24 * PPQ before.
+        const notes: {
+            ticks: number;
+            durationTicks: number;
+            midi: number;
+            name: string;
+            color: string;
+        }[] = [];
+        let maxDur = 0;
 
         midi.tracks.forEach((track, trackIndex) => {
-            // Filter out empty tracks
             if (track.notes.length === 0) return;
-
-            // Filter out Drum Channel (Channel 10 is usually mapped to index 9, or check instrument)
-            // Tone.js MIDI puts percussion in `track.instrument.percussion` (boolean) usually, 
-            // or checks channel. Let's rely on instrument info if available.
             if (track.instrument.percussion) return;
 
-            // Color Logic
-            let noteColor = "#22d3ee"; // Fallback
+            let noteColor = "#22d3ee";
             if (activeColors) {
                 if (activeColors.split) {
                     noteColor = trackIndex === 0 ? activeColors.right : activeColors.left;
@@ -80,10 +69,73 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
             }
 
             track.notes.forEach(note => {
-                // Use TICKS: note.ticks, note.durationTicks
-                if (note.ticks + note.durationTicks > currentTick && note.ticks < currentTick + windowSizeTicks) {
+                if (note.durationTicks > maxDur) maxDur = note.durationTicks;
+                notes.push({
+                    ticks: note.ticks,
+                    durationTicks: note.durationTicks,
+                    midi: note.midi,
+                    name: note.name,
+                    color: noteColor,
+                });
+            });
+        });
 
-                    const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
+        // Sort by start tick
+        return { allNotes: notes.sort((a, b) => a.ticks - b.ticks), maxDuration: maxDur };
+    }, [midi, activeColors]);
+
+    const visibleNotes = useMemo(() => {
+        if (!midi || allNotes.length === 0) return [];
+
+        const PPQ = midi.header.ppq;
+        const windowSizeTicks = 6 * PPQ;
+        const endTime = currentTick + windowSizeTicks;
+
+        let startIdx = 0;
+        let left = 0;
+        let right = allNotes.length - 1;
+
+        // Find first note that starts >= currentTick
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            if (allNotes[mid].ticks < currentTick) {
+                left = mid + 1;
+            } else {
+                startIdx = mid;
+                right = mid - 1;
+            }
+        }
+
+        // Backtrack to find notes that started before currentTick but overlap
+        // We look back by maxDuration to ensure we catch all potential overlaps
+        let renderStartIdx = startIdx;
+        const lookbackTicks = maxDuration;
+
+        // Optimization: Don't scan blindly, use binary search?
+        // No, simple backtrack is okay if we don't go back too far.
+        // But if maxDuration is huge (e.g. whole song), this degrades to linear scan from beginning in worst case?
+        // Yes, if there is one huge note at the beginning.
+        // Ideally we'd use an Interval Tree.
+        // But for typical piano music, extremely long notes are rare.
+        // A better heuristic might be to stop backtracking if we see a gap > maxDuration?
+        // Or simply: check notes backward from startIdx. Stop when note.ticks < currentTick - maxDuration.
+        // Since notes are sorted by start time, if note[i].ticks < currentTick - maxDuration,
+        // then note[i] started too early to possibly overlap (since its duration <= maxDuration).
+
+        while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - lookbackTicks) {
+             renderStartIdx--;
+        }
+
+        const active: { id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string }[] = [];
+
+        for (let i = renderStartIdx; i < allNotes.length; i++) {
+            const note = allNotes[i];
+
+            // If note starts after the window, we can stop
+            if (note.ticks > endTime) break;
+
+            if (note.ticks + note.durationTicks > currentTick) {
+                 const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
                     const heightPct = (note.durationTicks / windowSizeTicks) * 100;
 
                     const { left, width, isBlack } = getNotePosition(note.midi);
@@ -96,13 +148,13 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
                         height: `${heightPct}%`,
                         isBlack,
                         name: note.name,
-                        color: noteColor
+                        color: note.color
                     });
-                }
-            });
-        });
+            }
+        }
+
         return active;
-    }, [midi, currentTick, activeColors]);
+    }, [midi, currentTick, allNotes, maxDuration]);
 
 
     return (
