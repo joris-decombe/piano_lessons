@@ -191,7 +191,7 @@ export default function Home() {
 
   if (!hasStarted) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white p-8 relative overflow-hidden">
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white p-8 relative overflow-y-auto">
         {/* Background Ambient Effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 to-zinc-950 pointer-events-none" />
 
