@@ -150,9 +150,6 @@ export default function Home() {
   const [rightColor, setRightColor] = useState("#22d3ee"); // Cyan default
   const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
 
-  // Determine active notes for visual feedback on Keyboard
-  // Note: Waterfall handles its own visual state based on time.
-  // Keyboard needs to know which keys are currently *sounding*.
   // activeNotes are now calculated efficiently in the usePianoAudio hook.
   // We just need to map them to colors for the Keyboard component.
   const coloredActiveNotes = useMemo(() => {
