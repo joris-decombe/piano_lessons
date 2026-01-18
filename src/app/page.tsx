@@ -153,35 +153,20 @@ export default function Home() {
   // Determine active notes for visual feedback on Keyboard
   // Note: Waterfall handles its own visual state based on time.
   // Keyboard needs to know which keys are currently *sounding*.
-  // We can derive this from audio.midi + audio.currentTime
-
-  const activeNotes = useMemo(() => {
-    if (!audio.midi) return []; // Keep highlight on pause!
-
-    // Find notes that overlap with currentTick
-    const active: { note: string; color: string }[] = [];
-
-    audio.midi.tracks.forEach((track, trackIndex) => {
+  // activeNotes are now calculated efficiently in the usePianoAudio hook.
+  // We just need to map them to colors for the Keyboard component.
+  const coloredActiveNotes = useMemo(() => {
+    return audio.activeNotes.map(activeNote => {
       let trackColor;
       if (splitHands) {
-        // Simple heuristic: Track 0 is usually Right, Track 1+ is Left/Other
-        // Or cycle if more tracks?
-        // User requested Left/Right customization. 
-        // Assuming Track 0 = Right, Track 1 = Left for this MIDI.
-        trackColor = trackIndex === 0 ? rightColor : leftColor;
+        // Heuristic: Track 0 = Right Hand, Track 1+ = Left Hand
+        trackColor = activeNote.track === 0 ? rightColor : leftColor;
       } else {
         trackColor = unifiedColor;
       }
-
-      track.notes.forEach(note => {
-        // Use TICKS for exact sync
-        if (audio.currentTick >= note.ticks && audio.currentTick < note.ticks + note.durationTicks) {
-          active.push({ note: note.name, color: trackColor });
-        }
-      });
+      return { note: activeNote.note, color: trackColor };
     });
-    return active;
-  }, [audio.midi, audio.currentTick, splitHands, leftColor, rightColor, unifiedColor]);
+  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor]);
 
 
   if (!hasStarted) {
@@ -281,7 +266,7 @@ export default function Home() {
 
         {/* Keyboard Container */}
         <div className="w-full shrink-0 z-50 landscape:h-auto">
-          <Keyboard activeNotes={activeNotes} />
+          <Keyboard activeNotes={coloredActiveNotes} />
         </div>
 
       </main>

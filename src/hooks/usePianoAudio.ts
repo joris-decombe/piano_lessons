@@ -2,6 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
 
+export interface ActiveNote {
+    note: string;
+    track: number;
+}
+
 export interface PianoAudioState {
     isLoaded: boolean;
     isPlaying: boolean;
@@ -9,6 +14,7 @@ export interface PianoAudioState {
     currentTick: number; // Add this
     duration: number;
     midi: Midi | null;
+    activeNotes: ActiveNote[];
 }
 
 interface NoteEvent {
@@ -32,11 +38,37 @@ export function usePianoAudio(source: SongSource) {
         currentTick: 0,
         duration: 0,
         midi: null,
+        activeNotes: [],
     });
 
     const samplerRef = useRef<Tone.Sampler | null>(null);
+    const noteTimelineRef = useRef<Map<number, { note: string; type: "start" | "stop"; track: number }[]>>(new Map());
+    const activeNotesRef = useRef<Map<string, ActiveNote>>(new Map());
+    const lastProcessedTickRef = useRef(0);
     const [playbackRate, setPlaybackRate] = useState(1);
     const baseBpmRef = useRef<number>(120);
+
+    /**
+     * Helper to recalculate all active notes from tick 0 up to a target tick.
+     * Used for seeking or correcting state after a backward jump in time.
+     */
+    const rebuildActiveNotes = (targetTick: number) => {
+        activeNotesRef.current.clear();
+        for (let tick = 0; tick <= targetTick; tick++) {
+            if (noteTimelineRef.current.has(tick)) {
+                const events = noteTimelineRef.current.get(tick)!;
+                events.forEach(event => {
+                    const key = `${event.note}-${event.track}`;
+                    if (event.type === 'start') {
+                        activeNotesRef.current.set(key, { note: event.note, track: event.track });
+                    } else {
+                        activeNotesRef.current.delete(key);
+                    }
+                });
+            }
+        }
+        return Array.from(activeNotesRef.current.values());
+    };
 
     // Initialize Audio & Load MIDI
     useEffect(() => {
@@ -139,6 +171,25 @@ export function usePianoAudio(source: SongSource) {
                 );
             }, notes).start(0);
 
+            // 4. Pre-compute Note Timeline for efficient active note lookup
+            const timeline = new Map<number, { note: string, type: 'start' | 'stop', track: number }[]>();
+            midi.tracks.forEach((track, trackIndex) => {
+                track.notes.forEach(note => {
+                    const startTick = note.ticks;
+                    const endTick = startTick + note.durationTicks;
+
+                    // Add note start event
+                    if (!timeline.has(startTick)) timeline.set(startTick, []);
+                    timeline.get(startTick)!.push({ note: note.name, type: 'start', track: trackIndex });
+
+                    // Add note stop event
+                    if (!timeline.has(endTick)) timeline.set(endTick, []);
+                    timeline.get(endTick)!.push({ note: note.name, type: 'stop', track: trackIndex });
+                });
+            });
+            noteTimelineRef.current = timeline;
+
+
             // Loop adjustment? No, user wants linear play.
 
             setState((prev) => ({
@@ -147,7 +198,8 @@ export function usePianoAudio(source: SongSource) {
                 duration: midi.duration,
                 midi: midi,
                 currentTick: 0,
-                currentTime: 0
+                currentTime: 0,
+                activeNotes: [], // Reset active notes on new song
             }));
         }
 
@@ -164,35 +216,77 @@ export function usePianoAudio(source: SongSource) {
         let animationFrame: number;
 
         const syncLoop = () => {
-            // We only update state if playing to avoid excessive re-renders when paused
-            if (Tone.Transport.state === "started") {
-                setState((prev) => ({
+            if (Tone.Transport.state !== "started") {
+                setState(prev => ({ ...prev, isPlaying: false }));
+                return;
+            }
+
+            const currentTick = Math.floor(Tone.Transport.ticks);
+            const lastProcessedTick = lastProcessedTickRef.current;
+            let notesChanged = false;
+
+            // Determine direction for tick processing
+            const startTick = Math.min(lastProcessedTick, currentTick);
+            const endTick = Math.max(lastProcessedTick, currentTick);
+
+            // Backwards seek: reset state
+            if (currentTick < lastProcessedTick) {
+                rebuildActiveNotes(currentTick);
+                notesChanged = true; // Force state update
+            } else { // Process ticks forward
+                for (let tick = startTick + 1; tick <= endTick; tick++) {
+                    if (noteTimelineRef.current.has(tick)) {
+                        notesChanged = true;
+                        const events = noteTimelineRef.current.get(tick)!;
+                        events.forEach(event => {
+                            const key = `${event.note}-${event.track}`;
+                            if (event.type === 'start') {
+                                activeNotesRef.current.set(key, { note: event.note, track: event.track });
+                            } else {
+                                activeNotesRef.current.delete(key);
+                            }
+                        });
+                    }
+                }
+            }
+
+
+            lastProcessedTickRef.current = currentTick;
+
+            setState(prev => {
+                const newActiveNotes = Array.from(activeNotesRef.current.values());
+                // Only update state if something has actually changed to prevent re-renders
+                if (
+                    prev.currentTime === Tone.Transport.seconds &&
+                    prev.currentTick === currentTick &&
+                    prev.isPlaying === true &&
+                    !notesChanged
+                ) {
+                    return prev;
+                }
+
+                return {
                     ...prev,
                     currentTime: Tone.Transport.seconds,
-                    currentTick: Tone.Transport.ticks,
+                    currentTick,
                     isPlaying: true,
-                }));
-                animationFrame = requestAnimationFrame(syncLoop);
-            } else {
-                setState((prev) => ({
-                    ...prev,
-                    isPlaying: false,
-                }));
-            }
+                    activeNotes: newActiveNotes
+                };
+            });
+
+            animationFrame = requestAnimationFrame(syncLoop);
         };
 
         if (state.isPlaying) {
-            syncLoop();
+            // Reset last tick on play to avoid large jumps
+            lastProcessedTickRef.current = Math.floor(Tone.Transport.ticks);
+            animationFrame = requestAnimationFrame(syncLoop);
+        } else {
+             // Ensure isPlaying is false when transport is not started
+            if (Tone.Transport.state !== 'started') {
+                 setState(prev => ({...prev, isPlaying: false}));
+            }
         }
-
-        // We also need to listen for Transport state changes or manual updates? 
-        // Actually, just running this when 'isPlaying' changes isn't enough because 
-        // isPlaying is set by the loop itself. 
-        // Better: External controls toggle Transport, and we have a watcher here.
-
-        // Simplified: Just run loop when Transport is started.
-        // However, react state might not update fast enough to *trigger* this effect.
-        // Instead, controls should trigger the state update OR the loop checks Transport.state directly.
 
         return () => cancelAnimationFrame(animationFrame);
     }, [state.isPlaying]);
@@ -212,7 +306,18 @@ export function usePianoAudio(source: SongSource) {
 
     const seek = (time: number) => {
         Tone.Transport.seconds = time;
-        setState((prev) => ({ ...prev, currentTime: time }));
+        // manually update tick state for immediate UI feedback.
+        const newTick = Math.floor(time * (Tone.Transport.PPQ / 60) * (baseBpmRef.current * playbackRate));
+        lastProcessedTickRef.current = newTick;
+
+        const newActiveNotes = rebuildActiveNotes(newTick);
+
+        setState(prev => ({
+            ...prev,
+            currentTime: time,
+            currentTick: newTick,
+            activeNotes: newActiveNotes
+        }));
     };
 
     const changeSpeed = (rate: number) => {
