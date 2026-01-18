@@ -194,6 +194,10 @@ export function usePianoAudio(source: SongSource) {
 
             // Loop adjustment? No, user wants linear play.
 
+            // Reset state for new song
+            lastProcessedTickRef.current = 0;
+            const initialActiveNotes = rebuildActiveNotes(0);
+
             setState((prev) => ({
                 ...prev,
                 isLoaded: true,
@@ -201,7 +205,7 @@ export function usePianoAudio(source: SongSource) {
                 midi: midi,
                 currentTick: 0,
                 currentTime: 0,
-                activeNotes: [], // Reset active notes on new song
+                activeNotes: initialActiveNotes,
             }));
         }
 
@@ -313,14 +317,14 @@ export function usePianoAudio(source: SongSource) {
         // Also reset internal state
         Tone.Transport.seconds = 0;
         lastProcessedTickRef.current = 0;
-        rebuildActiveNotes(0);
+        const initialActiveNotes = rebuildActiveNotes(0);
 
         setState((prev) => ({
             ...prev,
             isPlaying: false,
             currentTime: 0,
             currentTick: 0,
-            activeNotes: []
+            activeNotes: initialActiveNotes
         }));
     };
 

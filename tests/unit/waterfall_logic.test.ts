@@ -112,7 +112,7 @@ describe('Waterfall Logic Correctness', () => {
          const { allNotes, maxDuration } = preProcessNotes(longNoteMidi);
 
          const currentTick = 50000; // Middle of the note
-         const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks, 480);
+         const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
 
          // Should contain the note
          expect(visible.length).toBe(1);
@@ -122,7 +122,7 @@ describe('Waterfall Logic Correctness', () => {
         const midi = generateMockMidi(1, 10);
         const { allNotes, maxDuration } = preProcessNotes(midi);
         const currentTick = 0;
-        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks, 480);
+        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
         // Notes at 0, 100, 200... should be visible
         expect(visible.length).toBeGreaterThan(0);
     });
