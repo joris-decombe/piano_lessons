@@ -72,6 +72,7 @@ export default function Home() {
 
   const [hasStarted, setHasStarted] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [showPWAHint, setShowPWAHint] = useState(false);
 
   // Load persistence
   useEffect(() => {
@@ -165,6 +166,18 @@ export default function Home() {
     });
   }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor]);
 
+  // Check if PWA hint should show (iPhone only, not in standalone mode)
+  useEffect(() => {
+    const isIPhone = /iPhone/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const dismissed = localStorage.getItem('pwa_hint_dismissed');
+
+    if (isIPhone && !isStandalone && !dismissed) {
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setShowPWAHint(true), 0);
+    }
+  }, []);
+
 
   if (!hasStarted) {
     return (
@@ -225,6 +238,35 @@ export default function Home() {
             </label>
           </div>
         </div>
+
+        {/* PWA Install Hint for iPhone */}
+        {showPWAHint && (
+          <div className="fixed bottom-4 left-4 right-4 z-50 bg-indigo-600/95 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-indigo-500/50 animate-slide-up">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💡</span>
+              <div className="flex-1">
+                <p className="text-sm text-white font-medium">
+                  For the best fullscreen experience
+                </p>
+                <p className="text-xs text-indigo-200 mt-1">
+                  Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPWAHint(false);
+                  localStorage.setItem('pwa_hint_dismissed', 'true');
+                }}
+                className="text-white/80 hover:text-white transition-colors"
+                aria-label="Dismiss"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
