@@ -236,7 +236,10 @@ export function usePianoAudio(source: SongSource) {
                 rebuildActiveNotes(currentTick);
                 notesChanged = true; // Force state update
             } else { // Process ticks forward
-                for (let tick = startTick + 1; tick <= endTick; tick++) {
+                // When starting from tick 0, we need to include it in processing
+                // Otherwise we skip it by starting at startTick + 1
+                const firstTick = (lastProcessedTick === 0 && currentTick >= 0) ? 0 : startTick + 1;
+                for (let tick = firstTick; tick <= endTick; tick++) {
                     if (noteTimelineRef.current.has(tick)) {
                         notesChanged = true;
                         const events = noteTimelineRef.current.get(tick)!;
