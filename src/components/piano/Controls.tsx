@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatTime } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useKeyboardControls } from "@/hooks/useKeyboardControls";
 
 // ... (interfaces remain same)
 
@@ -63,6 +64,13 @@ export function Controls({
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
     const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
+
+    useKeyboardControls({
+        onTogglePlay,
+        onSeek,
+        currentTime,
+        duration,
+    });
 
     // Load persisted songs on mount
     useEffect(() => {
@@ -321,6 +329,17 @@ export function Controls({
                                     <span className="text-xs text-zinc-400">Unified Color</span>
                                 </div>
                             )}
+                        </div>
+
+                        <div className="h-[1px] bg-white/5 w-full" />
+
+                        {/* Shortcuts Hint */}
+                        <div className="space-y-2">
+                            <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Shortcuts</div>
+                            <div className="text-xs text-zinc-400 space-y-1">
+                                <div className="flex justify-between"><span>Play/Pause</span> <span className="text-zinc-500 font-mono">Space</span></div>
+                                <div className="flex justify-between"><span>Seek ±5s</span> <span className="text-zinc-500 font-mono">← / →</span></div>
+                            </div>
                         </div>
 
                     </div>
