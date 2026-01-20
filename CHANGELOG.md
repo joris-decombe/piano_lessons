@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of Piano Lessons.
 - Real-time MIDI visualization ("Waterfall" style).
 - Virtual Keyboard with active note highlighting.
-- Support for "Gnossienne No. 1" and "Twinkle Twinkle Little Star".
+- Support for "Gnossienne No. 1" (Erik Satie) and "Twinkle Twinkle Little Star".
 - Split-hand color customization.
 - Playback controls (Play/Pause, Seek, Speed).
 - Automated screenshot generation via Playwright.
