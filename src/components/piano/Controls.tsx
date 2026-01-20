@@ -48,6 +48,13 @@ interface ControlsProps {
     songSettings?: SongSettings;
 }
 
+const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const getNoteName = (midi: number) => {
+    const octave = Math.floor(midi / 12) - 1;
+    const note = NOTES[midi % 12];
+    return `${note}${octave}`;
+};
+
 export function Controls({
     isPlaying,
     onTogglePlay,
@@ -59,7 +66,6 @@ export function Controls({
     visualSettings,
     songSettings,
 }: ControlsProps) {
-
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
     const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
@@ -111,6 +117,7 @@ export function Controls({
                             value={currentTime}
                             onChange={(e) => onSeek(parseFloat(e.target.value))}
                             aria-label="Seek"
+                            aria-valuetext={formatTime(currentTime)}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
                     </div>
@@ -239,6 +246,7 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
+                                aria-valuetext={`${playbackRate.toFixed(1)}x`}
                                 className="w-full cursor-pointer h-1.5 bg-zinc-700 rounded-lg appearance-none accent-indigo-600"
                             />
                         </div>
@@ -292,6 +300,8 @@ export function Controls({
                                                     max={108}
                                                     value={visualSettings.splitPoint}
                                                     onChange={(e) => visualSettings.setSplitPoint(parseInt(e.target.value))}
+                                                    aria-label="Split point"
+                                                    aria-valuetext={getNoteName(visualSettings.splitPoint)}
                                                     className="w-full h-1 bg-zinc-700 rounded-lg appearance-none accent-indigo-500"
                                                 />
                                             </div>
