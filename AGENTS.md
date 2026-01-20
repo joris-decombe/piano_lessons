@@ -4,7 +4,7 @@ This file provides guidance to AI agents (like Gemini, Claude, etc.) when workin
 
 ## Project Overview
 
-**Piano Lessons** is an interactive web application designed to help users learn to play "Gnossienne: No. 1" by Claude Debussy. It provides a real-time, waterfall-style visualization of MIDI notes falling onto a virtual keyboard.
+**Piano Lessons** is an interactive web application designed to help users learn to play "Gnossienne: No. 1" by Erik Satie. It provides a real-time, waterfall-style visualization of MIDI notes falling onto a virtual keyboard.
 
 ### Key Features
 - **Visual Learning:** "Falling notes" visualization synced with audio.
