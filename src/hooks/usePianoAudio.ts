@@ -439,7 +439,7 @@ export function usePianoAudio(source: SongSource) {
         }
 
         return () => cancelAnimationFrame(animationFrame);
-    }, [state.isPlaying]);
+    }, [state.isPlaying, playbackRate, state.midi]);
 
 
     // Controls
@@ -512,7 +512,7 @@ export function usePianoAudio(source: SongSource) {
     const toggleLoop = () => {
         setState(prev => {
             const newLooping = !prev.isLooping;
-            let start = prev.loopStartTick;
+            const start = prev.loopStartTick;
             let end = prev.loopEndTick;
 
             if (newLooping && start === 0 && end === 0) {
