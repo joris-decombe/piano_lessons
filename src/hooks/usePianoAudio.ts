@@ -57,6 +57,7 @@ export function usePianoAudio(source: SongSource) {
 
     const samplerRef = useRef<Tone.Sampler | null>(null);
     const noteTimelineRef = useRef<Map<number, { note: string; type: "start" | "stop"; track: number; velocity: number }[]>>(new Map());
+    const timelineKeysRef = useRef<number[]>([]); // Cache sorted keys
     const activeNotesRef = useRef<Map<string, ActiveNote>>(new Map());
     const lastProcessedTickRef = useRef(0);
     const [playbackRate, setPlaybackRate] = useState(1);
@@ -70,11 +71,26 @@ export function usePianoAudio(source: SongSource) {
      */
     const rebuildActiveNotes = (targetTick: number) => {
         activeNotesRef.current.clear();
-        const relevantTicks = Array.from(noteTimelineRef.current.keys())
-            .filter(tick => tick <= targetTick)
-            .sort((a, b) => a - b);
 
-        for (const tick of relevantTicks) {
+        // Use cached sorted keys for performance (Binary Search + Slice)
+        const keys = timelineKeysRef.current;
+        let low = 0, high = keys.length - 1;
+        let count = 0;
+
+        // Find index of last key <= targetTick
+        while (low <= high) {
+            const mid = (low + high) >>> 1;
+            if (keys[mid] <= targetTick) {
+                count = mid + 1;
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        // Iterate only relevant keys
+        for (let i = 0; i < count; i++) {
+            const tick = keys[i];
             const events = noteTimelineRef.current.get(tick)!;
             events.forEach(event => {
                 const key = `${event.note}-${event.track}`;
@@ -206,6 +222,9 @@ export function usePianoAudio(source: SongSource) {
                 });
             });
             noteTimelineRef.current = timeline;
+
+            // Cache sorted keys for seek optimization
+            timelineKeysRef.current = Array.from(timeline.keys()).sort((a, b) => a - b);
 
 
             // Loop adjustment? No, user wants linear play.
