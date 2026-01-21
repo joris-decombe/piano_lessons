@@ -32,6 +32,7 @@ interface NoteEvent {
     note: string;
     duration: number;
     velocity: number;
+    rawTicks: number; // For sorting
 }
 
 export interface SongSource {
@@ -191,32 +192,40 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             midi.tracks.forEach((track) => {
                 track.notes.forEach((note) => {
                     notes.push({
-                        time: `${note.ticks} i`,
+                        time: `${note.ticks}i`, // No space!
                         note: note.name,
                         duration: note.duration,
                         velocity: note.velocity,
+                        rawTicks: note.ticks
                     });
                 });
             });
 
             // Sort notes by ticks to ensure Tone.Part plays them correctly
-            notes.sort((a, b) => {
-                // Parse "ticks i" format back to number for sorting
-                const tickA = parseInt(a.time.toString().split(" ")[0]);
-                const tickB = parseInt(b.time.toString().split(" ")[0]);
-                return tickA - tickB;
-            });
+            notes.sort((a, b) => a.rawTicks - b.rawTicks);
 
             console.log("Scheduling Part with", notes.length, "notes");
+            if (notes.length > 0) {
+                console.log("First note:", notes[0]);
+                console.log("Second note:", notes[1]);
+            }
 
             part = new Tone.Part((time, value: NoteEvent) => {
-                // console.log("Triggering", value.note);
-                sampler.triggerAttackRelease(
-                    value.note,
-                    value.duration,
-                    time,
-                    value.velocity
-                );
+                try {
+                    // console.log("Trig", value.note, "@", time);
+                    if (!value.duration || value.duration <= 0) {
+                        console.warn("Invalid duration for", value.note, value.duration);
+                        return;
+                    }
+                    sampler.triggerAttackRelease(
+                        value.note,
+                        value.duration,
+                        time,
+                        value.velocity
+                    );
+                } catch (e) {
+                    console.error("Part callback error:", e);
+                }
             }, notes).start(0);
 
             // 4. Pre-compute Note Timeline for efficient active note lookup
