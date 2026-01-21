@@ -20,6 +20,8 @@ interface VisualSettings {
     setSplitStrategy: (val: 'tracks' | 'point') => void;
     splitPoint: number;
     setSplitPoint: (val: number) => void;
+    lookAheadTime: number;
+    setLookAheadTime: (val: number) => void;
 }
 
 interface Song {
@@ -265,6 +267,26 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
+                                className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
+                            />
+                        </div>
+
+                        <div className="h-[1px] bg-white/5 w-full" />
+
+                        {/* Preview Duration */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                                <span>Preview</span>
+                                <span className="text-indigo-400">{visualSettings.lookAheadTime?.toFixed(1) || "1.5"}s</span>
+                            </div>
+                            <input
+                                type="range"
+                                min={0.1}
+                                max={3.0}
+                                step={0.1}
+                                value={visualSettings.lookAheadTime || 1.5}
+                                onChange={(e) => visualSettings.setLookAheadTime(parseFloat(e.target.value))}
+                                aria-label="Preview duration"
                                 className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
                             />
                         </div>

@@ -40,7 +40,12 @@ export interface SongSource {
     type: 'midi' | 'abc';
 }
 
-export function usePianoAudio(source: SongSource) {
+export interface PianoAudioSettings {
+    lookAheadTime?: number;
+}
+
+export function usePianoAudio(source: SongSource, settings: PianoAudioSettings = {}) {
+    const { lookAheadTime = 1.5 } = settings;
     const [state, setState] = useState<PianoAudioState>({
         isLoaded: false,
         isPlaying: false,
@@ -336,7 +341,7 @@ export function usePianoAudio(source: SongSource) {
             // So if base is 500ms.
             // Rate 0.5 -> Preview 1000ms.
 
-            const baseLookAhead = 0.5; // seconds
+            const baseLookAhead = lookAheadTime; // seconds
             const adjustedLookAhead = baseLookAhead * (1 / (playbackRate || 1));
             const lookAheadTicks = Tone.Time(adjustedLookAhead).toTicks();
             const previewEndOfWindow = currentTick + lookAheadTicks;
@@ -439,7 +444,7 @@ export function usePianoAudio(source: SongSource) {
         }
 
         return () => cancelAnimationFrame(animationFrame);
-    }, [state.isPlaying, playbackRate, state.midi]);
+    }, [state.isPlaying, playbackRate, state.midi, lookAheadTime]);
 
 
     // Controls

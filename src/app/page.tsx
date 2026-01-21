@@ -75,7 +75,8 @@ interface PianoLessonProps {
 }
 
 function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps) {
-  const audio = usePianoAudio(song);
+  const [lookAheadTime, setLookAheadTime] = useState(1.5);
+  const audio = usePianoAudio(song, { lookAheadTime });
 
   const [splitHands, setSplitHands] = useState(true);
   const [leftColor, setLeftColor] = useState("#fb7185"); // Rose default
@@ -193,7 +194,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             rightColor, setRightColor,
             unifiedColor, setUnifiedColor,
             splitStrategy, setSplitStrategy,
-            splitPoint, setSplitPoint
+            splitPoint, setSplitPoint,
+            lookAheadTime, setLookAheadTime
           }}
           songSettings={{
             songs: allSongs,
