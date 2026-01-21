@@ -199,9 +199,18 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                 });
             });
 
-            // Debug logs removed
+            // Sort notes by ticks to ensure Tone.Part plays them correctly
+            notes.sort((a, b) => {
+                // Parse "ticks i" format back to number for sorting
+                const tickA = parseInt(a.time.toString().split(" ")[0]);
+                const tickB = parseInt(b.time.toString().split(" ")[0]);
+                return tickA - tickB;
+            });
+
+            console.log("Scheduling Part with", notes.length, "notes");
 
             part = new Tone.Part((time, value: NoteEvent) => {
+                // console.log("Triggering", value.note);
                 sampler.triggerAttackRelease(
                     value.note,
                     value.duration,
@@ -571,10 +580,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         togglePlay,
         seek,
         currentTime: Tone.Transport.seconds,
-        duration: state.duration / (playbackRate || 1), // duration is in seconds, adjusted for original length? 
-        // Wait, state.duration is total duration in seconds. Tone.Transport.duration is loop duration? No.
-        // Tone.Transport doesn't track song duration. We load it from midi.
-        // Revert to state.duration.
+        duration: state.duration, // Revert to state.duration for safety
         toggleLoop,
         setLoop,
         loopStart: typeof window !== 'undefined' ? Tone.Time(state.loopStartTick, "i").toSeconds() : 0,

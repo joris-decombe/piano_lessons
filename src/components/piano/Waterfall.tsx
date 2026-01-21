@@ -194,7 +194,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
                                 bottom: 0,
                                 height: `${note.bottom}`,
                                 width: "1px",
-                                background: `linear-gradient(to top, ${note.color}00, ${note.color}80)`,
+                                background: `linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.3))`, // Ghost white
                                 opacity: Math.max(0, 1 - (parseFloat(note.bottom) / ((lookAheadTicks > 0 ? (lookAheadTicks / (6 * midi!.header.ppq)) * 100 : 15 / playbackRate))))
                             }}
                         />
