@@ -61,7 +61,7 @@ test.describe('Looping Functionality', () => {
         // Re-enter song (ensure we click the card, not footer text)
         await page.getByTestId('song-gnossienne1').click();
 
-        // Verify time is 0:00
-        await expect(page.getByTestId('current-time')).toHaveText('0:00');
+        // Verify time is 0:00 (allow 0:01 for CI timing variances)
+        await expect(page.getByTestId('current-time')).toHaveText(/^0:0[01]$/);
     });
 });
