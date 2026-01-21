@@ -167,6 +167,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             currentTick={audio.currentTick}
             playbackRate={audio.playbackRate}
             activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+            lookAheadTicks={audio.lookAheadTicks}
           />
           {/* Hit Line Separator */}
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.4)] z-40 pointer-events-none" />

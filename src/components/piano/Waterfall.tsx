@@ -14,9 +14,10 @@ interface WaterfallProps {
         right: string;
         unified: string;
     };
+    lookAheadTicks?: number;
 }
 
-export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, lookAheadTicks = 0 }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
@@ -143,17 +144,17 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors }:
                 const { left, width, isBlack } = getNotePosition(note.midi);
 
                 const isActive = note.ticks <= currentTick && (note.ticks + note.durationTicks) >= currentTick;
-                const approachThreshold = 15 / (playbackRate || 1);
+
+                // Calculate threshold based on lookAheadTicks if available, otherwise fallback (though fallback shouldn't be needed if strictly passed)
+                // Fallback logic approximated: 15% window roughly 0.5s at normal speed? 
+                // windowSize = 6 beats. at 120bpm = 3s. 15% of 3s = 0.45s. Checks out.
+                const approachThreshold = lookAheadTicks > 0
+                    ? (lookAheadTicks / windowSizeTicks) * 100
+                    : 15 / (playbackRate || 1);
 
                 // Only mark as approaching if:
                 // 1. Not currently active (hit line)
                 // 2. Within threshold
-                // 3. It's the "closest" instance of this pitch?
-                // Logic: Iterate visibleNotes so far, if same pitch exists and is closer (lower bottomPct), ignore this one?
-                // VisualNotes is sorted by tick (ascending).
-                // So if we found a note of same pitch already in 'active' list that is also approaching, this one is further away.
-                // WE MUST CHECK 'active' array for duplicates.
-
                 let isApproaching = !isActive && bottomPct < approachThreshold && bottomPct > 0;
 
                 if (isApproaching) {
@@ -177,7 +178,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors }:
         }
 
         return active;
-    }, [midi, currentTick, allNotes, maxDuration, playbackRate]);
+    }, [midi, currentTick, allNotes, maxDuration, playbackRate, lookAheadTicks]);
 
 
     return (
@@ -194,7 +195,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors }:
                                 height: `${note.bottom}`,
                                 width: "1px",
                                 background: `linear-gradient(to top, ${note.color}00, ${note.color}80)`,
-                                opacity: Math.max(0, 1 - (parseFloat(note.bottom) / (15 / playbackRate))) // Fade based on distance
+                                opacity: Math.max(0, 1 - (parseFloat(note.bottom) / ((lookAheadTicks > 0 ? (lookAheadTicks / (6 * midi!.header.ppq)) * 100 : 15 / playbackRate))))
                             }}
                         />
                     )}

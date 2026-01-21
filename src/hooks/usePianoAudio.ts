@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
 
@@ -98,7 +98,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             const tick = keys[i];
             const events = noteTimelineRef.current.get(tick)!;
             events.forEach(event => {
-                const key = `${event.note}-${event.track}`;
+                const key = `${event.note} -${event.track} `;
                 if (event.type === 'start') {
                     activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
                 } else {
@@ -191,7 +191,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             midi.tracks.forEach((track) => {
                 track.notes.forEach((note) => {
                     notes.push({
-                        time: `${note.ticks}i`,
+                        time: `${note.ticks} i`,
                         note: note.name,
                         duration: note.duration,
                         velocity: note.velocity,
@@ -292,7 +292,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                         notesChanged = true;
                         const events = noteTimelineRef.current.get(tick)!;
                         events.forEach(event => {
-                            const key = `${event.note}-${event.track}`;
+                            const key = `${event.note} -${event.track} `;
                             if (event.type === 'start') {
                                 activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
                             } else {
@@ -312,7 +312,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             // Guard against invalid loop or infinite seek loops
             // Use 48 ticks buffer (approx 1/10th beat at 480PPQ)
             if (isLooping && loopEndTick > loopStartTick + 48 && currentTick >= loopEndTick) {
-                console.log(`[Loop] Looping back to tick ${loopStartTick}`);
+                console.log(`[Loop] Looping back to tick ${loopStartTick} `);
 
                 // Seek by TICKS
                 Tone.Transport.ticks = loopStartTick;
@@ -557,18 +557,28 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         };
     }, [state.isLooping, state.loopStartTick, state.loopEndTick]);
 
+    // Calculate current lookahead in ticks for UI visualization
+    const currentLookAheadTicks = useMemo(() => {
+        if (typeof window === 'undefined') return 0;
+        const adjusted = (lookAheadTime || 0) * (1 / (playbackRate || 1));
+        return Tone.Time(adjusted).toTicks();
+    }, [lookAheadTime, playbackRate]);
+
     return {
         ...state,
-        duration: state.duration / playbackRate,
-        togglePlay,
-        stop,
-        seek,
         playbackRate,
         setPlaybackRate: changeSpeed,
+        togglePlay,
+        seek,
+        currentTime: Tone.Transport.seconds,
+        duration: state.duration / (playbackRate || 1), // duration is in seconds, adjusted for original length? 
+        // Wait, state.duration is total duration in seconds. Tone.Transport.duration is loop duration? No.
+        // Tone.Transport doesn't track song duration. We load it from midi.
+        // Revert to state.duration.
         toggleLoop,
         setLoop,
-        // Expose Seconds for UI compatibility
         loopStart: typeof window !== 'undefined' ? Tone.Time(state.loopStartTick, "i").toSeconds() : 0,
-        loopEnd: typeof window !== 'undefined' ? Tone.Time(state.loopEndTick, "i").toSeconds() : 0
+        loopEnd: typeof window !== 'undefined' ? Tone.Time(state.loopEndTick, "i").toSeconds() : 0,
+        lookAheadTicks: currentLookAheadTicks
     };
 }
