@@ -245,6 +245,7 @@ export default function Home() {
           {allSongs.map((song) => (
             <button
               key={song.id}
+              data-testid={`song-${song.id}`}
               onClick={async () => {
                 // Start audio context on user interaction (iOS requirement)
                 try {
