@@ -56,9 +56,10 @@ test.describe('Looping Functionality', () => {
 
         // Go back to menu
         await page.getByText('Back to Menu').click();
+        await expect(page.getByText('Select a Song')).toBeVisible();
 
-        // Re-enter song
-        await page.getByText('Gnossienne No. 1').click();
+        // Re-enter song (ensure we click the card, not footer text)
+        await page.getByRole('button', { name: /Gnossienne No. 1/ }).first().click();
 
         // Verify time is 0:00
         await expect(page.getByTestId('current-time')).toHaveText('0:00');
