@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { formatTime } from "@/lib/utils";
+import { formatTime, getNoteName } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
 
 // ... (interfaces remain same)
@@ -111,6 +111,7 @@ export function Controls({
                             value={currentTime}
                             onChange={(e) => onSeek(parseFloat(e.target.value))}
                             aria-label="Seek"
+                            aria-valuetext={formatTime(currentTime)}
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
                     </div>
@@ -239,6 +240,7 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
+                                aria-valuetext={`${playbackRate.toFixed(1)}x`}
                                 className="w-full cursor-pointer h-1.5 bg-zinc-700 rounded-lg appearance-none accent-indigo-600"
                             />
                         </div>
@@ -284,7 +286,7 @@ export function Controls({
                                             <div className="pt-1 space-y-1">
                                                 <div className="flex justify-between text-xs text-zinc-400">
                                                     <span>Split Note</span>
-                                                    <span>{visualSettings.splitPoint} (C{Math.floor(visualSettings.splitPoint / 12) - 1})</span>
+                                                    <span>{visualSettings.splitPoint} ({getNoteName(visualSettings.splitPoint)})</span>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -292,6 +294,8 @@ export function Controls({
                                                     max={108}
                                                     value={visualSettings.splitPoint}
                                                     onChange={(e) => visualSettings.setSplitPoint(parseInt(e.target.value))}
+                                                    aria-label="Split point"
+                                                    aria-valuetext={getNoteName(visualSettings.splitPoint)}
                                                     className="w-full h-1 bg-zinc-700 rounded-lg appearance-none accent-indigo-500"
                                                 />
                                             </div>
