@@ -33,9 +33,7 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                 transform: isActive ? "scale(0.99)" : undefined,
                 boxShadow: isActive
                     ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
-                    : isPreview
-                        ? `0 0 0 2px ${activeColor || glowColor}, inset 0 0 15px ${activeColor || glowColor}40` // Use spread shadow to simulate border without layout shift
-                        : undefined,
+                    : undefined,
                 borderColor: undefined, // Remove border color
                 borderWidth: undefined, // Remove border width
                 // Z-Index Layering:
@@ -47,6 +45,17 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                 zIndex: isBlack ? (isActive ? 40 : 30) : (isActive ? 20 : 0)
             }}
         >
+            {/* Preview Overlay (Top Half Only) */}
+            {isPreview && (
+                <div
+                    className="absolute top-0 left-0 w-full h-[50%] pointer-events-none rounded-t-[1px]"
+                    style={{
+                        background: `linear-gradient(to bottom, ${activeColor || glowColor}80, transparent)`,
+                        borderTop: `3px solid ${activeColor || glowColor}`
+                    }}
+                />
+            )}
+
             {/* Laser Beam Effect */}
             {isActive && (
                 <div

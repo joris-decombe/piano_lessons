@@ -199,20 +199,21 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors }:
                         />
                     )}
 
-                    {/* Splash / Punch Effect (Active) */}
+                    {/* Hit Flash / Punch Effect (Active) */}
                     {note.isActive && (
                         <div
-                            key={`${note.id}-splash`} // Force remount on ID change
-                            className="absolute z-30 rounded-full animate-ping"
+                            key={`${note.id}-flash`}
+                            className="absolute z-30"
                             style={{
-                                left: `calc(${note.left} + ${parseFloat(note.width) / 2}% - 10px)`,
-                                width: "20px",
-                                height: "20px",
-                                bottom: "-10px",
-                                backgroundColor: note.color,
+                                left: note.left,
+                                width: note.width,
+                                bottom: "0px",
+                                height: "30px", // Vertical flash
+                                background: `linear-gradient(to top, ${note.color}ff, ${note.color}00)`, // Fade up
                                 opacity: 0.8,
-                                animationDuration: '0.5s',
-                                animationIterationCount: 1 // Only run once!
+                                transformOrigin: "bottom center",
+                                animation: "ping 0.4s cubic-bezier(0,0,0.2,1) 1 forwards", // Reuse ping but clamped
+                                filter: 'blur(2px)' // Soft glare
                             }}
                         />
                     )}
