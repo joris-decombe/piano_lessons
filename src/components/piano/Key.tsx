@@ -48,7 +48,6 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                     className="absolute top-0 left-0 w-full h-[50%] pointer-events-none rounded-t-[1px]"
                     style={{
                         background: `linear-gradient(to bottom, ${activeColor || glowColor}80, transparent)`,
-                        borderTop: `3px solid ${activeColor || glowColor}`
                     }}
                 />
             )}
