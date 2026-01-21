@@ -23,8 +23,8 @@ export interface PianoAudioState {
     activeNotes: ActiveNote[];
     previewNotes: PreviewNote[];
     isLooping: boolean;
-    loopStart: number; // in Seconds
-    loopEnd: number; // in Seconds
+    loopStartTick: number;
+    loopEndTick: number;
 }
 
 interface NoteEvent {
@@ -51,8 +51,8 @@ export function usePianoAudio(source: SongSource) {
         activeNotes: [],
         previewNotes: [],
         isLooping: false,
-        loopStart: 0,
-        loopEnd: 0,
+        loopStartTick: 0,
+        loopEndTick: 0,
     });
 
     const samplerRef = useRef<Tone.Sampler | null>(null);
@@ -63,7 +63,7 @@ export function usePianoAudio(source: SongSource) {
     const [playbackRate, setPlaybackRate] = useState(1);
     const baseBpmRef = useRef<number>(120);
     // Ref to hold mutable loop state for the animation loop
-    const loopStateRef = useRef({ isLooping: false, loopStart: 0, loopEnd: 0 });
+    const loopStateRef = useRef({ isLooping: false, loopStartTick: 0, loopEndTick: 0 });
 
     /**
      * Helper to recalculate all active notes from tick 0 up to a target tick.
@@ -238,11 +238,11 @@ export function usePianoAudio(source: SongSource) {
                 currentTime: 0,
                 activeNotes: [], // Reset active notes on new song
                 isLooping: false,
-                loopStart: 0,
-                loopEnd: 0
+                loopStartTick: 0,
+                loopEndTick: 0
             }));
             // Sync ref
-            loopStateRef.current = { isLooping: false, loopStart: 0, loopEnd: 0 };
+            loopStateRef.current = { isLooping: false, loopStartTick: 0, loopEndTick: 0 };
         }
 
         init();
@@ -250,7 +250,10 @@ export function usePianoAudio(source: SongSource) {
         return () => {
             mounted = false;
             if (part) part.dispose();
+            Tone.Transport.stop();
             Tone.Transport.cancel();
+            Tone.Transport.seconds = 0;
+            Tone.Transport.ticks = 0;
         };
     }, [source]);
     // Sync Loop for UI
@@ -298,19 +301,22 @@ export function usePianoAudio(source: SongSource) {
 
             lastProcessedTickRef.current = currentTick;
 
-            // Looping Logic
-            const { isLooping, loopStart, loopEnd } = loopStateRef.current;
-            if (isLooping && loopEnd > 0 && Tone.Transport.seconds >= loopEnd) {
-                // Loop back to start
-                // We use Tone.Transport.position or seconds to jump
-                // But we must use seek() logic to reset active notes correctly?
-                // Calling seek() inside loop might trigger state update loop if not careful.
-                // But we are inside requestAnimationFrame loop (syncLoop).
-                // seek() modifies Tone.Transport.seconds.
+            // Looping Logic (TICKS BASED)
+            const { isLooping, loopStartTick, loopEndTick } = loopStateRef.current;
+            // Guard against invalid loop or infinite seek loops
+            // Guard against invalid loop or infinite seek loops
+            // Use 48 ticks buffer (approx 1/10th beat at 480PPQ)
+            if (isLooping && loopEndTick > loopStartTick + 48 && currentTick >= loopEndTick) {
+                console.log(`[Loop] Looping back to tick ${loopStartTick}`);
 
-                // Ideally we detect this boundary and jump.
-                seek(loopStart);
-                return; // next frame will sync
+                // Seek by TICKS
+                Tone.Transport.ticks = loopStartTick;
+
+                // Update internal state immediately for next frame
+                lastProcessedTickRef.current = loopStartTick;
+                rebuildActiveNotes(loopStartTick);
+
+                return; // next frame will sync UI
             }
 
             // Calculate Preview Notes
@@ -462,8 +468,10 @@ export function usePianoAudio(source: SongSource) {
         if (Tone.Transport.state === "started") {
             Tone.Transport.stop();
         }
-        // Also reset internal state
+        // Force reset transport time to 0
         Tone.Transport.seconds = 0;
+
+        // Also reset internal state
         lastProcessedTickRef.current = 0;
         rebuildActiveNotes(0);
 
@@ -474,10 +482,10 @@ export function usePianoAudio(source: SongSource) {
             currentTick: 0,
             activeNotes: [],
             isLooping: false,
-            loopStart: 0,
-            loopEnd: 0
+            loopStartTick: 0,
+            loopEndTick: 0
         }));
-        loopStateRef.current = { isLooping: false, loopStart: 0, loopEnd: 0 };
+        loopStateRef.current = { isLooping: false, loopStartTick: 0, loopEndTick: 0 };
     };
 
     const seek = (time: number) => {
@@ -504,38 +512,45 @@ export function usePianoAudio(source: SongSource) {
     const toggleLoop = () => {
         setState(prev => {
             const newLooping = !prev.isLooping;
-
-            // Should we set default loop points if none set?
-            // E.g. whole song or current view?
-            // Let's verify defaults.
-            let start = prev.loopStart;
-            let end = prev.loopEnd;
+            let start = prev.loopStartTick;
+            let end = prev.loopEndTick;
 
             if (newLooping && start === 0 && end === 0) {
-                end = prev.duration;
+                // Default to whole song (in ticks)
+                if (prev.midi) {
+                    // midi.durationTicks might not be exposed directly by @tonejs/midi?
+                    // Actually it is. But let's verify. 
+                    // If not, we can calculate from duration * speed? No.
+                    // Midi object has tracks[0].durationTicks usually.
+                    // Safe fallback: Tone.Transport.toTicks(prev.duration) (but prev.duration is unscaled seconds)
+                    // Tone.Transport.toTicks uses CURRENT BPM. If BPM is different from initial, this might be wrong for absolute duration?
+                    // BUT midi.duration is constant. Ticks are constant.
+                    // Best to set end = max tick found? or just leave as is.
+                    // Let's use Tone helper if available, or just a large number? No.
+                    // Let's assume midi is loaded.
+                    end = Math.max(...prev.midi.tracks.map(t => t.notes.length > 0 ? t.notes[t.notes.length - 1].ticks + t.notes[t.notes.length - 1].durationTicks : 0), 0);
+                }
             }
 
-            return { ...prev, isLooping: newLooping, loopStart: start, loopEnd: end };
+            return { ...prev, isLooping: newLooping, loopStartTick: start, loopEndTick: end };
         });
-
-        // We need to update ref immediately? 
-        // State updates are async, so ref might lag if we only sync on effect?
-        // Actually, we can update ref here "optimistically" or use an effect to sync ref to state.
-        // Let's use an effect to keep it clean.
     };
 
     const setLoop = (start: number, end: number) => {
-        setState(prev => ({ ...prev, loopStart: start, loopEnd: end }));
+        // UI sends Seconds. Convert to Ticks.
+        const startTick = Tone.Time(start).toTicks();
+        const endTick = Tone.Time(end).toTicks();
+        setState(prev => ({ ...prev, loopStartTick: startTick, loopEndTick: endTick }));
     };
 
     // Keep Loop Ref in Sync with State
     useEffect(() => {
         loopStateRef.current = {
             isLooping: state.isLooping,
-            loopStart: state.loopStart,
-            loopEnd: state.loopEnd
+            loopStartTick: state.loopStartTick,
+            loopEndTick: state.loopEndTick
         };
-    }, [state.isLooping, state.loopStart, state.loopEnd]);
+    }, [state.isLooping, state.loopStartTick, state.loopEndTick]);
 
     return {
         ...state,
@@ -546,6 +561,9 @@ export function usePianoAudio(source: SongSource) {
         playbackRate,
         setPlaybackRate: changeSpeed,
         toggleLoop,
-        setLoop
+        setLoop,
+        // Expose Seconds for UI compatibility
+        loopStart: typeof window !== 'undefined' ? Tone.Time(state.loopStartTick, "i").toSeconds() : 0,
+        loopEnd: typeof window !== 'undefined' ? Tone.Time(state.loopEndTick, "i").toSeconds() : 0
     };
 }
