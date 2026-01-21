@@ -6,7 +6,8 @@ import { twMerge } from "tailwind-merge";
 
 interface WaterfallProps {
     midi: Midi | null;
-    currentTick: number; // Add this
+    currentTick: number;
+    playbackRate?: number;
     activeColors?: {
         split: boolean;
         left: string;
@@ -15,9 +16,7 @@ interface WaterfallProps {
     };
 }
 
-
-
-export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
@@ -123,10 +122,13 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
         // then note[i] started too early to possibly overlap (since its duration <= maxDuration).
 
         while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - lookbackTicks) {
-             renderStartIdx--;
+            renderStartIdx--;
         }
 
-        const active: { id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string }[] = [];
+        const active: {
+            id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string;
+            isApproaching: boolean; isActive: boolean;
+        }[] = [];
 
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
@@ -135,51 +137,106 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
             if (note.ticks > endTime) break;
 
             if (note.ticks + note.durationTicks > currentTick) {
-                 const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
-                    const heightPct = (note.durationTicks / windowSizeTicks) * 100;
+                const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
+                const heightPct = (note.durationTicks / windowSizeTicks) * 100;
 
-                    const { left, width, isBlack } = getNotePosition(note.midi);
+                const { left, width, isBlack } = getNotePosition(note.midi);
 
-                    active.push({
-                        id: `${note.name}-${note.ticks}`,
-                        left: `${left}%`,
-                        width: `${width}%`,
-                        bottom: `${bottomPct}%`,
-                        height: `${heightPct}%`,
-                        isBlack,
-                        name: note.name,
-                        color: note.color
-                    });
+                const isActive = note.ticks <= currentTick && (note.ticks + note.durationTicks) >= currentTick;
+                const approachThreshold = 15 / (playbackRate || 1);
+
+                // Only mark as approaching if:
+                // 1. Not currently active (hit line)
+                // 2. Within threshold
+                // 3. It's the "closest" instance of this pitch?
+                // Logic: Iterate visibleNotes so far, if same pitch exists and is closer (lower bottomPct), ignore this one?
+                // VisualNotes is sorted by tick (ascending).
+                // So if we found a note of same pitch already in 'active' list that is also approaching, this one is further away.
+                // WE MUST CHECK 'active' array for duplicates.
+
+                let isApproaching = !isActive && bottomPct < approachThreshold && bottomPct > 0;
+
+                if (isApproaching) {
+                    const duplicate = active.find(n => n.name === note.name && n.isApproaching);
+                    if (duplicate) isApproaching = false;
+                }
+
+                active.push({
+                    id: `${note.name}-${note.ticks}`,
+                    left: `${left}%`,
+                    width: `${width}%`,
+                    bottom: `${bottomPct}%`,
+                    height: `${heightPct}%`,
+                    isBlack,
+                    name: note.name,
+                    color: note.color,
+                    isApproaching,
+                    isActive
+                });
             }
         }
 
         return active;
-    }, [midi, currentTick, allNotes, maxDuration]);
+    }, [midi, currentTick, allNotes, maxDuration, playbackRate]);
 
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-transparent">
+        <div className="relative h-full w-full overflow-hidden bg-transparent perspective-500">
             {visibleNotes.map(note => (
-                <div
-                    key={note.id}
-                    className={twMerge(
-                        "absolute rounded-sm opacity-90 shadow-sm",
-                        note.isBlack ? "z-20" : "z-10"
+                <div key={note.id}>
+                    {/* Connecting Line (Approaching) */}
+                    {note.isApproaching && (
+                        <div
+                            className="absolute z-0 w-[1px] bg-white/20 transition-opacity duration-200"
+                            style={{
+                                left: `calc(${note.left} + ${parseFloat(note.width) / 2}%)`,
+                                bottom: 0,
+                                height: `${note.bottom}`,
+                                width: "1px",
+                                background: `linear-gradient(to top, ${note.color}00, ${note.color}80)`,
+                                opacity: Math.max(0, 1 - (parseFloat(note.bottom) / (15 / playbackRate))) // Fade based on distance
+                            }}
+                        />
                     )}
-                    style={{
-                        left: note.left,
-                        width: note.width,
-                        bottom: note.bottom,
-                        height: note.height,
-                        backgroundColor: "transparent", // Use gradient instead
-                        background: `linear-gradient(to top, ${note.color}, ${note.color}80)`,
-                        border: `1px solid ${note.color}`,
-                        boxShadow: `0 0 15px ${note.color}80, 0 0 5px ${note.color} inset`,
-                        borderRadius: "4px",
-                        zIndex: note.isBlack ? 20 : 10,
-                    }}
-                >
-                    {/* Optional: Note label */}
+
+                    {/* Splash / Punch Effect (Active) */}
+                    {note.isActive && (
+                        <div
+                            key={`${note.id}-splash`} // Force remount on ID change
+                            className="absolute z-30 rounded-full animate-ping"
+                            style={{
+                                left: `calc(${note.left} + ${parseFloat(note.width) / 2}% - 10px)`,
+                                width: "20px",
+                                height: "20px",
+                                bottom: "-10px",
+                                backgroundColor: note.color,
+                                opacity: 0.8,
+                                animationDuration: '0.5s',
+                                animationIterationCount: 1 // Only run once!
+                            }}
+                        />
+                    )}
+
+                    {/* Note Body */}
+                    <div
+                        className={twMerge(
+                            "absolute rounded-sm opacity-90 shadow-sm transition-transform",
+                            note.isBlack ? "z-20" : "z-10",
+                            note.isActive && "brightness-125"
+                        )}
+                        style={{
+                            left: note.left,
+                            width: note.width,
+                            bottom: note.bottom,
+                            height: note.height,
+                            background: `linear-gradient(to top, ${note.color}, ${note.color}80)`,
+                            border: `1px solid ${note.color}`,
+                            boxShadow: note.isActive ? `0 0 20px ${note.color}, 0 0 10px white` : `0 0 15px ${note.color}80, 0 0 5px ${note.color} inset`,
+                            borderRadius: "4px",
+                            zIndex: note.isBlack ? 20 : 10,
+                        }}
+                    >
+                    </div>
                 </div>
             ))}
         </div>

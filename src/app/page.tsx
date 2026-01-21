@@ -166,28 +166,48 @@ export default function Home() {
     }
   }, [audio.midi]);
 
-  // activeNotes are now calculated efficiently in the usePianoAudio hook.
-  // We just need to map them to colors for the Keyboard component.
-  const coloredActiveNotes = useMemo(() => {
-    return audio.activeNotes.map(activeNote => {
+  // Combine Active and Preview notes for visualization
+  const coloredKeys = useMemo(() => {
+    // 1. Map Active Notes (High Priority)
+    const activeMapping = audio.activeNotes.map(activeNote => {
       let trackColor;
-
       if (splitHands) {
         if (splitStrategy === 'point') {
-          // Split Point Strategy: Note based
-          // Notes < splitPoint = Left, Notes >= splitPoint = Right
           const noteNumber = Tone.Frequency(activeNote.note).toMidi();
-          trackColor = noteNumber < splitPoint ? leftColor : rightColor;
+          // Safety check for valid note number
+          trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
         } else {
-          // Track Strategy: Track 0 = Right, Track 1+ = Left
           trackColor = activeNote.track === 0 ? rightColor : leftColor;
         }
       } else {
         trackColor = unifiedColor;
       }
-      return { note: activeNote.note, color: trackColor };
+      return { note: activeNote.note, color: trackColor, isPreview: false };
     });
-  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
+
+    // 2. Map Preview Notes (Lower Priority)
+    // We filter out notes that are already active
+    const activeNoteSet = new Set(audio.activeNotes.map(n => n.note));
+
+    const previewMapping = audio.previewNotes
+      .filter(n => !activeNoteSet.has(n.note))
+      .map(previewNote => {
+        let trackColor;
+        if (splitHands) {
+          if (splitStrategy === 'point') {
+            const noteNumber = Tone.Frequency(previewNote.note).toMidi();
+            trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
+          } else {
+            trackColor = previewNote.track === 0 ? rightColor : leftColor;
+          }
+        } else {
+          trackColor = unifiedColor;
+        }
+        return { note: previewNote.note, color: trackColor, isPreview: true };
+      });
+
+    return [...activeMapping, ...previewMapping];
+  }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
   // Check if PWA hint should show (iPhone only, not in standalone mode)
   useEffect(() => {
@@ -341,7 +361,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
+    <div className="flex h-[100dvh] w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
 
       {/* Portrait Warning Overlay */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
@@ -378,6 +398,7 @@ export default function Home() {
           <Waterfall
             midi={audio.midi}
             currentTick={audio.currentTick}
+            playbackRate={audio.playbackRate}
             activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
           />
           {/* Hit Line Separator */}
@@ -386,7 +407,7 @@ export default function Home() {
 
         {/* Keyboard Container */}
         <div className="w-full shrink-0 z-50 landscape:h-auto">
-          <Keyboard activeNotes={coloredActiveNotes} />
+          <Keyboard keys={coloredKeys} />
         </div>
 
       </main>
@@ -414,6 +435,11 @@ export default function Home() {
             currentSong,
             onSelectSong: setCurrentSong
           }}
+          isLooping={audio.isLooping}
+          loopStart={audio.loopStart}
+          loopEnd={audio.loopEnd}
+          onToggleLoop={audio.toggleLoop}
+          onSetLoop={audio.setLoop}
         />
       </footer>
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />

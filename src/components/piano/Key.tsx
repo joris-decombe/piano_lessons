@@ -5,9 +5,10 @@ interface KeyProps {
     isBlack: boolean;
     isActive: boolean;
     label?: string; // e.g. "C"
+    isPreview?: boolean;
 }
 
-export function Key({ note, isBlack, isActive, activeColor, label }: KeyProps & { activeColor?: string }) {
+export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: KeyProps & { activeColor?: string }) {
     // Determine beam color (default to cyan/rose if not provided, or gold fallback)
     // Actually activeColor is passed from page.tsx (Cyan/Rose).
     const glowColor = activeColor || (isBlack ? "#fbbf24" : "#38bdf8"); // Fallback Gold/Sky
@@ -22,12 +23,21 @@ export function Key({ note, isBlack, isActive, activeColor, label }: KeyProps & 
                     : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
                 isActive && isBlack && !activeColor && "bg-slate-800 scale-[0.99] !shadow-none",
                 isActive && !isBlack && !activeColor && "bg-slate-200 scale-[0.99]",
+                // Preview State (Hollow)
+                isPreview && !isActive && !isBlack && "bg-indigo-50",
+                isPreview && !isActive && isBlack && "bg-zinc-800",
                 "select-none"
             )}
             style={{
                 backgroundColor: isActive && activeColor ? activeColor : undefined,
                 transform: isActive ? "scale(0.99)" : undefined,
-                boxShadow: isActive ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset` : undefined,
+                boxShadow: isActive
+                    ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
+                    : isPreview
+                        ? `0 0 0 2px ${activeColor || glowColor}, inset 0 0 15px ${activeColor || glowColor}40` // Use spread shadow to simulate border without layout shift
+                        : undefined,
+                borderColor: undefined, // Remove border color
+                borderWidth: undefined, // Remove border width
                 // Z-Index Layering:
                 // Black Active: 40
                 // Black Inactive: 30

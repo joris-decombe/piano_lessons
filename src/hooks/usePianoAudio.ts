@@ -5,6 +5,12 @@ import { Midi } from "@tonejs/midi";
 export interface ActiveNote {
     note: string;
     track: number;
+    velocity: number;
+}
+
+export interface PreviewNote {
+    note: string;
+    track: number;
 }
 
 export interface PianoAudioState {
@@ -15,6 +21,10 @@ export interface PianoAudioState {
     duration: number;
     midi: Midi | null;
     activeNotes: ActiveNote[];
+    previewNotes: PreviewNote[];
+    isLooping: boolean;
+    loopStart: number; // in Seconds
+    loopEnd: number; // in Seconds
 }
 
 interface NoteEvent {
@@ -39,10 +49,14 @@ export function usePianoAudio(source: SongSource) {
         duration: 0,
         midi: null,
         activeNotes: [],
+        previewNotes: [],
+        isLooping: false,
+        loopStart: 0,
+        loopEnd: 0,
     });
 
     const samplerRef = useRef<Tone.Sampler | null>(null);
-    const noteTimelineRef = useRef<Map<number, { note: string; type: "start" | "stop"; track: number }[]>>(new Map());
+    const noteTimelineRef = useRef<Map<number, { note: string; type: "start" | "stop"; track: number; velocity: number }[]>>(new Map());
     const activeNotesRef = useRef<Map<string, ActiveNote>>(new Map());
     const lastProcessedTickRef = useRef(0);
     const [playbackRate, setPlaybackRate] = useState(1);
@@ -63,7 +77,7 @@ export function usePianoAudio(source: SongSource) {
             events.forEach(event => {
                 const key = `${event.note}-${event.track}`;
                 if (event.type === 'start') {
-                    activeNotesRef.current.set(key, { note: event.note, track: event.track });
+                    activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
                 } else {
                     activeNotesRef.current.delete(key);
                 }
@@ -174,7 +188,7 @@ export function usePianoAudio(source: SongSource) {
             }, notes).start(0);
 
             // 4. Pre-compute Note Timeline for efficient active note lookup
-            const timeline = new Map<number, { note: string, type: 'start' | 'stop', track: number }[]>();
+            const timeline = new Map<number, { note: string, type: 'start' | 'stop', track: number, velocity: number }[]>();
             midi.tracks.forEach((track, trackIndex) => {
                 track.notes.forEach(note => {
                     const startTick = note.ticks;
@@ -182,11 +196,11 @@ export function usePianoAudio(source: SongSource) {
 
                     // Add note start event
                     if (!timeline.has(startTick)) timeline.set(startTick, []);
-                    timeline.get(startTick)!.push({ note: note.name, type: 'start', track: trackIndex });
+                    timeline.get(startTick)!.push({ note: note.name, type: 'start', track: trackIndex, velocity: note.velocity });
 
                     // Add note stop event
                     if (!timeline.has(endTick)) timeline.set(endTick, []);
-                    timeline.get(endTick)!.push({ note: note.name, type: 'stop', track: trackIndex });
+                    timeline.get(endTick)!.push({ note: note.name, type: 'stop', track: trackIndex, velocity: 0 });
                 });
             });
             noteTimelineRef.current = timeline;
@@ -246,7 +260,7 @@ export function usePianoAudio(source: SongSource) {
                         events.forEach(event => {
                             const key = `${event.note}-${event.track}`;
                             if (event.type === 'start') {
-                                activeNotesRef.current.set(key, { note: event.note, track: event.track });
+                                activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
                             } else {
                                 activeNotesRef.current.delete(key);
                             }
@@ -258,14 +272,111 @@ export function usePianoAudio(source: SongSource) {
 
             lastProcessedTickRef.current = currentTick;
 
+            // Looping Logic
+            if (state.isLooping && state.loopEnd > 0 && Tone.Transport.seconds >= state.loopEnd) {
+                // Loop back to start
+                // We use Tone.Transport.position or seconds to jump
+                // But we must use seek() logic to reset active notes correctly?
+                // Calling seek() inside loop might trigger state update loop if not careful.
+                // But we are inside requestAnimationFrame loop (syncLoop).
+                // seek() modifies Tone.Transport.seconds.
+
+                // Ideally we detect this boundary and jump.
+                seek(state.loopStart);
+                return; // next frame will sync
+            }
+
+            // Calculate Preview Notes
+            // Lookahead time scales with playback rate: slower speed = longer lookahead (earlier warning)
+            // Base lookahead: 0.5s? Let's try adaptive.
+            // If Rate is 0.5, we want to see 1s into future?
+            // If Rate is 2.0, we want to see 0.25s into future?
+            // Actually, constant *distance* on screen means constant *time* if scrolling speed is constant?
+            // But waterfall speed depends on playback rate.
+            // So we want a fixed *time* window relative to the user's reaction time?
+            // "slowing down the song increases the preview duration" -> Yes, 1s at 0.5x is 2s of "real time".
+
+            // Let's use a base lookahead of 400ms.
+            // At 1.0x, it's 400ms.
+            // At 0.5x, it's 800ms of song time? Or user meant "earlier relative to playback"?
+            // User said: "slowing down the song increases the preview duration"
+            // So if base is 500ms.
+            // Rate 0.5 -> Preview 1000ms.
+
+            const baseLookAhead = 0.5; // seconds
+            const adjustedLookAhead = baseLookAhead * (1 / (playbackRate || 1));
+            const lookAheadTicks = Tone.Time(adjustedLookAhead).toTicks();
+            const previewEndOfWindow = currentTick + lookAheadTicks;
+
+            const previewNotes: PreviewNote[] = [];
+            // Naive iteration for preview (optimization possible but map is sparse-ish)
+            // Better: iterate only relevant ticks. But map keys are not sorted in structure, only if we explicitly sort keys.
+            // We can't easily query range on Map.
+            // But we have `midi.tracks` structure.
+            // Let's iterate midi tracks -> notes using binary search or the sorted `allNotes` if we had it.
+            // Accessing `state.midi` here might be stale or slow?
+            // Actually, `noteTimelineRef` is just events.
+            // Let's just iterate `noteTimelineRef`? No, too slow.
+
+            // We can rely on proper binary search if we had a sorted event list.
+            // Let's stick to what we need. Use the MIDI object if available?
+            if (state.midi) {
+                // This is running in loop, so keep it light.
+                // Binary search for note starts in [currentTick, previewEndOfWindow]?
+                // `state.midi` structure is track -> notes (sorted by default? yes usually).
+                // Let's assume sorted.
+
+                state.midi.tracks.forEach((track, trackIndex) => {
+                    // Find first note > currentTick
+                    // We can simple loop from last known index? 
+                    // But we don't track indices per track.
+                    // A simple find here is O(N) but N is small per track usually? No, can be large.
+                    // Binary search is better.
+
+                    // Optimization: Use a cached "next note index" per track?
+                    // Managing that ref is complex with seeking.
+
+                    // Let's just do a quick scan on visible window since we don't have indexes.
+                    // Or, just implement binary search helper.
+
+                    let low = 0, high = track.notes.length - 1;
+                    let startIdx = -1;
+
+                    while (low <= high) {
+                        const mid = Math.floor((low + high) / 2);
+                        if (track.notes[mid].ticks > currentTick) {
+                            startIdx = mid;
+                            high = mid - 1;
+                        } else {
+                            low = mid + 1;
+                        }
+                    }
+
+                    if (startIdx !== -1) {
+                        for (let i = startIdx; i < track.notes.length; i++) {
+                            const note = track.notes[i];
+                            if (note.ticks > previewEndOfWindow) break;
+                            previewNotes.push({ note: note.name, track: trackIndex });
+                        }
+                    }
+                });
+            }
+
             setState(prev => {
                 const newActiveNotes = Array.from(activeNotesRef.current.values());
+
+                // Deep comparison for preview notes to avoid render
+                const previewChanged =
+                    prev.previewNotes.length !== previewNotes.length ||
+                    !prev.previewNotes.every((n, i) => n.note === previewNotes[i].note && n.track === previewNotes[i].track);
+
                 // Only update state if something has actually changed to prevent re-renders
                 if (
                     prev.currentTime === Tone.Transport.seconds &&
                     prev.currentTick === currentTick &&
                     prev.isPlaying === true &&
-                    !notesChanged
+                    !notesChanged &&
+                    !previewChanged
                 ) {
                     return prev;
                 }
@@ -275,7 +386,8 @@ export function usePianoAudio(source: SongSource) {
                     currentTime: Tone.Transport.seconds,
                     currentTick,
                     isPlaying: true,
-                    activeNotes: newActiveNotes
+                    activeNotes: newActiveNotes,
+                    previewNotes
                 };
             });
 
@@ -358,6 +470,28 @@ export function usePianoAudio(source: SongSource) {
         Tone.Transport.bpm.value = baseBpmRef.current * rate;
     };
 
+    const toggleLoop = () => {
+        setState(prev => {
+            const newLooping = !prev.isLooping;
+
+            // Should we set default loop points if none set?
+            // E.g. whole song or current view?
+            // Let's verify defaults.
+            let start = prev.loopStart;
+            let end = prev.loopEnd;
+
+            if (newLooping && start === 0 && end === 0) {
+                end = prev.duration;
+            }
+
+            return { ...prev, isLooping: newLooping, loopStart: start, loopEnd: end };
+        });
+    };
+
+    const setLoop = (start: number, end: number) => {
+        setState(prev => ({ ...prev, loopStart: start, loopEnd: end }));
+    };
+
     return {
         ...state,
         duration: state.duration / playbackRate,
@@ -366,5 +500,7 @@ export function usePianoAudio(source: SongSource) {
         seek,
         playbackRate,
         setPlaybackRate: changeSpeed,
+        toggleLoop,
+        setLoop
     };
 }
