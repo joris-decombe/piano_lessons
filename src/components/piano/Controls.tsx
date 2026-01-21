@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatTime } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { Timeline } from "./Timeline";
 
 // ... (interfaces remain same)
 
@@ -19,6 +20,12 @@ interface VisualSettings {
     setSplitStrategy: (val: 'tracks' | 'point') => void;
     splitPoint: number;
     setSplitPoint: (val: number) => void;
+    lookAheadTime: number;
+    setLookAheadTime: (val: number) => void;
+    showGrid: boolean;
+    setShowGrid: (val: boolean) => void;
+    showPreview: boolean;
+    setShowPreview: (val: boolean) => void;
 }
 
 interface Song {
@@ -46,6 +53,11 @@ interface ControlsProps {
     onSetPlaybackRate: (rate: number) => void;
     visualSettings: VisualSettings;
     songSettings?: SongSettings;
+    isLooping: boolean;
+    loopStart: number;
+    loopEnd: number;
+    onToggleLoop: () => void;
+    onSetLoop: (start: number, end: number) => void;
 }
 
 export function Controls({
@@ -58,6 +70,11 @@ export function Controls({
     onSetPlaybackRate,
     visualSettings,
     songSettings,
+    isLooping,
+    loopStart,
+    loopEnd,
+    onToggleLoop,
+    onSetLoop
 }: ControlsProps) {
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -93,27 +110,19 @@ export function Controls({
         <div className="relative w-full">
 
             {/* Minimalist Control Bar */}
-            <div className="relative w-full bg-zinc-900/90 backdrop-blur-md rounded-full border border-zinc-700/50 px-4 py-2 shadow-xl flex items-center justify-between gap-4 h-[48px] md:h-[56px]">
+            <div className="relative w-full bg-zinc-900/90 backdrop-blur-md rounded-full border border-zinc-700/50 px-4 py-2 shadow-xl flex items-center justify-between gap-4 h-[56px] md:h-[64px]">
 
-                {/* Progress Bar (Integrated at top) */}
-                <div className="absolute top-0 left-4 right-4 h-[2px] -mt-[1px]">
-                    <div className="relative w-full h-full">
-                        <div className="absolute inset-0 bg-zinc-700 rounded-full"></div>
-                        <div
-                            className="absolute inset-y-0 left-0 bg-indigo-500 rounded-full"
-                            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                        />
-                        <input
-                            type="range"
-                            min={0}
-                            max={duration || 100}
-                            step={0.1}
-                            value={currentTime}
-                            onChange={(e) => onSeek(parseFloat(e.target.value))}
-                            aria-label="Seek"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                    </div>
+                {/* Timeline Area (Elevated when looping to avoid overlap) */}
+                <div className={`absolute top-0 left-4 right-4 w-auto transition-all duration-300 ease-out z-10 ${isLooping ? '-mt-[26px]' : '-mt-[10px]'}`}>
+                    <Timeline
+                        currentTime={currentTime}
+                        duration={duration}
+                        onSeek={onSeek}
+                        isLooping={isLooping}
+                        loopStart={loopStart}
+                        loopEnd={loopEnd}
+                        onSetLoop={onSetLoop}
+                    />
                 </div>
 
                 {/* Left: Song Info (Compact) */}
@@ -131,22 +140,45 @@ export function Controls({
                 </div>
 
                 {/* Center: Play/Pause */}
-                <button
-                    onClick={onTogglePlay}
-                    data-testid="play-button"
-                    aria-label={isPlaying ? "Pause" : "Play"}
-                    className="flex-shrink-0 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
-                >
-                    {isPlaying ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+                {/* Center: Play/Pause & Rewind */}
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={onToggleLoop}
+                        aria-label="Toggle Loop"
+                        className={`flex-shrink-0 flex items-center justify-center w-12 h-12 -mx-2 rounded-full transition-all active:scale-95 ${isLooping ? 'text-indigo-400 bg-indigo-500/10 ring-1 ring-indigo-500/50' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                    >
+                        <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            onSeek(0);
+                            if (isLooping) onToggleLoop(); // Disable loop on reset
+                        }}
+                        aria-label="Return to start"
+                        className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                         </svg>
-                    ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-0.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-                        </svg>
-                    )}
-                </button>
+                    </button>
+                    <button
+                        onClick={onTogglePlay}
+                        data-testid="play-button"
+                        aria-label={isPlaying ? "Pause" : "Play"}
+                        className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
+                    >
+                        {isPlaying ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+                            </svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6 ml-0.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
 
                 {/* Right: Settings Toggle */}
                 <div className="flex-1 flex justify-end items-center gap-3 min-w-0">
@@ -239,7 +271,27 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
-                                className="w-full cursor-pointer h-1.5 bg-zinc-700 rounded-lg appearance-none accent-indigo-600"
+                                className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
+                            />
+                        </div>
+
+                        <div className="h-[1px] bg-white/5 w-full" />
+
+                        {/* Preview Duration */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                                <span>Preview</span>
+                                <span className="text-indigo-400">{visualSettings.lookAheadTime?.toFixed(1) || "1.5"}s</span>
+                            </div>
+                            <input
+                                type="range"
+                                min={0.1}
+                                max={3.0}
+                                step={0.1}
+                                value={visualSettings.lookAheadTime || 1.5}
+                                onChange={(e) => visualSettings.setLookAheadTime(parseFloat(e.target.value))}
+                                aria-label="Preview duration"
+                                className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
                             />
                         </div>
 
@@ -248,6 +300,26 @@ export function Controls({
                         {/* Visual Settings */}
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Appearance</label>
+
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Show Grid</span>
+                                <input
+                                    type="checkbox"
+                                    checked={visualSettings.showGrid}
+                                    onChange={(e) => visualSettings.setShowGrid(e.target.checked)}
+                                    className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
+                                />
+                            </label>
+
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Note Preview</span>
+                                <input
+                                    type="checkbox"
+                                    checked={visualSettings.showPreview}
+                                    onChange={(e) => visualSettings.setShowPreview(e.target.checked)}
+                                    className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
+                                />
+                            </label>
 
                             <label className="flex items-center justify-between cursor-pointer group">
                                 <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Split Hands</span>

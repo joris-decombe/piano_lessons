@@ -62,7 +62,7 @@ function calculateVisibleNotesOptimized(allNotes: Note[], maxDuration: number, c
     let renderStartIdx = startIdx;
     const lookbackTicks = maxDuration;
     while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - lookbackTicks) {
-            renderStartIdx--;
+        renderStartIdx--;
     }
 
     const active: Note[] = [];
@@ -72,7 +72,7 @@ function calculateVisibleNotesOptimized(allNotes: Note[], maxDuration: number, c
         if (note.ticks > endTime) break;
 
         if (note.ticks + note.durationTicks > currentTick) {
-                active.push(note);
+            active.push(note);
         }
     }
     return active;
@@ -104,25 +104,25 @@ describe('Waterfall Logic Correctness', () => {
     const windowSizeTicks = 6 * 480;
 
     it('should correctly render a very long note that started way before currentTick', () => {
-         const longNoteMidi = generateMockMidi(1, 1);
-         // Make the note extremely long
-         longNoteMidi.tracks[0].notes[0].ticks = 0;
-         longNoteMidi.tracks[0].notes[0].durationTicks = 100000; // Very long duration
+        const longNoteMidi = generateMockMidi(1, 1);
+        // Make the note extremely long
+        longNoteMidi.tracks[0].notes[0].ticks = 0;
+        longNoteMidi.tracks[0].notes[0].durationTicks = 100000; // Very long duration
 
-         const { allNotes, maxDuration } = preProcessNotes(longNoteMidi);
+        const { allNotes, maxDuration } = preProcessNotes(longNoteMidi);
 
-         const currentTick = 50000; // Middle of the note
-         const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks, 480);
+        const currentTick = 50000; // Middle of the note
+        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
 
-         // Should contain the note
-         expect(visible.length).toBe(1);
+        // Should contain the note
+        expect(visible.length).toBe(1);
     });
 
     it('should correctly render normal notes inside window', () => {
         const midi = generateMockMidi(1, 10);
         const { allNotes, maxDuration } = preProcessNotes(midi);
         const currentTick = 0;
-        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks, 480);
+        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
         // Notes at 0, 100, 200... should be visible
         expect(visible.length).toBeGreaterThan(0);
     });

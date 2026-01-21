@@ -6,18 +6,20 @@ import { twMerge } from "tailwind-merge";
 
 interface WaterfallProps {
     midi: Midi | null;
-    currentTick: number; // Add this
+    currentTick: number;
+    playbackRate?: number;
     activeColors?: {
         split: boolean;
         left: string;
         right: string;
         unified: string;
     };
+    lookAheadTicks?: number;
+    showGrid?: boolean;
+    showPreview?: boolean;
 }
 
-
-
-export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, lookAheadTicks = 0, showGrid = true, showPreview = true }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
@@ -123,11 +125,19 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
         // then note[i] started too early to possibly overlap (since its duration <= maxDuration).
 
         while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - lookbackTicks) {
-             renderStartIdx--;
+            renderStartIdx--;
         }
 
-        const active: { id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string }[] = [];
+        const active: {
+            id: string; left: string; width: string; bottom: string; height: string; isBlack: boolean; name: string; color: string;
+            isApproaching: boolean; isActive: boolean;
+        }[] = [];
 
+        // Track which pitches have already been rendered (from bottom up) to avoid duplicate preview lines
+        const coveredPitches = new Set<string>();
+
+        // Notes are sorted by ticks (lowest/earliest first)
+        // Since we iterate from renderStartIdx forwards, we encounter "lower" notes first.
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
 
@@ -135,51 +145,144 @@ export function Waterfall({ midi, currentTick, activeColors }: WaterfallProps) {
             if (note.ticks > endTime) break;
 
             if (note.ticks + note.durationTicks > currentTick) {
-                 const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
-                    const heightPct = (note.durationTicks / windowSizeTicks) * 100;
+                const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
+                const heightPct = (note.durationTicks / windowSizeTicks) * 100;
 
-                    const { left, width, isBlack } = getNotePosition(note.midi);
+                const { left, width, isBlack } = getNotePosition(note.midi);
 
-                    active.push({
-                        id: `${note.name}-${note.ticks}`,
-                        left: `${left}%`,
-                        width: `${width}%`,
-                        bottom: `${bottomPct}%`,
-                        height: `${heightPct}%`,
-                        isBlack,
-                        name: note.name,
-                        color: note.color
-                    });
+                const isActive = note.ticks <= currentTick && (note.ticks + note.durationTicks) >= currentTick;
+
+                // Calculate threshold based on lookAheadTicks if available
+                const approachThreshold = lookAheadTicks > 0
+                    ? (lookAheadTicks / windowSizeTicks) * 100
+                    : 15 / (playbackRate || 1);
+
+                // Only mark as approaching if:
+                // 1. Not currently active
+                // 2. Within threshold
+                // 3. Pitch not yet "covered" by a lower note (active or approaching)
+                let isApproaching = !isActive && bottomPct < approachThreshold && bottomPct > 0;
+
+                if (coveredPitches.has(note.name)) {
+                    isApproaching = false;
+                }
+
+                if (isActive || isApproaching) {
+                    coveredPitches.add(note.name);
+                }
+                // If it's just visible but high up (not approaching/active), it doesn't "cover" the pitch yet?
+                // User logic: "not really a problem since ... have notes on the waterfall that are lower".
+                // If there is ANY note lower, we probably don't need a line?
+                // But if the lower note is VERY far down (below view)? No, we iterate visible only.
+                // If lower note is at 10% (visible, but not approaching/active?? Wait, if visible it is approaching or active basically).
+                // Actually, "Active" means played. "Approaching" means < threshold.
+                // What if note is > threshold? (e.g. 50% high).
+                // If we have note at 50% (visible) and note at 80% (approaching? no).
+                // If we have note at 50% (visible, not approaching) and note at 20% (approaching).
+                // We process 20% first. It isApproaching. 
+                // We process 50% next. It is NOT approaching.
+                // Logic holds.
+
+                // What if we have note at 20% (approaching). coveredPitches adds it.
+                // Note at 50% (approaching). coveredPitches has it -> false. 
+                // Result: Lower note gets line. Higher note doesn't. Correct.
+
+                active.push({
+                    id: `${note.name}-${note.ticks}`,
+                    left: `${left}%`,
+                    width: `${width}%`,
+                    bottom: `${bottomPct}%`,
+                    height: `${heightPct}%`,
+                    isBlack,
+                    name: note.name,
+                    color: note.color,
+                    isApproaching,
+                    isActive
+                });
             }
         }
 
         return active;
-    }, [midi, currentTick, allNotes, maxDuration]);
+    }, [midi, currentTick, allNotes, maxDuration, playbackRate, lookAheadTicks]);
 
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-transparent">
+        <div className="relative h-full w-full overflow-hidden bg-transparent perspective-500">
+            {/* Octave Guidelines (C-to-C sections) */}
+            {showGrid && Array.from({ length: 9 }).map((_, i) => {
+                // C1 starts at index 0 of white keys? No.
+                // Formula: getNotePosition uses MIDI 21 (A0).
+                // Cs are: C1(24), C2(36), C3(48), ...
+                // Let's render lines for C notes.
+                const octave = i + 1; // C1 to C8
+                const midiC = 24 + (i * 12);
+                if (midiC > 108) return null;
+                const { left } = getNotePosition(midiC);
+                return (
+                    <div
+                        key={`guide-c-${octave}`}
+                        className="absolute top-0 bottom-0 w-[1px] bg-white/10 pointer-events-none z-0"
+                        style={{ left: `${left}%` }}
+                    />
+                );
+            })}
+
             {visibleNotes.map(note => (
-                <div
-                    key={note.id}
-                    className={twMerge(
-                        "absolute rounded-sm opacity-90 shadow-sm",
-                        note.isBlack ? "z-20" : "z-10"
+                <div key={note.id}>
+                    {/* Connecting Line (Approaching) */}
+                    {showPreview && note.isApproaching && (
+                        <div
+                            className="absolute z-0 w-[1px] bg-white/20 transition-opacity duration-200"
+                            style={{
+                                left: `calc(${note.left} + ${parseFloat(note.width) / 2}%)`,
+                                bottom: 0,
+                                height: `${note.bottom}`,
+                                width: "1px",
+                                background: `linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.6))`, // Increased visibility
+                                opacity: Math.max(0, 1 - (parseFloat(note.bottom) / ((lookAheadTicks > 0 ? (lookAheadTicks / (6 * midi!.header.ppq)) * 100 : 15 / playbackRate))))
+                            }}
+                        />
                     )}
-                    style={{
-                        left: note.left,
-                        width: note.width,
-                        bottom: note.bottom,
-                        height: note.height,
-                        backgroundColor: "transparent", // Use gradient instead
-                        background: `linear-gradient(to top, ${note.color}, ${note.color}80)`,
-                        border: `1px solid ${note.color}`,
-                        boxShadow: `0 0 15px ${note.color}80, 0 0 5px ${note.color} inset`,
-                        borderRadius: "4px",
-                        zIndex: note.isBlack ? 20 : 10,
-                    }}
-                >
-                    {/* Optional: Note label */}
+
+                    {/* Hit Flash / Punch Effect (Active) */}
+                    {note.isActive && (
+                        <div
+                            key={`${note.id}-flash`}
+                            className="absolute z-30"
+                            style={{
+                                left: note.left,
+                                width: note.width,
+                                bottom: "0px",
+                                height: "30px", // Vertical flash
+                                background: `linear-gradient(to top, ${note.color}ff, ${note.color}00)`, // Fade up
+                                opacity: 0.8,
+                                transformOrigin: "bottom center",
+                                animation: "ping 0.4s cubic-bezier(0,0,0.2,1) 1 forwards", // Reuse ping but clamped
+                                filter: 'blur(2px)' // Soft glare
+                            }}
+                        />
+                    )}
+
+                    {/* Note Body */}
+                    <div
+                        className={twMerge(
+                            "absolute rounded-sm opacity-90 shadow-sm transition-transform",
+                            note.isBlack ? "z-20" : "z-10",
+                            note.isActive && "brightness-125"
+                        )}
+                        style={{
+                            left: note.left,
+                            width: note.width,
+                            bottom: note.bottom,
+                            height: note.height,
+                            background: `linear-gradient(to top, ${note.color}, ${note.color}80)`,
+                            border: `1px solid ${note.color}`,
+                            boxShadow: note.isActive ? `0 0 20px ${note.color}, 0 0 10px white` : `0 0 15px ${note.color}80, 0 0 5px ${note.color} inset`,
+                            borderRadius: "4px",
+                            zIndex: note.isBlack ? 20 : 10,
+                        }}
+                    >
+                    </div>
                 </div>
             ))}
         </div>

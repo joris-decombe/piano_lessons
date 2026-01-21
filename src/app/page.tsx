@@ -67,6 +67,159 @@ function HelpModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
   );
 }
 
+interface PianoLessonProps {
+  song: Song;
+  allSongs: Song[];
+  onSongChange: (song: Song) => void;
+  onExit: () => void;
+}
+
+function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps) {
+  const [lookAheadTime, setLookAheadTime] = useState(1.5);
+  const audio = usePianoAudio(song, { lookAheadTime });
+
+  const [splitHands, setSplitHands] = useState(true);
+  const [leftColor, setLeftColor] = useState("#fb7185"); // Rose default
+  const [rightColor, setRightColor] = useState("#22d3ee"); // Cyan default
+  const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
+  const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
+  const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
+  const [showGrid, setShowGrid] = useState(true);
+  const [showPreview, setShowPreview] = useState(true);
+
+  // Auto-detect strategy on song load
+  useEffect(() => {
+    if (audio.midi) {
+      const target = audio.midi.tracks.length <= 1 ? 'point' : 'tracks';
+      setTimeout(() => setSplitStrategy(prev => prev === target ? prev : target), 0);
+    }
+  }, [audio.midi]);
+
+  // Combine Active and Preview notes for visualization
+  const coloredKeys = useMemo(() => {
+    const activeMapping = audio.activeNotes.map(activeNote => {
+      let trackColor;
+      if (splitHands) {
+        if (splitStrategy === 'point') {
+          const noteNumber = Tone.Frequency(activeNote.note).toMidi();
+          trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
+        } else {
+          trackColor = activeNote.track === 0 ? rightColor : leftColor;
+        }
+      } else {
+        trackColor = unifiedColor;
+      }
+      return { note: activeNote.note, color: trackColor, isPreview: false };
+    });
+
+    const activeNoteSet = new Set(audio.activeNotes.map(n => n.note));
+
+    const previewMapping = showPreview ? audio.previewNotes
+      .filter(n => !activeNoteSet.has(n.note))
+      .map(previewNote => {
+        let trackColor;
+        if (splitHands) {
+          if (splitStrategy === 'point') {
+            const noteNumber = Tone.Frequency(previewNote.note).toMidi();
+            trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
+          } else {
+            trackColor = previewNote.track === 0 ? rightColor : leftColor;
+          }
+        } else {
+          trackColor = unifiedColor;
+        }
+        return { note: previewNote.note, color: trackColor, isPreview: true };
+      }) : [];
+
+    return [...activeMapping, ...previewMapping];
+  }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showPreview]);
+
+  return (
+    <div className="flex h-[100dvh] w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
+      {/* ... (Portrait Warning and Exit Button unchanged) ... */}
+      <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
+        <div className="text-4xl mb-4">↻</div>
+        <h2 className="text-2xl font-bold text-white mb-2">Please Rotate Your Device</h2>
+        <p className="text-zinc-400">Piano Lessons works best in landscape mode.</p>
+      </div>
+
+      <button
+        onClick={onExit}
+        className="absolute top-4 left-4 z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
+        aria-label="Return to Song List"
+      >
+        <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </button>
+
+      {/* Header / Title - Hidden in mobile landscape to save space */}
+      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
+        <h1 className="text-xl font-bold text-zinc-100">{song.title}</h1>
+        <div className="text-xs text-zinc-400">{song.artist}</div>
+      </header>
+
+      {/* Main Visual Area */}
+      <main className="relative flex-1 min-h-0 w-full flex flex-col">
+        {/* Waterfall Container */}
+        <div data-testid="waterfall-container" className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
+          <Waterfall
+            midi={audio.midi}
+            currentTick={audio.currentTick}
+            playbackRate={audio.playbackRate}
+            activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+            lookAheadTicks={audio.lookAheadTicks}
+            showGrid={showGrid}
+            showPreview={showPreview}
+          />
+          {/* Hit Line Separator */}
+          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.4)] z-40 pointer-events-none" />
+        </div>
+
+        {/* Keyboard Container */}
+        <div className="w-full shrink-0 z-50 landscape:h-auto mb-2 md:mb-4">
+          <Keyboard keys={coloredKeys} />
+        </div>
+      </main>
+
+      {/* Controls Area */}
+      <footer className="mt-6 landscape:mt-1 w-full max-w-2xl mx-auto z-[60]">
+        <Controls
+          isPlaying={audio.isPlaying}
+          onTogglePlay={audio.togglePlay}
+          currentTime={audio.currentTime}
+          duration={audio.duration}
+          onSeek={audio.seek}
+          playbackRate={audio.playbackRate}
+          onSetPlaybackRate={audio.setPlaybackRate}
+          visualSettings={{
+            splitHands, setSplitHands,
+            leftColor, setLeftColor,
+            rightColor, setRightColor,
+            unifiedColor, setUnifiedColor,
+            splitStrategy, setSplitStrategy,
+            splitPoint, setSplitPoint,
+            lookAheadTime, setLookAheadTime,
+            showGrid, setShowGrid,
+            showPreview, setShowPreview
+          }}
+          songSettings={{
+            songs: allSongs,
+            currentSong: song,
+            onSelectSong: onSongChange
+          }}
+          isLooping={audio.isLooping}
+          loopStart={audio.loopStart}
+          loopEnd={audio.loopEnd}
+          onToggleLoop={audio.toggleLoop}
+          onSetLoop={audio.setLoop}
+        />
+      </footer>
+      <HelpModal isOpen={false} onClose={() => { }} />
+    </div >
+  );
+}
+
 export default function Home() {
   const [allSongs, setAllSongs] = useState<Song[]>(defaultSongs);
   const [currentSong, setCurrentSong] = useState<Song>(defaultSongs[0]);
@@ -145,50 +298,6 @@ export default function Home() {
     }
   };
 
-  const audio = usePianoAudio(currentSong);
-
-  const [splitHands, setSplitHands] = useState(true);
-  const [leftColor, setLeftColor] = useState("#fb7185"); // Rose default
-  const [rightColor, setRightColor] = useState("#22d3ee"); // Cyan default
-  const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
-  const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
-  const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
-
-  // Auto-detect strategy on song load
-  useEffect(() => {
-    if (audio.midi) {
-      // If only 1 track (or very few tracks), default to Split Point
-      if (audio.midi.tracks.length <= 1) {
-        setSplitStrategy('point');
-      } else {
-        setSplitStrategy('tracks');
-      }
-    }
-  }, [audio.midi]);
-
-  // activeNotes are now calculated efficiently in the usePianoAudio hook.
-  // We just need to map them to colors for the Keyboard component.
-  const coloredActiveNotes = useMemo(() => {
-    return audio.activeNotes.map(activeNote => {
-      let trackColor;
-
-      if (splitHands) {
-        if (splitStrategy === 'point') {
-          // Split Point Strategy: Note based
-          // Notes < splitPoint = Left, Notes >= splitPoint = Right
-          const noteNumber = Tone.Frequency(activeNote.note).toMidi();
-          trackColor = noteNumber < splitPoint ? leftColor : rightColor;
-        } else {
-          // Track Strategy: Track 0 = Right, Track 1+ = Left
-          trackColor = activeNote.track === 0 ? rightColor : leftColor;
-        }
-      } else {
-        trackColor = unifiedColor;
-      }
-      return { note: activeNote.note, color: trackColor };
-    });
-  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
-
   // Check if PWA hint should show (iPhone only, not in standalone mode)
   useEffect(() => {
     const isIPhone = /iPhone/i.test(navigator.userAgent);
@@ -196,7 +305,6 @@ export default function Home() {
     const dismissed = localStorage.getItem('pwa_hint_dismissed');
 
     if (isIPhone && !isStandalone && !dismissed) {
-      // Use setTimeout to avoid synchronous setState in effect
       setTimeout(() => setShowPWAHint(true), 0);
     }
   }, []);
@@ -212,210 +320,141 @@ export default function Home() {
   }, []);
 
 
-  if (!hasStarted) {
+  if (hasStarted) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white p-8 relative overflow-y-auto">
-        {/* Background Ambient Effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 to-zinc-950 pointer-events-none" />
-
-        <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Piano Lessons</h1>
-        <p className="text-zinc-400 mb-12 z-10 text-lg">Select a piece to begin practicing</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
-          {allSongs.map((song) => (
-            <button
-              key={song.id}
-              onClick={async () => {
-                // Start audio context on user interaction (iOS requirement)
-                try {
-                  const Tone = await import('tone');
-                  await Tone.start();
-                } catch (e) {
-                  console.error('Failed to start audio context:', e);
-                }
-                setCurrentSong(song);
-                setHasStarted(true);
-              }}
-              className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 hover:border-indigo-500/50 hover:bg-zinc-900/80 transition-all hover:scale-[1.02] text-left"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-
-              <h3 className="text-2xl font-bold text-zinc-100 mb-1">{song.title}</h3>
-              <p className="text-zinc-400 font-medium">{song.artist}</p>
-
-              <div className="mt-6 flex items-center text-indigo-400 text-sm font-bold group-hover:text-indigo-300">
-                <span>Start Lesson</span>
-                <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </div>
-            </button>
-          ))}
-
-          {/* Upload New Song Card */}
-
-          {/* Client-Side Conversion: Always enabled now */}
-          <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
-
-            <div className="flex w-full justify-between items-start">
-              <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>
-              <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="text-zinc-500 hover:text-cyan-400 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </button>
-            </div>
-            <p className="text-zinc-400 font-medium">Import MusicXML files</p>
-
-            <label className="mt-6 flex items-center text-cyan-400 text-sm font-bold group-hover:text-cyan-300 cursor-pointer">
-              <span>Select .xml / .musicxml</span>
-              <input
-                type="file"
-                accept=".xml,.musicxml"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-            </label>
-          </div>
-        </div>
-
-        {/* Silent Mode Warning for iOS */}
-        {showSilentModeHint && (
-          <div className="fixed bottom-20 left-4 right-4 z-50 bg-amber-600/90 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-amber-500/50">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">📱</span>
-              <div className="flex-1">
-                <p className="text-sm text-white font-medium">
-                  iOS Tip: Turn off silent mode
-                </p>
-                <p className="text-xs text-amber-100 mt-1">
-                  Your device must not be in silent mode to hear audio
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowSilentModeHint(false);
-                  localStorage.setItem('silent_mode_hint_dismissed', 'true');
-                }}
-                className="text-white/80 hover:text-white transition-colors"
-                aria-label="Dismiss"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* PWA Install Hint for iPhone */}
-        {showPWAHint && (
-          <div className="fixed bottom-4 left-4 right-4 z-50 bg-indigo-600/95 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-indigo-500/50 animate-slide-up">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">💡</span>
-              <div className="flex-1">
-                <p className="text-sm text-white font-medium">
-                  For the best fullscreen experience
-                </p>
-                <p className="text-xs text-indigo-200 mt-1">
-                  Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowPWAHint(false);
-                  localStorage.setItem('pwa_hint_dismissed', 'true');
-                }}
-                className="text-white/80 hover:text-white transition-colors"
-                aria-label="Dismiss"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      <PianoLesson
+        song={currentSong}
+        allSongs={allSongs}
+        onSongChange={setCurrentSong}
+        onExit={() => setHasStarted(false)}
+      />
     );
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white p-8 relative overflow-y-auto">
+      {/* Background Ambient Effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 to-zinc-950 pointer-events-none" />
 
-      {/* Portrait Warning Overlay */}
-      <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
-        <div className="text-4xl mb-4">↻</div>
-        <h2 className="text-2xl font-bold text-white mb-2">Please Rotate Your Device</h2>
-        <p className="text-zinc-400">Piano Lessons works best in landscape mode.</p>
+      <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Piano Lessons</h1>
+      <p className="text-zinc-400 mb-12 z-10 text-lg">Select a piece to begin practicing</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
+        {allSongs.map((song) => (
+          <button
+            key={song.id}
+            data-testid={`song-${song.id}`}
+            onClick={async () => {
+              // Start audio context on user interaction (iOS requirement)
+              try {
+                const Tone = await import('tone');
+                await Tone.start();
+              } catch (e) {
+                console.error('Failed to start audio context:', e);
+              }
+              setCurrentSong(song);
+              setHasStarted(true);
+            }}
+            className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 hover:border-indigo-500/50 hover:bg-zinc-900/80 transition-all hover:scale-[1.02] text-left"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+
+            <h3 className="text-2xl font-bold text-zinc-100 mb-1">{song.title}</h3>
+            <p className="text-zinc-400 font-medium">{song.artist}</p>
+
+            <div className="mt-6 flex items-center text-indigo-400 text-sm font-bold group-hover:text-indigo-300">
+              <span>Start Lesson</span>
+              <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </div>
+          </button>
+        ))}
+
+        {/* Upload New Song Card */}
+
+        {/* Client-Side Conversion: Always enabled now */}
+        <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
+
+          <div className="flex w-full justify-between items-start">
+            <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>
+            <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="text-zinc-500 hover:text-cyan-400 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
+          </div>
+          <p className="text-zinc-400 font-medium">Import MusicXML files</p>
+
+          <label className="mt-6 flex items-center text-cyan-400 text-sm font-bold group-hover:text-cyan-300 cursor-pointer">
+            <span>Select .xml / .musicxml</span>
+            <input
+              type="file"
+              accept=".xml,.musicxml"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+          </label>
+        </div>
       </div>
 
-      {/* Return to Home Button */}
-      <button
-        onClick={() => {
-          audio.stop();
-          setHasStarted(false);
-        }}
-        className="absolute top-4 left-4 z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
-        aria-label="Return to Song List"
-      >
-        <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-      </button>
-
-      {/* Header / Title - Hidden in mobile landscape to save space */}
-      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
-        <h1 className="text-xl font-bold text-zinc-100">{currentSong.title}</h1>
-        <div className="text-xs text-zinc-400">{currentSong.artist}</div>
-      </header>
-
-      {/* Main Visual Area */}
-      <main className="relative flex-1 min-h-0 w-full flex flex-col">
-
-        {/* Waterfall Container */}
-        <div data-testid="waterfall-container" className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
-          <Waterfall
-            midi={audio.midi}
-            currentTick={audio.currentTick}
-            activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
-          />
-          {/* Hit Line Separator */}
-          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.4)] z-40 pointer-events-none" />
+      {/* Silent Mode Warning for iOS */}
+      {showSilentModeHint && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 bg-amber-600/90 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-amber-500/50">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">📱</span>
+            <div className="flex-1">
+              <p className="text-sm text-white font-medium">
+                iOS Tip: Turn off silent mode
+              </p>
+              <p className="text-xs text-amber-100 mt-1">
+                Your device must not be in silent mode to hear audio
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowSilentModeHint(false);
+                localStorage.setItem('silent_mode_hint_dismissed', 'true');
+              }}
+              className="text-white/80 hover:text-white transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* Keyboard Container */}
-        <div className="w-full shrink-0 z-50 landscape:h-auto">
-          <Keyboard activeNotes={coloredActiveNotes} />
+      {/* PWA Install Hint for iPhone */}
+      {showPWAHint && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 bg-indigo-600/95 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-indigo-500/50 animate-slide-up">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">💡</span>
+            <div className="flex-1">
+              <p className="text-sm text-white font-medium">
+                For the best fullscreen experience
+              </p>
+              <p className="text-xs text-indigo-200 mt-1">
+                Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowPWAHint(false);
+                localStorage.setItem('pwa_hint_dismissed', 'true');
+              }}
+              className="text-white/80 hover:text-white transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
-
-      </main>
-
-      {/* Controls Area */}
-      <footer className="mt-6 landscape:mt-1 w-full max-w-2xl mx-auto z-[60]">
-        <Controls
-          isPlaying={audio.isPlaying}
-          onTogglePlay={audio.togglePlay}
-          currentTime={audio.currentTime}
-          duration={audio.duration}
-          onSeek={audio.seek}
-          playbackRate={audio.playbackRate}
-          onSetPlaybackRate={audio.setPlaybackRate}
-          visualSettings={{
-            splitHands, setSplitHands,
-            leftColor, setLeftColor,
-            rightColor, setRightColor,
-            unifiedColor, setUnifiedColor,
-            splitStrategy, setSplitStrategy,
-            splitPoint, setSplitPoint
-          }}
-          songSettings={{
-            songs: allSongs,
-            currentSong,
-            onSelectSong: setCurrentSong
-          }}
-        />
-      </footer>
+      )}
       <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </div>
   );

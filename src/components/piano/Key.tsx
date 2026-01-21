@@ -5,9 +5,10 @@ interface KeyProps {
     isBlack: boolean;
     isActive: boolean;
     label?: string; // e.g. "C"
+    isPreview?: boolean;
 }
 
-export function Key({ note, isBlack, isActive, activeColor, label }: KeyProps & { activeColor?: string }) {
+export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: KeyProps & { activeColor?: string }) {
     // Determine beam color (default to cyan/rose if not provided, or gold fallback)
     // Actually activeColor is passed from page.tsx (Cyan/Rose).
     const glowColor = activeColor || (isBlack ? "#fbbf24" : "#38bdf8"); // Fallback Gold/Sky
@@ -16,18 +17,24 @@ export function Key({ note, isBlack, isActive, activeColor, label }: KeyProps & 
         <div
             data-note={note}
             className={twMerge(
-                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border",
+                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border origin-top",
                 isBlack
                     ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-lg"
                     : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
-                isActive && isBlack && !activeColor && "bg-slate-800 scale-[0.99] !shadow-none",
-                isActive && !isBlack && !activeColor && "bg-slate-200 scale-[0.99]",
+                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.99] !shadow-none border-transparent border-t-0",
+                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.99] border-transparent border-t-0",
+                isActive && "border-transparent border-t-0", // Ensure custom colored active keys also lose border
+                isPreview && "border-transparent border-t-0", // Remove border for preview keys to avoid black line at top
                 "select-none"
             )}
             style={{
                 backgroundColor: isActive && activeColor ? activeColor : undefined,
-                transform: isActive ? "scale(0.99)" : undefined,
-                boxShadow: isActive ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset` : undefined,
+                transform: isActive ? "scaleY(0.99)" : undefined,
+                boxShadow: isActive
+                    ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
+                    : undefined,
+                borderColor: undefined, // Remove border color
+                borderWidth: undefined, // Remove border width
                 // Z-Index Layering:
                 // Black Active: 40
                 // Black Inactive: 30
@@ -37,6 +44,16 @@ export function Key({ note, isBlack, isActive, activeColor, label }: KeyProps & 
                 zIndex: isBlack ? (isActive ? 40 : 30) : (isActive ? 20 : 0)
             }}
         >
+            {/* Preview Overlay (Top Half Only) */}
+            {isPreview && (
+                <div
+                    className="absolute top-0 left-0 w-full h-[50%] pointer-events-none rounded-t-[1px]"
+                    style={{
+                        background: `linear-gradient(to bottom, ${activeColor || glowColor}80, transparent)`,
+                    }}
+                />
+            )}
+
             {/* Laser Beam Effect */}
             {isActive && (
                 <div
