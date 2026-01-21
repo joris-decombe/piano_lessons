@@ -51,7 +51,7 @@ async function takeScreenshots() {
     // The keyboard container has a class that likely contains "Keyboard" or just look for the footer controls
     await page.waitForSelector('footer');
     // No canvas element in DOM (div-based), just wait for render
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(5000);
     await hideDevTools(page);
 
     await page.screenshot({
