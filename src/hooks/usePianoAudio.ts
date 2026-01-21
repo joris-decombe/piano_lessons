@@ -204,17 +204,9 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             // Sort notes by ticks to ensure Tone.Part plays them correctly
             notes.sort((a, b) => a.rawTicks - b.rawTicks);
 
-            console.log("Scheduling Part with", notes.length, "notes");
-            if (notes.length > 0) {
-                console.log("First note:", notes[0]);
-                console.log("Second note:", notes[1]);
-            }
-
             part = new Tone.Part((time, value: NoteEvent) => {
                 try {
-                    // console.log("Trig", value.note, "@", time);
                     if (!value.duration || value.duration <= 0) {
-                        console.warn("Invalid duration for", value.note, value.duration);
                         return;
                     }
                     sampler.triggerAttackRelease(
@@ -330,8 +322,6 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                 // Guard against invalid loop or infinite seek loops
                 // Use 48 ticks buffer (approx 1/10th beat at 480PPQ)
                 if (isLooping && loopEndTick > loopStartTick + 48 && currentTick >= loopEndTick) {
-                    console.log(`[Loop] Looping back to tick ${loopStartTick}`);
-
                     // Seek by TICKS
                     Tone.Transport.ticks = loopStartTick;
 
