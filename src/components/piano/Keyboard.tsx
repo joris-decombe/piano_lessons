@@ -24,7 +24,6 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
             const noteIndex = i % 12;
             const noteName = NOTES[noteIndex];
             const fullName = `${noteName}${octave}`;
-            const isBlack = noteName.includes("b") || noteName.includes("#") || noteName.length > 1 && (noteName[1] === 'b' || noteName[1] === '#');
             // Note: Our manual array has 'Db', 'Eb', etc. so use those. 
             // Tone.js usually emits sharps (C#4), but we used a manual NOTES array with Flats here?
             // "Db" -> includes "b". 
