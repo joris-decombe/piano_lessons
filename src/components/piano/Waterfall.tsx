@@ -131,6 +131,11 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
             isApproaching: boolean; isActive: boolean;
         }[] = [];
 
+        // Track which pitches have already been rendered (from bottom up) to avoid duplicate preview lines
+        const coveredPitches = new Set<string>();
+
+        // Notes are sorted by ticks (lowest/earliest first)
+        // Since we iterate from renderStartIdx forwards, we encounter "lower" notes first.
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
 
@@ -145,22 +150,40 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
 
                 const isActive = note.ticks <= currentTick && (note.ticks + note.durationTicks) >= currentTick;
 
-                // Calculate threshold based on lookAheadTicks if available, otherwise fallback (though fallback shouldn't be needed if strictly passed)
-                // Fallback logic approximated: 15% window roughly 0.5s at normal speed? 
-                // windowSize = 6 beats. at 120bpm = 3s. 15% of 3s = 0.45s. Checks out.
+                // Calculate threshold based on lookAheadTicks if available
                 const approachThreshold = lookAheadTicks > 0
                     ? (lookAheadTicks / windowSizeTicks) * 100
                     : 15 / (playbackRate || 1);
 
                 // Only mark as approaching if:
-                // 1. Not currently active (hit line)
+                // 1. Not currently active
                 // 2. Within threshold
+                // 3. Pitch not yet "covered" by a lower note (active or approaching)
                 let isApproaching = !isActive && bottomPct < approachThreshold && bottomPct > 0;
 
-                if (isApproaching) {
-                    const duplicate = active.find(n => n.name === note.name && n.isApproaching);
-                    if (duplicate) isApproaching = false;
+                if (coveredPitches.has(note.name)) {
+                    isApproaching = false;
                 }
+
+                if (isActive || isApproaching) {
+                    coveredPitches.add(note.name);
+                }
+                // If it's just visible but high up (not approaching/active), it doesn't "cover" the pitch yet?
+                // User logic: "not really a problem since ... have notes on the waterfall that are lower".
+                // If there is ANY note lower, we probably don't need a line?
+                // But if the lower note is VERY far down (below view)? No, we iterate visible only.
+                // If lower note is at 10% (visible, but not approaching/active?? Wait, if visible it is approaching or active basically).
+                // Actually, "Active" means played. "Approaching" means < threshold.
+                // What if note is > threshold? (e.g. 50% high).
+                // If we have note at 50% (visible) and note at 80% (approaching? no).
+                // If we have note at 50% (visible, not approaching) and note at 20% (approaching).
+                // We process 20% first. It isApproaching. 
+                // We process 50% next. It is NOT approaching.
+                // Logic holds.
+
+                // What if we have note at 20% (approaching). coveredPitches adds it.
+                // Note at 50% (approaching). coveredPitches has it -> false. 
+                // Result: Lower note gets line. Higher note doesn't. Correct.
 
                 active.push({
                     id: `${note.name}-${note.ticks}`,
@@ -183,6 +206,25 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-transparent perspective-500">
+            {/* Octave Guidelines (C-to-C sections) */}
+            {Array.from({ length: 9 }).map((_, i) => {
+                // C1 starts at index 0 of white keys? No.
+                // Formula: getNotePosition uses MIDI 21 (A0).
+                // Cs are: C1(24), C2(36), C3(48), ...
+                // Let's render lines for C notes.
+                const octave = i + 1; // C1 to C8
+                const midiC = 24 + (i * 12);
+                if (midiC > 108) return null;
+                const { left } = getNotePosition(midiC);
+                return (
+                    <div
+                        key={`guide-c-${octave}`}
+                        className="absolute top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none z-0"
+                        style={{ left: `${left}%` }}
+                    />
+                );
+            })}
+
             {visibleNotes.map(note => (
                 <div key={note.id}>
                     {/* Connecting Line (Approaching) */}
