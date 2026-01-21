@@ -23,9 +23,6 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                     : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
                 isActive && isBlack && !activeColor && "bg-slate-800 scale-[0.99] !shadow-none",
                 isActive && !isBlack && !activeColor && "bg-slate-200 scale-[0.99]",
-                // Preview State (Hollow)
-                isPreview && !isActive && !isBlack && "bg-indigo-50",
-                isPreview && !isActive && isBlack && "bg-zinc-800",
                 "select-none"
             )}
             style={{
