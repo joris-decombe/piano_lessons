@@ -108,8 +108,8 @@ export function Controls({
             {/* Minimalist Control Bar */}
             <div className="relative w-full bg-zinc-900/90 backdrop-blur-md rounded-full border border-zinc-700/50 px-4 py-2 shadow-xl flex items-center justify-between gap-4 h-[56px] md:h-[64px]">
 
-                {/* Timeline Area */}
-                <div className="absolute top-0 left-4 right-4 -mt-[10px] w-auto">
+                {/* Timeline Area (Elevated when looping to avoid overlap) */}
+                <div className={`absolute top-0 left-4 right-4 w-auto transition-all duration-300 ease-out z-10 ${isLooping ? '-mt-[26px]' : '-mt-[10px]'}`}>
                     <Timeline
                         currentTime={currentTime}
                         duration={duration}
