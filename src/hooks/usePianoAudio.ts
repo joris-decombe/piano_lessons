@@ -61,6 +61,8 @@ export function usePianoAudio(source: SongSource) {
     const lastProcessedTickRef = useRef(0);
     const [playbackRate, setPlaybackRate] = useState(1);
     const baseBpmRef = useRef<number>(120);
+    // Ref to hold mutable loop state for the animation loop
+    const loopStateRef = useRef({ isLooping: false, loopStart: 0, loopEnd: 0 });
 
     /**
      * Helper to recalculate all active notes from tick 0 up to a target tick.
@@ -216,7 +218,12 @@ export function usePianoAudio(source: SongSource) {
                 currentTick: 0,
                 currentTime: 0,
                 activeNotes: [], // Reset active notes on new song
+                isLooping: false,
+                loopStart: 0,
+                loopEnd: 0
             }));
+            // Sync ref
+            loopStateRef.current = { isLooping: false, loopStart: 0, loopEnd: 0 };
         }
 
         init();
@@ -273,7 +280,8 @@ export function usePianoAudio(source: SongSource) {
             lastProcessedTickRef.current = currentTick;
 
             // Looping Logic
-            if (state.isLooping && state.loopEnd > 0 && Tone.Transport.seconds >= state.loopEnd) {
+            const { isLooping, loopStart, loopEnd } = loopStateRef.current;
+            if (isLooping && loopEnd > 0 && Tone.Transport.seconds >= loopEnd) {
                 // Loop back to start
                 // We use Tone.Transport.position or seconds to jump
                 // But we must use seek() logic to reset active notes correctly?
@@ -282,7 +290,7 @@ export function usePianoAudio(source: SongSource) {
                 // seek() modifies Tone.Transport.seconds.
 
                 // Ideally we detect this boundary and jump.
-                seek(state.loopStart);
+                seek(loopStart);
                 return; // next frame will sync
             }
 
@@ -445,8 +453,12 @@ export function usePianoAudio(source: SongSource) {
             isPlaying: false,
             currentTime: 0,
             currentTick: 0,
-            activeNotes: []
+            activeNotes: [],
+            isLooping: false,
+            loopStart: 0,
+            loopEnd: 0
         }));
+        loopStateRef.current = { isLooping: false, loopStart: 0, loopEnd: 0 };
     };
 
     const seek = (time: number) => {
@@ -486,11 +498,25 @@ export function usePianoAudio(source: SongSource) {
 
             return { ...prev, isLooping: newLooping, loopStart: start, loopEnd: end };
         });
+
+        // We need to update ref immediately? 
+        // State updates are async, so ref might lag if we only sync on effect?
+        // Actually, we can update ref here "optimistically" or use an effect to sync ref to state.
+        // Let's use an effect to keep it clean.
     };
 
     const setLoop = (start: number, end: number) => {
         setState(prev => ({ ...prev, loopStart: start, loopEnd: end }));
     };
+
+    // Keep Loop Ref in Sync with State
+    useEffect(() => {
+        loopStateRef.current = {
+            isLooping: state.isLooping,
+            loopStart: state.loopStart,
+            loopEnd: state.loopEnd
+        };
+    }, [state.isLooping, state.loopStart, state.loopEnd]);
 
     return {
         ...state,

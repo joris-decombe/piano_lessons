@@ -406,7 +406,7 @@ export default function Home() {
         </div>
 
         {/* Keyboard Container */}
-        <div className="w-full shrink-0 z-50 landscape:h-auto">
+        <div className="w-full shrink-0 z-50 landscape:h-auto mb-2 md:mb-4">
           <Keyboard keys={coloredKeys} />
         </div>
 

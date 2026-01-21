@@ -139,15 +139,18 @@ export function Controls({
                     <button
                         onClick={onToggleLoop}
                         aria-label="Toggle Loop"
-                        className={`flex-shrink-0 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full transition-all active:scale-95 ${isLooping ? 'text-indigo-400 bg-indigo-500/10 ring-1 ring-indigo-500/50' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                        className={`flex-shrink-0 flex items-center justify-center w-12 h-12 -mx-2 rounded-full transition-all active:scale-95 ${isLooping ? 'text-indigo-400 bg-indigo-500/10 ring-1 ring-indigo-500/50' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                     >
-                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
 
                     <button
-                        onClick={() => onSeek(0)}
+                        onClick={() => {
+                            onSeek(0);
+                            if (isLooping) onToggleLoop(); // Disable loop on reset
+                        }}
                         aria-label="Return to start"
-                        className="flex-shrink-0 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
+                        className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
