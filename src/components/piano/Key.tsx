@@ -17,17 +17,19 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
         <div
             data-note={note}
             className={twMerge(
-                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border",
+                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border origin-top",
                 isBlack
                     ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-lg"
                     : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
-                isActive && isBlack && !activeColor && "bg-slate-800 scale-[0.99] !shadow-none",
-                isActive && !isBlack && !activeColor && "bg-slate-200 scale-[0.99]",
+                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.99] !shadow-none border-transparent border-t-0",
+                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.99] border-transparent border-t-0",
+                isActive && "border-transparent border-t-0", // Ensure custom colored active keys also lose border
+                isPreview && "border-transparent border-t-0", // Remove border for preview keys to avoid black line at top
                 "select-none"
             )}
             style={{
                 backgroundColor: isActive && activeColor ? activeColor : undefined,
-                transform: isActive ? "scale(0.99)" : undefined,
+                transform: isActive ? "scaleY(0.99)" : undefined,
                 boxShadow: isActive
                     ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
                     : undefined,

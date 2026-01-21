@@ -15,9 +15,11 @@ interface WaterfallProps {
         unified: string;
     };
     lookAheadTicks?: number;
+    showGrid?: boolean;
+    showPreview?: boolean;
 }
 
-export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, lookAheadTicks = 0 }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, lookAheadTicks = 0, showGrid = true, showPreview = true }: WaterfallProps) {
 
     const getNotePosition = (midiNote: number) => {
         const whiteKeyWidth = 100 / 52;
@@ -207,7 +209,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
     return (
         <div className="relative h-full w-full overflow-hidden bg-transparent perspective-500">
             {/* Octave Guidelines (C-to-C sections) */}
-            {Array.from({ length: 9 }).map((_, i) => {
+            {showGrid && Array.from({ length: 9 }).map((_, i) => {
                 // C1 starts at index 0 of white keys? No.
                 // Formula: getNotePosition uses MIDI 21 (A0).
                 // Cs are: C1(24), C2(36), C3(48), ...
@@ -219,7 +221,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
                 return (
                     <div
                         key={`guide-c-${octave}`}
-                        className="absolute top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none z-0"
+                        className="absolute top-0 bottom-0 w-[1px] bg-white/10 pointer-events-none z-0"
                         style={{ left: `${left}%` }}
                     />
                 );
@@ -228,7 +230,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
             {visibleNotes.map(note => (
                 <div key={note.id}>
                     {/* Connecting Line (Approaching) */}
-                    {note.isApproaching && (
+                    {showPreview && note.isApproaching && (
                         <div
                             className="absolute z-0 w-[1px] bg-white/20 transition-opacity duration-200"
                             style={{
@@ -236,7 +238,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
                                 bottom: 0,
                                 height: `${note.bottom}`,
                                 width: "1px",
-                                background: `linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.3))`, // Ghost white
+                                background: `linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.6))`, // Increased visibility
                                 opacity: Math.max(0, 1 - (parseFloat(note.bottom) / ((lookAheadTicks > 0 ? (lookAheadTicks / (6 * midi!.header.ppq)) * 100 : 15 / playbackRate))))
                             }}
                         />

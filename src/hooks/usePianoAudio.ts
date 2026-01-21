@@ -449,29 +449,6 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         }
     };
 
-    const stop = () => {
-        if (Tone.Transport.state === "started") {
-            Tone.Transport.stop();
-        }
-        // Force reset transport time to 0
-        Tone.Transport.seconds = 0;
-
-        // Also reset internal state
-        lastProcessedTickRef.current = 0;
-        rebuildActiveNotes(0);
-
-        setState((prev) => ({
-            ...prev,
-            isPlaying: false,
-            currentTime: 0,
-            currentTick: 0,
-            activeNotes: [],
-            isLooping: false,
-            loopStartTick: 0,
-            loopEndTick: 0
-        }));
-        loopStateRef.current = { isLooping: false, loopStartTick: 0, loopEndTick: 0 };
-    };
 
     const seek = (time: number) => {
         Tone.Transport.seconds = time;

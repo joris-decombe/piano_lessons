@@ -22,6 +22,10 @@ interface VisualSettings {
     setSplitPoint: (val: number) => void;
     lookAheadTime: number;
     setLookAheadTime: (val: number) => void;
+    showGrid: boolean;
+    setShowGrid: (val: boolean) => void;
+    showPreview: boolean;
+    setShowPreview: (val: boolean) => void;
 }
 
 interface Song {
@@ -296,6 +300,26 @@ export function Controls({
                         {/* Visual Settings */}
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Appearance</label>
+
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Show Grid</span>
+                                <input
+                                    type="checkbox"
+                                    checked={visualSettings.showGrid}
+                                    onChange={(e) => visualSettings.setShowGrid(e.target.checked)}
+                                    className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
+                                />
+                            </label>
+
+                            <label className="flex items-center justify-between cursor-pointer group">
+                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Note Preview</span>
+                                <input
+                                    type="checkbox"
+                                    checked={visualSettings.showPreview}
+                                    onChange={(e) => visualSettings.setShowPreview(e.target.checked)}
+                                    className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
+                                />
+                            </label>
 
                             <label className="flex items-center justify-between cursor-pointer group">
                                 <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Split Hands</span>

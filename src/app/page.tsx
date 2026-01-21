@@ -84,6 +84,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
+  const [showGrid, setShowGrid] = useState(true);
+  const [showPreview, setShowPreview] = useState(true);
 
   // Auto-detect strategy on song load
   useEffect(() => {
@@ -112,7 +114,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
     const activeNoteSet = new Set(audio.activeNotes.map(n => n.note));
 
-    const previewMapping = audio.previewNotes
+    const previewMapping = showPreview ? audio.previewNotes
       .filter(n => !activeNoteSet.has(n.note))
       .map(previewNote => {
         let trackColor;
@@ -127,21 +129,20 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           trackColor = unifiedColor;
         }
         return { note: previewNote.note, color: trackColor, isPreview: true };
-      });
+      }) : [];
 
     return [...activeMapping, ...previewMapping];
-  }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
+  }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showPreview]);
 
   return (
     <div className="flex h-[100dvh] w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
-      {/* Portrait Warning Overlay */}
+      {/* ... (Portrait Warning and Exit Button unchanged) ... */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
         <div className="text-4xl mb-4">↻</div>
         <h2 className="text-2xl font-bold text-white mb-2">Please Rotate Your Device</h2>
         <p className="text-zinc-400">Piano Lessons works best in landscape mode.</p>
       </div>
 
-      {/* Return to Home Button */}
       <button
         onClick={onExit}
         className="absolute top-4 left-4 z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
@@ -168,6 +169,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             playbackRate={audio.playbackRate}
             activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
             lookAheadTicks={audio.lookAheadTicks}
+            showGrid={showGrid}
+            showPreview={showPreview}
           />
           {/* Hit Line Separator */}
           <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.4)] z-40 pointer-events-none" />
@@ -196,7 +199,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             unifiedColor, setUnifiedColor,
             splitStrategy, setSplitStrategy,
             splitPoint, setSplitPoint,
-            lookAheadTime, setLookAheadTime
+            lookAheadTime, setLookAheadTime,
+            showGrid, setShowGrid,
+            showPreview, setShowPreview
           }}
           songSettings={{
             songs: allSongs,
@@ -211,7 +216,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         />
       </footer>
       <HelpModal isOpen={false} onClose={() => { }} />
-    </div>
+    </div >
   );
 }
 
