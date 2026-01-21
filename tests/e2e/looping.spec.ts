@@ -38,7 +38,7 @@ test.describe('Looping Functionality', () => {
         await expect(page.getByText('Select a Song')).toBeVisible();
 
         // Re-enter song
-        await page.getByText('Gnossienne No. 1').click();
+        await page.getByTestId('song-gnossienne1').click();
 
         // Verify loop is disabled
         await expect(page.getByLabel('Toggle Loop')).not.toHaveClass(/text-indigo-400/);
