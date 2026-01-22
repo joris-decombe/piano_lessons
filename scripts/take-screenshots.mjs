@@ -61,13 +61,11 @@ async function takeScreenshots() {
 
     // 3. Player View (Active)
     console.log('3/3 Player view (Active)...');
-    // Click the Play button. It's the first button in the footer.
-    // We can be more specific: button inside footer that is not the song selector
-    const playButton = page.locator('footer button').first();
-    await playButton.click();
+    // Click the Play button using its test ID
+    await page.click('[data-testid="play-button"]');
 
     // Wait for some notes to fall and keys to light up
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(6000);
     await hideDevTools(page);
 
     await page.screenshot({
