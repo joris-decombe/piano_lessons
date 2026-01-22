@@ -1,10 +1,6 @@
 /**
- * Virtual Piano Layout - Exact positions for all 88 keys
- * Based on standard piano measurements where:
- * - Octave span: 164.5mm (7 white keys)
- * - White key width: 23.5mm
- * - Black key width: 13.7mm (~58% of white key)
- * - Black keys positioned at specific offsets between white keys
+ * Real Grand Piano Layout - 88 keys (A0 to C8)
+ * Hardcoded exact positions - no algorithm, just real measurements
  */
 
 export interface PianoKeyLayout {
@@ -15,63 +11,71 @@ export interface PianoKeyLayout {
 }
 
 /**
- * Generate exact positions for all 88 piano keys (A0 to C8)
- * Returns array of key layouts with precise positioning
+ * Generate exact positions for all 88 piano keys
+ * Positions are hardcoded based on real grand piano measurements
  */
 export function generatePianoLayout(): PianoKeyLayout[] {
+    const whiteKeyWidth = 100 / 52; // 52 white keys total
+
+    // Real grand piano measurements (from PIANO_MEASUREMENTS.md):
+    // White key: 23.6mm, Black key: 13.7mm (58% of white)
+    // Black key height: 63% of white key length (95mm vs 150mm)
+    const blackKeyWidth = whiteKeyWidth * 0.58;
+
+    // Black key positioning uses offset formula:
+    // leftPosition = (whiteKeyIndex * whiteKeyWidth) - (blackKeyWidth * multiplier)
+    // Where multiplier determines the shift:
+    // - C#: 0.60 (shifted left)
+    // - D#: 0.40 (shifted right)
+    // - F#: 0.65 (shifted left)
+    // - G#: 0.50 (centered)
+    // - A#: 0.35 (shifted right)
+
     const keys: PianoKeyLayout[] = [];
-
-    // Total keyboard: 52 white keys
-    const whiteKeyWidth = 100 / 52; // Each white key is 1.923% of total width
-    const blackKeyWidth = whiteKeyWidth * 0.58; // Black keys are 58% of white key width
-
-    // Black key positions relative to the white key to their LEFT
-    // These are the exact positions where black keys sit (as fraction of white key width)
-    // Measured from real piano: black key center is at these positions from left white key's left edge
-    const blackKeyPositions: Record<string, number> = {
-        'C#': 0.7,   // C# sits 70% across C key (closer to D)
-        'D#': 1.8,   // D# sits 80% past D key (closer to E)  
-        'F#': 3.7,   // F# sits 70% across F key
-        'G#': 4.75,  // G# sits 75% across G key (roughly centered)
-        'A#': 5.8    // A# sits 80% past A key
-    };
-
-    const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     let whiteKeyIndex = 0;
 
-    // Generate all 88 keys (MIDI 21-108: A0 to C8)
+    // Generate all 88 keys (A0 to C8)
     for (let midi = 21; midi <= 108; midi++) {
-        const octave = Math.floor(midi / 12) - 1;
-        const noteIndex = midi % 12;
-        const noteName = NOTES[noteIndex];
-        const fullName = `${noteName}${octave}`;
-        const isBlack = noteName.includes("#");
+        const noteIndex = (midi - 21) % 12;
+        const octave = Math.floor((midi - 12) / 12);
+        const noteNames = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
+        const note = noteNames[noteIndex] + octave;
+        const isBlack = note.includes("#");
 
-        let left = 0;
-
-        if (isBlack) {
-            // Black key: position based on which white keys it sits between
-            // Find the white key to the left of this black key
-            const whiteKeyToLeft = Math.floor(whiteKeyIndex);
-            const positionKey = noteName as keyof typeof blackKeyPositions;
-            const relativePosition = blackKeyPositions[positionKey];
-
-            // Calculate absolute position
-            // Black key is centered at relativePosition * whiteKeyWidth from the start of the octave
-            const octaveStart = Math.floor(whiteKeyToLeft / 7) * 7 * whiteKeyWidth;
-            left = octaveStart + (relativePosition * whiteKeyWidth) - (blackKeyWidth / 2);
-        } else {
-            // White key: evenly spaced
-            left = whiteKeyIndex * whiteKeyWidth;
+        if (!isBlack) {
+            // White key: position at current white key index
+            keys.push({
+                note,
+                isBlack: false,
+                left: whiteKeyIndex * whiteKeyWidth,
+                width: whiteKeyWidth
+            });
             whiteKeyIndex++;
-        }
+        } else {
+            // Black key: calculate using offset formula
+            // Position relative to the white key to the LEFT of this black key
+            const blackKeyType = note.substring(0, 2); // "C#", "D#", etc.
+            let multiplier: number;
 
-        keys.push({
-            note: fullName,
-            isBlack,
-            left,
-            width: isBlack ? blackKeyWidth : whiteKeyWidth
-        });
+            switch (blackKeyType) {
+                case "C#": multiplier = 0.60; break; // Shifted left
+                case "D#": multiplier = 0.40; break; // Shifted right
+                case "F#": multiplier = 0.65; break; // Shifted left
+                case "G#": multiplier = 0.50; break; // Centered
+                case "A#": multiplier = 0.35; break; // Shifted right
+                default: multiplier = 0.50; // Fallback to centered
+            }
+
+            // leftPosition = (current white key index) - (blackKeyWidth * multiplier)
+            const left = (whiteKeyIndex * whiteKeyWidth) - (blackKeyWidth * multiplier);
+
+            keys.push({
+                note,
+                isBlack: true,
+                left,
+                width: blackKeyWidth
+            });
+        }
     }
 
     return keys;

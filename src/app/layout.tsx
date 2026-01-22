@@ -23,11 +23,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta
           httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob: https://tonejs.github.io; worker-src 'self' blob:; connect-src 'self' https://tonejs.github.io;"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://raw.githack.com https://raw.githubusercontent.com; media-src 'self' data: blob: https://tonejs.github.io; worker-src 'self' blob:; connect-src 'self' https://tonejs.github.io https://raw.githack.com https://raw.githubusercontent.com;"
         />
       </head>
       <body

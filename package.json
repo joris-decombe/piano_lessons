@@ -11,7 +11,12 @@
     "screenshots": "node scripts/take-screenshots.mjs"
   },
   "dependencies": {
+    "@react-spring/three": "^10.0.3",
+    "@react-spring/web": "^10.0.3",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tonejs/midi": "^2.0.28",
+    "@types/three": "^0.182.0",
     "abcjs": "^6.6.0",
     "clsx": "^2.1.1",
     "fast-xml-parser": "^5.3.3",
@@ -21,6 +26,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",
+    "three": "^0.182.0",
     "tone": "^15.1.22"
   },
   "devDependencies": {
