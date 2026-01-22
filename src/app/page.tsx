@@ -169,7 +169,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           <div className="mx-auto h-full flex flex-col relative" style={{ minWidth: 'fit-content' }}>
 
             {/* Waterfall Container */}
-            <div data-testid="waterfall-container" className="flex-1 relative w-full">
+            <div data-testid="waterfall-container" className="flex-1 relative w-full pl-[64px]">
               <Waterfall
                 midi={audio.midi}
                 currentTick={audio.currentTick}
@@ -180,7 +180,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 showPreview={showPreview}
               />
               {/* Hit Line Separator (Pixel Art Style: Solid line) */}
-              <div className="absolute bottom-0 left-0 w-full h-[1px] bg-[var(--color-piano-white-side)] opacity-50 z-40 pointer-events-none" />
+              <div className="absolute bottom-0 left-[64px] right-0 h-[1px] bg-[var(--color-piano-white-side)] opacity-50 z-40 pointer-events-none" />
             </div>
 
             {/* Keyboard Container */}

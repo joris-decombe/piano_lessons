@@ -375,6 +375,15 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     });
                 }
 
+                // Calculate BPM-invariant time (Song Position)
+                // Tone.Transport.ticks is the source of truth
+                // Time (s) = ticks / (PPQ * (BaseBPM / 60))
+                // Note: Tone.Transport.PPQ might be default 192, we synced it to MIDI PPQ in init.
+                const ppq = Tone.Transport.PPQ;
+                const baseBpm = baseBpmRef.current;
+                // Calculate seconds at 1x speed
+                const songTime = currentTick / (ppq * (baseBpm / 60));
+
                 setState(prev => {
                     const newActiveNotes = Array.from(activeNotesRef.current.values());
 
@@ -385,7 +394,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
                     // Only update state if something has actually changed to prevent re-renders
                     if (
-                        prev.currentTime === Tone.Transport.seconds &&
+                        Math.abs(prev.currentTime - songTime) < 0.01 &&
                         prev.currentTick === currentTick &&
                         prev.isPlaying === true &&
                         !notesChanged &&
@@ -396,7 +405,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
                     return {
                         ...prev,
-                        currentTime: Tone.Transport.seconds,
+                        currentTime: songTime, // Use Song Time
                         currentTick,
                         isPlaying: true,
                         activeNotes: newActiveNotes,

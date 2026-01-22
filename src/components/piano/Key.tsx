@@ -6,10 +6,11 @@ interface KeyProps {
     isActive: boolean;
     label?: string;
     isPreview?: boolean;
+    activeColor?: string; // Restored
     style?: React.CSSProperties; // Allow passing left/width/height/zIndex
 }
 
-export function Key({ note, isBlack, isActive, label, isPreview, style }: KeyProps) {
+export function Key({ note, isBlack, isActive, label, isPreview, activeColor, style }: KeyProps) {
     return (
         <div
             data-note={note}
@@ -30,27 +31,16 @@ export function Key({ note, isBlack, isActive, label, isPreview, style }: KeyPro
                 // Actually, let's enforce color changes on active here.
             }}
         >
-            {/* Active State Color Overlay */}
+            {/* Active State Color Overlay - Semi-transparent to show key shape */}
             <div
                 className={twMerge(
-                    "absolute inset-0 pointer-events-none",
-                    isActive ? "opacity-100" : "opacity-0"
+                    "absolute inset-0 pointer-events-none transition-opacity duration-75",
+                    isActive ? "opacity-60" : "opacity-0"
                 )}
                 style={{
-                    backgroundColor: isBlack ? "var(--color-piano-black-active)" : "var(--color-piano-white-active)"
+                    backgroundColor: activeColor || (isBlack ? "var(--color-piano-black-active)" : "var(--color-piano-white-active)")
                 }}
             />
-
-            {/* Preview Hint (Top of key) */}
-            {isPreview && (
-                <div
-                    className="absolute top-0 left-0 w-full height-[50%] pointer-events-none opacity-50"
-                    style={{
-                        height: '50%',
-                        backgroundColor: isActive ? 'transparent' : 'var(--color-piano-accent-DEFAULT)'
-                    }}
-                />
-            )}
 
             {/* Note Label (White Keys only) */}
             {!isBlack && label && (
