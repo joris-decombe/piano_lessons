@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Key } from "./Key";
+import { generatePianoLayout } from "./pianoLayout";
 
 interface KeyboardKey {
     note: string;
