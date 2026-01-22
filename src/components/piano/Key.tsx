@@ -17,19 +17,19 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
         <div
             data-note={note}
             className={twMerge(
-                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border origin-top",
+                "relative flex items-end justify-center rounded-b-lg transition-all duration-200 ease-in-out origin-top will-change-transform",
                 isBlack
-                    ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-lg"
-                    : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
-                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.99] !shadow-none border-transparent border-t-0",
-                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.99] border-transparent border-t-0",
-                isActive && "border-transparent border-t-0", // Ensure custom colored active keys also lose border
-                isPreview && "border-transparent border-t-0", // Remove border for preview keys to avoid black line at top
+                    ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-[0_6px_12px_rgba(0,0,0,0.4),inset_0_-1px_3px_rgba(255,255,255,0.15)]"
+                    : "z-0 h-full flex-1 bg-white text-gray-500 shadow-[0_4px_6px_rgba(0,0,0,0.12),inset_0_-1px_1px_rgba(0,0,0,0.03)]",
+                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.98] brightness-95 shadow-[0_2px_4px_rgba(0,0,0,0.3)]",
+                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.98] brightness-95 shadow-[0_1px_2px_rgba(0,0,0,0.1)]",
+                isActive && "scale-y-[0.98] brightness-95", // Ensure custom colored active keys also get press effect
+                isPreview && "", // Preview keys don't need special border handling anymore
                 "select-none"
             )}
             style={{
                 backgroundColor: isActive && activeColor ? activeColor : undefined,
-                transform: isActive ? "scaleY(0.99)" : undefined,
+                transform: isActive ? "scaleY(0.98) translateY(1px)" : undefined,
                 boxShadow: isActive
                     ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
                     : undefined,
