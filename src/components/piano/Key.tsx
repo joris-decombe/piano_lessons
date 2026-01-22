@@ -21,8 +21,8 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview, le
             className={twMerge(
                 "absolute flex items-end justify-center rounded-b-lg transition-all duration-200 ease-in-out origin-top will-change-transform",
                 isBlack
-                    ? "h-[60%] bg-gradient-to-t from-black via-black to-zinc-900 text-white shadow-[0_6px_12px_rgba(0,0,0,0.4),inset_0_-1px_3px_rgba(255,255,255,0.15)]"
-                    : "h-full bg-gradient-to-t from-white via-white to-gray-50 text-gray-500 shadow-[0_4px_6px_rgba(0,0,0,0.12)] border-r border-black/10",
+                    ? "h-[60%] bg-gradient-to-t from-black via-zinc-900 to-zinc-800 text-white shadow-[0_8px_16px_rgba(0,0,0,0.6),inset_0_-2px_4px_rgba(255,255,255,0.2),inset_2px_0_3px_rgba(0,0,0,0.4),inset_-2px_0_3px_rgba(0,0,0,0.4)]"
+                    : "h-full bg-gradient-to-t from-gray-50 via-white to-gray-100 text-gray-500 shadow-[0_2px_4px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]",
                 isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.98] brightness-95 shadow-[0_4px_8px_rgba(0,0,0,0.35)]",
                 isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.98] brightness-95 shadow-[0_2px_4px_rgba(0,0,0,0.15)]",
                 isActive && "scale-y-[0.98] brightness-95", // Ensure custom colored active keys also get press effect
