@@ -19,16 +19,16 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
         const k = [];
         const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
         const whiteKeyWidth = 100 / 52; // 52 white keys across 100%
-        const blackKeyWidth = whiteKeyWidth * 0.4; // 40% of white key width
+        const blackKeyWidth = whiteKeyWidth * 0.5; // 50% of white key width (more substantial)
 
         // Black key offsets within an octave (as % of octave width)
         // Based on real piano measurements where black keys are NOT centered
         const blackKeyOffsets: Record<string, number> = {
-            'Db': 0.65,  // C# closer to C
-            'Eb': 1.8,   // D# closer to E
-            'Gb': 3.65,  // F# position
-            'Ab': 5.0,   // G# centered
-            'Bb': 6.35   // A# position
+            'Db': 0.6,   // C# closer to C
+            'Eb': 1.75,  // D# closer to E
+            'Gb': 3.6,   // F# position
+            'Ab': 4.9,   // G# centered
+            'Bb': 6.25   // A# position
         };
 
         let whiteKeyIndex = 0;
