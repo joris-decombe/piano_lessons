@@ -1,72 +1,91 @@
 import { twMerge } from "tailwind-merge";
 
 interface KeyProps {
-    note: string; // e.g. "C4", "Db4"
+    note: string;
     isBlack: boolean;
     isActive: boolean;
-    label?: string; // e.g. "C"
+    label?: string;
     isPreview?: boolean;
+    style?: React.CSSProperties; // Allow passing left/width/height/zIndex
 }
 
-export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: KeyProps & { activeColor?: string }) {
-    // Determine beam color (default to cyan/rose if not provided, or gold fallback)
-    // Actually activeColor is passed from page.tsx (Cyan/Rose).
-    const glowColor = activeColor || (isBlack ? "#fbbf24" : "#38bdf8"); // Fallback Gold/Sky
-
+export function Key({ note, isBlack, isActive, label, isPreview, style }: KeyProps) {
     return (
         <div
             data-note={note}
             className={twMerge(
-                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border origin-top",
-                isBlack
-                    ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-lg"
-                    : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
-                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.99] !shadow-none border-transparent border-t-0",
-                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.99] border-transparent border-t-0",
-                isActive && "border-transparent border-t-0", // Ensure custom colored active keys also lose border
-                isPreview && "border-transparent border-t-0", // Remove border for preview keys to avoid black line at top
-                "select-none"
+                "absolute top-0 select-none overflow-hidden", // Absolute positioning is key now
+                "transition-transform duration-75 ease-piano-press", // Fast attack
+                !isActive && "duration-150 ease-piano-release" // Bouncy release
             )}
             style={{
-                backgroundColor: isActive && activeColor ? activeColor : undefined,
-                transform: isActive ? "scaleY(0.99)" : undefined,
-                boxShadow: isActive
-                    ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
-                    : undefined,
-                borderColor: undefined, // Remove border color
-                borderWidth: undefined, // Remove border width
-                // Z-Index Layering:
-                // Black Active: 40
-                // Black Inactive: 30
-                // White Active: 20
-                // White Inactive: 0
-                // This ensures Black Keys are ALWAYS above White Keys.
-                zIndex: isBlack ? (isActive ? 40 : 30) : (isActive ? 20 : 0)
+                ...style,
+                transform: isActive ? "translateY(var(--spacing-key-dip))" : "translateY(0)",
+                backgroundColor: isBlack ? "var(--color-piano-black-surface)" : "var(--color-piano-white-surface)",
+                boxShadow: isBlack
+                    ? (isActive ? "var(--shadow-pixel-black-pressed)" : "var(--shadow-pixel-black)")
+                    : "var(--shadow-pixel-white)",
+                // Black keys are shorter (96px), White keys full height (150px) - handled by props or default classes?
+                // We'll let the parent pass exact pixel dimensions in 'style', but we can set defaults/classes here if needed.
+                // Actually, let's enforce color changes on active here.
             }}
         >
-            {/* Preview Overlay (Top Half Only) */}
+            {/* Active State Color Overlay */}
+            <div
+                className={twMerge(
+                    "absolute inset-0 pointer-events-none",
+                    isActive ? "opacity-100" : "opacity-0"
+                )}
+                style={{
+                    backgroundColor: isBlack ? "var(--color-piano-black-active)" : "var(--color-piano-white-active)"
+                }}
+            />
+
+            {/* Preview Hint (Top of key) */}
             {isPreview && (
                 <div
-                    className="absolute top-0 left-0 w-full h-[50%] pointer-events-none rounded-t-[1px]"
+                    className="absolute top-0 left-0 w-full height-[50%] pointer-events-none opacity-50"
                     style={{
-                        background: `linear-gradient(to bottom, ${activeColor || glowColor}80, transparent)`,
+                        height: '50%',
+                        backgroundColor: isActive ? 'transparent' : 'var(--color-piano-accent-DEFAULT)'
                     }}
                 />
             )}
 
-            {/* Laser Beam Effect */}
-            {isActive && (
+            {/* Note Label (White Keys only) */}
+            {!isBlack && label && (
+                <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none">
+                    <span className="text-[10px] font-sans text-stone-500 font-bold opacity-50 block">{label}</span>
+                </div>
+            )}
+
+            {/* 3D "Lip" / Highlight (White Keys) */}
+            {!isBlack && (
                 <div
-                    className="absolute bottom-full left-0 w-full pointer-events-none"
+                    className="absolute bottom-0 left-0 w-full pointer-events-none"
                     style={{
-                        height: "200px", // Shorter beam
-                        background: `linear-gradient(to top, ${activeColor || glowColor}33, transparent)`, // Lower opacity (0.2)
-                        filter: "blur(8px)", // Soften edges
-                        zIndex: -1
+                        height: "12px",
+                        backgroundColor: "var(--color-piano-white-lip)"
                     }}
                 />
             )}
-            {!isBlack && label && <span className="mb-2 text-xs font-semibold opacity-50">{label}</span>}
+
+            {/* Black Key Highlight (Top Edge) */}
+            {isBlack && (
+                <div
+                    className="absolute top-0 left-0 w-full pointer-events-none"
+                    style={{
+                        height: "4px", // Subtle top highlight
+                        backgroundColor: "var(--color-piano-black-highlight)"
+                    }}
+                />
+            )}
+
+            {/* Black Key 3D Face (Bottom) - Rendered via shadows or extra div? 
+                 Globals has --color-piano-black-face.
+                 The main div bg is 'surface'. 
+                 The 'boxShadow' handles the Z-depth for black keys.
+             */}
         </div>
     );
 }

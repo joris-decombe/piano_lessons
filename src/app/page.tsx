@@ -160,25 +160,35 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       </header>
 
       {/* Main Visual Area */}
-      <main className="relative flex-1 min-h-0 w-full flex flex-col">
-        {/* Waterfall Container */}
-        <div data-testid="waterfall-container" className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
-          <Waterfall
-            midi={audio.midi}
-            currentTick={audio.currentTick}
-            playbackRate={audio.playbackRate}
-            activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
-            lookAheadTicks={audio.lookAheadTicks}
-            showGrid={showGrid}
-            showPreview={showPreview}
-          />
-          {/* Hit Line Separator */}
-          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.4)] z-40 pointer-events-none" />
-        </div>
+      <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--color-piano-bg)]">
 
-        {/* Keyboard Container */}
-        <div className="w-full shrink-0 z-50 landscape:h-auto mb-2 md:mb-4">
-          <Keyboard keys={coloredKeys} />
+        {/* Unified Scroll Container */}
+        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col">
+
+          {/* Centered Content Wrapper (auto margins handle centering if fits, left-align if scroll) */}
+          <div className="mx-auto h-full flex flex-col relative" style={{ minWidth: 'fit-content' }}>
+
+            {/* Waterfall Container */}
+            <div data-testid="waterfall-container" className="flex-1 relative w-full">
+              <Waterfall
+                midi={audio.midi}
+                currentTick={audio.currentTick}
+                playbackRate={audio.playbackRate}
+                activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                lookAheadTicks={audio.lookAheadTicks}
+                showGrid={showGrid}
+                showPreview={showPreview}
+              />
+              {/* Hit Line Separator (Pixel Art Style: Solid line) */}
+              <div className="absolute bottom-0 left-0 w-full h-[1px] bg-[var(--color-piano-white-side)] opacity-50 z-40 pointer-events-none" />
+            </div>
+
+            {/* Keyboard Container */}
+            <div className="shrink-0 z-50 mb-2 md:mb-4">
+              <Keyboard keys={coloredKeys} />
+            </div>
+
+          </div>
         </div>
       </main>
 
