@@ -33,10 +33,6 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                 boxShadow: isActive
                     ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
                     : undefined,
-                // Add tapered shape to white keys for realism
-                clipPath: !isBlack
-                    ? "polygon(0 0, 100% 0, 100% 60%, 85% 60%, 85% 100%, 15% 100%, 15% 60%, 0 60%)"
-                    : undefined,
                 borderColor: undefined, // Remove border color
                 borderWidth: undefined, // Remove border width
                 // Z-Index Layering:
