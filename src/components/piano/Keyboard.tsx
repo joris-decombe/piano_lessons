@@ -18,20 +18,47 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
     const keys = useMemo(() => {
         const k = [];
         const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const whiteKeyWidth = 100 / 52; // 52 white keys across 100%
+        const blackKeyWidth = whiteKeyWidth * 0.4; // 40% of white key width
+
+        // Black key offsets within an octave (as % of octave width)
+        // Based on real piano measurements where black keys are NOT centered
+        const blackKeyOffsets: Record<string, number> = {
+            'Db': 0.65,  // C# closer to C
+            'Eb': 1.8,   // D# closer to E
+            'Gb': 3.65,  // F# position
+            'Ab': 5.0,   // G# centered
+            'Bb': 6.35   // A# position
+        };
+
+        let whiteKeyIndex = 0;
 
         for (let i = 21; i <= 108; i++) {
             const octave = Math.floor(i / 12) - 1;
             const noteIndex = i % 12;
             const noteName = NOTES[noteIndex];
             const fullName = `${noteName}${octave}`;
-            // Note: Our manual array has 'Db', 'Eb', etc. so use those. 
-            // Tone.js usually emits sharps (C#4), but we used a manual NOTES array with Flats here?
-            // "Db" -> includes "b". 
+            const isBlack = noteName.includes("b") || noteName.includes("#");
+
+            let left = 0;
+
+            if (isBlack) {
+                // Calculate position based on octave and offset
+                const octaveStart = Math.floor(whiteKeyIndex / 7) * 7 * whiteKeyWidth;
+                const offset = blackKeyOffsets[noteName] || 0;
+                left = octaveStart + (offset * whiteKeyWidth);
+            } else {
+                // White keys are evenly spaced
+                left = whiteKeyIndex * whiteKeyWidth;
+                whiteKeyIndex++;
+            }
 
             k.push({
                 midi: i,
                 note: fullName,
-                isBlack: noteName.includes("b") || noteName.includes("#"),
+                isBlack,
+                left,
+                width: isBlack ? blackKeyWidth : whiteKeyWidth,
                 label: noteName === "C" ? `C${octave}` : undefined
             });
         }
@@ -56,7 +83,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
 
     return (
         <div className="relative flex h-48 landscape:h-32 w-full justify-center rounded-b-xl bg-transparent">
-            <div className="flex h-full w-full max-w-[1200px] flex-row items-stretch justify-between bg-white rounded-b-xl">
+            <div className="relative h-full w-full max-w-[1200px] bg-white rounded-b-xl overflow-hidden">
                 {keys.map((key) => {
                     const { isActive, color, isPreview } = getActiveState(key.note);
                     return (
@@ -68,6 +95,8 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                             activeColor={color}
                             label={key.label}
                             isPreview={isPreview}
+                            left={key.left}
+                            width={key.width}
                         />
                     );
                 })}

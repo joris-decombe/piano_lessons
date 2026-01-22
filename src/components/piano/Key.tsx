@@ -6,9 +6,11 @@ interface KeyProps {
     isActive: boolean;
     label?: string; // e.g. "C"
     isPreview?: boolean;
+    left: number; // Position as percentage
+    width: number; // Width as percentage
 }
 
-export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: KeyProps & { activeColor?: string }) {
+export function Key({ note, isBlack, isActive, activeColor, label, isPreview, left, width }: KeyProps & { activeColor?: string }) {
     // Determine beam color (default to cyan/rose if not provided, or gold fallback)
     // Actually activeColor is passed from page.tsx (Cyan/Rose).
     const glowColor = activeColor || (isBlack ? "#fbbf24" : "#38bdf8"); // Fallback Gold/Sky
@@ -17,10 +19,10 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
         <div
             data-note={note}
             className={twMerge(
-                "relative flex items-end justify-center rounded-b-lg transition-all duration-200 ease-in-out origin-top will-change-transform",
+                "absolute flex items-end justify-center rounded-b-lg transition-all duration-200 ease-in-out origin-top will-change-transform",
                 isBlack
-                    ? "z-10 -mx-[0.385%] h-[60%] w-[0.77%] bg-gradient-to-t from-black via-black to-zinc-900 text-white shadow-[0_6px_12px_rgba(0,0,0,0.4),inset_0_-1px_3px_rgba(255,255,255,0.15)]"
-                    : "z-0 h-full flex-1 bg-gradient-to-t from-white via-white to-gray-50 text-gray-500 shadow-[0_4px_6px_rgba(0,0,0,0.12)] border-r border-black/10",
+                    ? "h-[60%] bg-gradient-to-t from-black via-black to-zinc-900 text-white shadow-[0_6px_12px_rgba(0,0,0,0.4),inset_0_-1px_3px_rgba(255,255,255,0.15)]"
+                    : "h-full bg-gradient-to-t from-white via-white to-gray-50 text-gray-500 shadow-[0_4px_6px_rgba(0,0,0,0.12)] border-r border-black/10",
                 isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.98] brightness-95 shadow-[0_4px_8px_rgba(0,0,0,0.35)]",
                 isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.98] brightness-95 shadow-[0_2px_4px_rgba(0,0,0,0.15)]",
                 isActive && "scale-y-[0.98] brightness-95", // Ensure custom colored active keys also get press effect
@@ -28,6 +30,8 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                 "select-none"
             )}
             style={{
+                left: `${left}%`,
+                width: `${width}%`,
                 backgroundColor: isActive && activeColor ? activeColor : undefined,
                 transform: isActive ? "scaleY(0.98) translateY(1px)" : undefined,
                 boxShadow: isActive
