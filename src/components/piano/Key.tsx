@@ -21,8 +21,8 @@ export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: 
                 isBlack
                     ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-[0_6px_12px_rgba(0,0,0,0.4),inset_0_-1px_3px_rgba(255,255,255,0.15)]"
                     : "z-0 h-full flex-1 bg-white text-gray-500 shadow-[0_4px_6px_rgba(0,0,0,0.12),inset_0_-1px_1px_rgba(0,0,0,0.03)]",
-                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.98] brightness-95 shadow-[0_2px_4px_rgba(0,0,0,0.3)]",
-                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.98] brightness-95 shadow-[0_1px_2px_rgba(0,0,0,0.1)]",
+                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.98] brightness-95 shadow-[0_4px_8px_rgba(0,0,0,0.35)]",
+                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.98] brightness-95 shadow-[0_2px_4px_rgba(0,0,0,0.15)]",
                 isActive && "scale-y-[0.98] brightness-95", // Ensure custom colored active keys also get press effect
                 isPreview && "", // Preview keys don't need special border handling anymore
                 "select-none"
