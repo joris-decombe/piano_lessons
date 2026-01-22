@@ -56,7 +56,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
 
     return (
         <div className="relative flex h-48 landscape:h-32 w-full justify-center rounded-b-xl bg-transparent">
-            <div className="flex h-full w-full max-w-[1200px] flex-row items-stretch justify-between">
+            <div className="flex h-full w-full max-w-[1200px] flex-row items-stretch justify-between bg-white rounded-b-xl">
                 {keys.map((key) => {
                     const { isActive, color, isPreview } = getActiveState(key.note);
                     return (
