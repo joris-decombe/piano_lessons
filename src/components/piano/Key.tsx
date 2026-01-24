@@ -20,54 +20,71 @@ interface KeyProps {
 
 export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
 
-    // Helper to generate dynamic shadow
+    // Helper to generate dynamic shadow (Box Shadow: Full Height)
     const getBoxShadow = () => {
-        if (!isActive) return !isBlack ? "var(--shadow-key-separator)" : "none";
-
+        // Base Shadow for Idle Black Keys (restored)
         if (isBlack) return "inset 0 2px 4px rgba(0,0,0,0.5)";
 
         // White Keys: Conditional shadows based on neighbors
+        // Note: Static separator is now handled by border-right.
         const shadows = [];
 
-        // --- White Key Separators ---
+        // --- White Key Separators (Dynamic Depth) ---
 
         // LEFT SIDE
-        if (!isLeftNeighborActive) {
-            // Neighbor is Higher: Casts strong shadow on us (Side Wall)
+        if (isActive && !isLeftNeighborActive) {
+            // We are down, neighbor is up => Strong shadow on our left wall
             shadows.push("inset 4px 0 4px -2px rgba(0,0,0,0.4)");
-        } else {
-            // Neighbor is Equal (Both Down): Show 1px separator line here.
-            // Using slightly darker/sharper opacity to ensure it looks like a separator line
+        } else if (isActive && isLeftNeighborActive) {
+            // Both down => Fine separator
             shadows.push("inset 1px 0 0 0 rgba(0,0,0,0.3)");
         }
 
         // RIGHT SIDE
-        if (!isRightNeighborActive) {
-            // Neighbor is Higher: Casts strong shadow on us
-            shadows.push("inset -4px 0 4px -2px rgba(0,0,0,0.4)");
-        } else {
-            // Neighbor is Equal: DO NOT draw separator.
-            // We rely on the Right Neighbor's Left-Edge separator.
+        if (isActive && !isRightNeighborActive) {
+             shadows.push("inset -4px 0 4px -2px rgba(0,0,0,0.4)");
+        }
+        
+        // NOTE: Black Key Casting Shadows moved to `backgroundImage` to control height.
+
+        return shadows.length > 0 ? shadows.join(", ") : "none";
+    };
+
+    // Helper to generate gradient shadows (Background Image: Partial Height)
+    const getShadowGradient = () => {
+        if (isBlack || isActive) return "none"; // Only idle white keys receive these shadows
+
+        const gradients = [];
+        const shadowH = "96px"; // Matches Black Key Height
+
+        // LEFT Neighbor Shadow (Gradient L->R)
+        if (leftBlackNeighborState === 'idle') {
+            gradients.push(`linear-gradient(to right, rgba(0,0,0,0.3) 0px, transparent 4px)`);
+        } else if (leftBlackNeighborState === 'active') {
+             gradients.push(`linear-gradient(to right, rgba(0,0,0,0.2) 0px, transparent 2px)`);
         }
 
-        // --- Black Key Casting Shadows ---
-        // Only render black key shadows on IDLE keys. 
-        // If key is Active (Pressed), we remove the shadow to keep the "clean" look user requested.
-        if (!isActive) {
-            if (leftBlackNeighborState === 'idle') {
-                shadows.push("inset 6px 0 8px -2px rgba(0,0,0,0.6)");
-            } else if (leftBlackNeighborState === 'active') {
-                shadows.push("inset 3px 0 4px -2px rgba(0,0,0,0.4)");
-            }
-
-            if (rightBlackNeighborState === 'idle') {
-                shadows.push("inset -6px 0 8px -2px rgba(0,0,0,0.6)");
-            } else if (rightBlackNeighborState === 'active') {
-                shadows.push("inset -3px 0 4px -2px rgba(0,0,0,0.4)");
-            }
+        // RIGHT Neighbor Shadow (Gradient R->L)
+        if (rightBlackNeighborState === 'idle') {
+             gradients.push(`linear-gradient(to left, rgba(0,0,0,0.3) 0px, transparent 4px)`);
+        } else if (rightBlackNeighborState === 'active') {
+             gradients.push(`linear-gradient(to left, rgba(0,0,0,0.2) 0px, transparent 2px)`);
         }
 
-        return shadows.join(", ");
+        return gradients.length > 0 ? gradients.join(", ") : "none";
+    };
+
+    const getBackgroundSize = () => {
+        if (isBlack || isActive) return undefined;
+        // We want the gradients to be 100% width but only 96px height
+        // If we have multiple gradients, we need multiple sizes?
+        // Actually, since they are L->R and R->L, they can overlap.
+        // We can set one common size if they are same height.
+        return `100% 96px`; 
+    };
+
+    const getBackgroundRepeat = () => {
+         return "no-repeat";
     };
 
     // Precise Geometry Masking with Chamfer (Rounding)
@@ -142,15 +159,23 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
                 // Borders
                 borderBottomWidth: isBlack ? (isActive ? "2px" : "12px") : "0px",
                 borderBottomStyle: isBlack ? "solid" : "none",
+                
+                // Explicit Separator for White Keys
+                borderRightWidth: isBlack ? "0px" : "1px",
+                borderRightStyle: isBlack ? "none" : "solid",
+                borderRightColor: "var(--color-piano-white-shadow)",
 
                 boxShadow: getBoxShadow(),
+                backgroundImage: getShadowGradient(),
+                backgroundSize: getBackgroundSize(),
+                backgroundRepeat: getBackgroundRepeat(),
                 clipPath: getClipPath(),
             }}
         >
             {/* Note Label */}
             {!isBlack && label && (
-                <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none">
-                    <span className="text-[10px] font-sans text-[var(--color-piano-white-shadow)] font-bold opacity-50 block">{label}</span>
+                <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
+                    <span className="text-[10px] font-sans text-gray-600 font-bold opacity-75 block">{label}</span>
                 </div>
             )}
 

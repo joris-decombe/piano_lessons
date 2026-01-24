@@ -105,8 +105,9 @@ From the Top-Down view, the white keys have "bites" taken out of them to form th
   * *Black Key Width:* 14px.
   * *Well Width:* ~16px.
 * **Shadows:** The implementation uses **Dynamic Neighbor Shadows**:
-  * **White-on-White:** A white key casts a shadow on its neighbor if the neighbor is pressed (lower). If both are pressed, a fine 1px separator line is drawn.
-  * **Black-on-White:** Idle black keys cast ambient occlusion shadows on the adjacent white keys. These shadows disappear when the black key is pressed to keep the look clean.
+  * **White-on-White:** Separated by an explicit `1px solid var(--color-piano-white-shadow)` border. When active, internal `inset` shadows simulate depth relative to neighbors.
+  * **Black-on-White:** Idle black keys cast ambient occlusion shadows using `backgroundImage` linear gradients restricted to **96px** height. This prevents shadows from "leaking" into the southern playing area.
+  * **Subtlety:** Ambient occlusion is refined to a 3px spread at 0.3 opacity for a clean, professional look.
 * When a black key sinks, it sinks into this specific dark void.
 
 ## **5\. Technical Dimensions Reference (Player View)**
@@ -160,5 +161,6 @@ All coordinates are relative to the top-left of the octave container.
 | **White Key (Lit)** | \#E2E4E9 (Cool Gray) | The main surface catching overhead light. |
 | **White Key (Shadow)** | \#9CA3AF (Gray 400\) | The pressed state (in shadow). |
 | **Black Key (Top)** | \#1F2937 (Gray 800\) | Matte surface. |
+| **Annotations** | \#4B5563 (Gray 600\) | `opacity-75` and `z-10` for high visibility on white keys. |
 | **Reflections** | white @ 15% Opacity | Subtle key reflections on the Nameboard. |
 
