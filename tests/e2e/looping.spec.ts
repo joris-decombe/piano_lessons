@@ -40,8 +40,8 @@ test.describe('Looping Functionality', () => {
         await expect(loopButton).toHaveClass(/text-indigo-400/);
 
         // Go back to menu
-        await page.getByText('Back to Menu').click();
-        await expect(page.getByText('Select a Song')).toBeVisible();
+        await page.getByLabel('Return to Song List').click();
+        await expect(page.getByText('Select a piece to begin practicing')).toBeVisible();
 
         // Re-enter song
         await page.getByTestId('song-gnossienne1').click();
@@ -64,8 +64,8 @@ test.describe('Looping Functionality', () => {
         expect(timeText).not.toBe('0:00');
 
         // Go back to menu
-        await page.getByText('Back to Menu').click();
-        await expect(page.getByText('Select a Song')).toBeVisible();
+        await page.getByLabel('Return to Song List').click();
+        await expect(page.getByText('Select a piece to begin practicing')).toBeVisible();
 
         // Re-enter song (ensure we click the card, not footer text)
         await page.getByTestId('song-gnossienne1').click();

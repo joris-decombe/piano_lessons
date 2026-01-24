@@ -13,7 +13,7 @@ test.describe('Navigation Flow', () => {
         await page.getByRole('button', { name: 'Gnossienne No. 1' }).click();
 
         // Verify Player is active
-        await expect(page.getByTestId('waterfall-container')).toBeVisible(); // Waterfall
+        await expect(page.getByTestId('keys-container')).toBeVisible(); // Keyboard
         await expect(page.getByTestId('play-button')).toBeVisible();
 
         // 3. Play audio briefly (optional, to test pause logic)
@@ -30,7 +30,7 @@ test.describe('Navigation Flow', () => {
         // Verify back on landing page
         try {
             await expect(page.getByText('Select a piece to begin practicing')).toBeVisible({ timeout: 5000 });
-            await expect(page.getByTestId('waterfall-container')).not.toBeVisible();
+            await expect(page.getByTestId('keys-container')).not.toBeVisible();
         } catch (e) {
             console.log('--- TEST FAILED --- taking screenshot');
             await page.screenshot({ path: 'test-failure.png' });
@@ -41,7 +41,7 @@ test.describe('Navigation Flow', () => {
         await page.getByRole('button', { name: 'Twinkle Twinkle Little Star' }).click();
 
         // Verify Player is active again
-        await expect(page.getByTestId('waterfall-container')).toBeVisible();
+        await expect(page.getByTestId('keys-container')).toBeVisible();
         await expect(page.getByTestId('current-song-title')).toHaveText('Twinkle Twinkle Little Star');
     });
 });
