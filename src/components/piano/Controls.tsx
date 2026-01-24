@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { formatTime } from "@/lib/utils";
+import { formatTime, getNoteName } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { Timeline } from "./Timeline";
 
@@ -271,6 +271,7 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
+                                aria-valuetext={`${playbackRate.toFixed(1)}x`}
                                 className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
                             />
                         </div>
@@ -291,6 +292,7 @@ export function Controls({
                                 value={visualSettings.lookAheadTime || 1.5}
                                 onChange={(e) => visualSettings.setLookAheadTime(parseFloat(e.target.value))}
                                 aria-label="Preview duration"
+                                aria-valuetext={`${visualSettings.lookAheadTime?.toFixed(1) || "1.5"}s`}
                                 className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
                             />
                         </div>
@@ -356,7 +358,7 @@ export function Controls({
                                             <div className="pt-1 space-y-1">
                                                 <div className="flex justify-between text-xs text-zinc-400">
                                                     <span>Split Note</span>
-                                                    <span>{visualSettings.splitPoint} (C{Math.floor(visualSettings.splitPoint / 12) - 1})</span>
+                                                    <span>{visualSettings.splitPoint} ({getNoteName(visualSettings.splitPoint)})</span>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -364,6 +366,8 @@ export function Controls({
                                                     max={108}
                                                     value={visualSettings.splitPoint}
                                                     onChange={(e) => visualSettings.setSplitPoint(parseInt(e.target.value))}
+                                                    aria-label="Split point"
+                                                    aria-valuetext={getNoteName(visualSettings.splitPoint)}
                                                     className="w-full h-1 bg-zinc-700 rounded-lg appearance-none accent-indigo-500"
                                                 />
                                             </div>
