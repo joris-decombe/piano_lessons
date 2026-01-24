@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { Key } from "./Key";
 import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
@@ -58,31 +57,19 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
     const totalWidth = getTotalKeyboardWidth();
 
     return (
-        <div className="flex flex-col items-center bg-[var(--color-piano-bg)] select-none">
+        <div className="flex flex-col items-center bg-[var(--color-pal-1)] select-none">
 
             {/* 1. TOP: Nameboard & Logo */}
-            {/* Z-Index 20 matches Cheek Blocks */}
-            <div className="w-full h-8 bg-black border-b-4 border-[var(--color-piano-black-face)] relative flex items-center justify-center shadow-lg z-20 overflow-hidden">
-                {/* Reflection Overlay (Specs v3.2) - Soft Periodic Keys (Lacquered Finish) */}
-                <div 
-                    className="absolute inset-0 z-10 pointer-events-none"
-                    style={{
-                        // Soft repeating highlight centered on keys (12px), fading to edges (0/24px).
-                        // No hard vertical lines to avoid banding artifacts.
-                        background: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(255,255,255,0.1) 12px, transparent 20px, transparent 24px)",
-                        // Fade out towards top (North) using mask to simulate reflection depth
-                        maskImage: "linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%)",
-                        WebkitMaskImage: "linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%)"
-                    }}
-                />
+            <div className="w-full h-8 bg-black border-b-4 border-[var(--color-pal-1)] relative flex items-center justify-center z-20 overflow-hidden">
+                {/* Global Reflection Removed: Replaced by Per-Key Reflections in Key.tsx */}
             </div>
 
             {/* 2. MIDDLE: The Action Area */}
             {/* BG Matches Frame so cavities look deep */}
-            <div className="relative z-[10] flex flex-row shadow-2xl bg-[var(--color-piano-black-face)]"> 
+            <div className="relative z-[10] flex flex-row bg-[var(--color-pal-1)]">
 
                 {/* Left Cheek Block: Height 154px - z-20 (Frame) */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-piano-black-surface)] border-b-[12px] border-[var(--color-piano-black-face)] box-border relative z-[20]" />
+                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-0)] box-border relative z-[20] border-r-2 border-[var(--color-pal-0)]" />
 
                 {/* The Keyboard Container */}
                 <div
@@ -90,12 +77,11 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                     className="relative h-[150px]"
                     style={{ width: `${totalWidth}px` }}
                 >
-                                        {/* Nameboard Cover (Lip) - REMOVED to eliminate North Gap (Zero Gap) */}
-                    
-                                        {/* Cavity (Behind Keys) */}
-                                        <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 -z-10" />
-                    
-                                        {/* Keys */}                    {keysData.map((key) => {
+                    {/* Cavity (Behind Keys) - Void Color */}
+                    <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 -z-10" />
+
+                    {/* Keys */}
+                    {keysData.map((key) => {
                         const { isActive, color } = getActiveState(key.note);
 
                         // Check neighbors (by MIDI index) for White Keys
@@ -144,7 +130,6 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                         const isLeftActive = leftKeyData ? getActiveState(leftKeyData.note).isActive : false;
                         const isRightActive = rightKeyData ? getActiveState(rightKeyData.note).isActive : false;
 
-                        // Pass CUT PROPS instead of keyShape
                         return (
                             <Key
                                 key={key.midi}
@@ -163,7 +148,12 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                                     left: `${key.left}px`,
                                     width: `${key.width}px`,
                                     height: `${key.height}px`,
-                                    top: key.isBlack ? '2px' : '0px', // North Gap for Black Keys only
+                                    // Top is managed internally or by geometry.ts?
+                                    // geometry says 'top' isn't returned, only 'left'. 
+                                    // Key.tsx previously had: top: key.isBlack ? '2px' : '0px'.
+                                    // Black keys sit in well. With new Bed system, they sit in bed.
+                                    // Let's keep offset to align visual grid.
+                                    top: key.isBlack ? '2px' : '0px', 
                                     zIndex: key.zIndex
                                 }}
                             />
@@ -172,12 +162,12 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                 </div>
 
                 {/* Right Cheek Block: Height 154px - z-20 */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-piano-black-surface)] border-b-[12px] border-[var(--color-piano-black-face)] box-border relative z-[20]" />
+                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-0)] box-border relative z-[20] border-l-2 border-[var(--color-pal-0)]" />
 
             </div>
 
             {/* 3. BOTTOM: Key Slip - z-0 */}
-            <div className="w-full h-6 bg-[var(--color-piano-black-face)] border-t border-[var(--color-piano-black-highlight)] z-[0] -mt-[4px] relative shadow-lg" />
+            <div className="w-full h-6 bg-[var(--color-pal-1)] border-t-2 border-[var(--color-pal-2)] z-[0] -mt-[4px] relative" />
 
             {/* Global Scroll stopper */}
             <style jsx global>{`

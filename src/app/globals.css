@@ -5,8 +5,7 @@
 
 :root {
   --background: #000000;
-  /* Pure Black to contrast with Slate 900 Piano */
-  --foreground: #ededed;
+  --foreground: #E2E4E9;
 }
 
 /* stylelint-disable-next-line at-rule-no-unknown */
@@ -16,51 +15,64 @@
   --font-sans: "Pixelify Sans", system-ui, sans-serif;
   --font-mono: "Pixelify Sans", monospace;
 
-  /* Satie Palette (Specs v3.1) */
-  --color-piano-bg: #111827;
-  /* Gray 900 Frame/Blocks/Slip */
-  --color-piano-black-surface: #1F2937;
-  /* Gray 800 - Black Key Top */
-  --color-piano-black-face: #111827;
-  /* Gray 900 - Black Key Face */
-  --color-piano-black-highlight: #374151;
-  /* Gray 700 */
-  --color-piano-void: #000000;
-  /* Pure Black - Key Pockets */
-  --color-piano-felt: #9F1239;
-  /* Rose 800 */
+  /* --- Satie-16 Pixel Palette --- */
+  
+  /* 0-3: Voids & Darks */
+  --color-pal-0: #000000; /* Pure Void */
+  --color-pal-1: #111827; /* Gray 900 (Frame Bed) */
+  --color-pal-2: #1F2937; /* Gray 800 (Black Key Face) */
+  --color-pal-3: #374151; /* Gray 700 (Black Key Highlight) */
+  
+  /* 4-7: Mids */
+  --color-pal-4: #4B5563; /* Gray 600 (Labels/Outlines) */
+  --color-pal-5: #6B7280; /* Gray 500 */
+  --color-pal-6: #9CA3AF; /* Gray 400 (White Key Shadow) */
+  --color-pal-7: #D1D5DB; /* Gray 300 (White Key Pressed) */
 
-  --color-piano-white-surface: #E2E4E9;
-  /* Cool Grey 200 - Lit */
-  --color-piano-white-pressed: #D1D5DB;
-  /* Gray 300 - Pressed */
-  --color-piano-white-shadow: #9CA3AF;
-  /* Gray 400 - Deep Shadow */
+  /* 8-11: Lights */
+  --color-pal-8: #E2E4E9; /* Cool Gray 200 (White Key Face) */
+  --color-pal-9: #F3F4F6; /* Gray 100 (Highlights) */
+  --color-pal-10: #FFFFFF; /* Pure White */
+  
+  /* 12-15: Accents */
+  --color-pal-12: #9F1239; /* Rose 800 (Felt) */
+  --color-pal-13: #E11D48; /* Rose 600 */
+  --color-pal-14: #0284C7; /* Sky 600 (Waterfall Dark) */
+  --color-pal-15: #38BDF8; /* Sky 400 (Waterfall Light) */
 
-  --color-piano-accent: #38BDF8;
-  /* Sky 400 */
-  --color-piano-accent-dim: #0EA5E9;
-  /* Sky 500 */
+  /* --- Semantic Mappings --- */
+  --color-piano-void: var(--color-pal-0);
+  --color-piano-bg: var(--color-pal-1); /* Frame Main */
+  --color-piano-frame-dark: var(--color-pal-0);
+  --color-piano-frame-light: var(--color-pal-2);
 
-  /* Spacing */
+  --color-piano-black-bed: var(--color-pal-0);
+  --color-piano-black-face: var(--color-pal-2);
+  --color-piano-black-highlight: var(--color-pal-3);
+
+  --color-piano-white-surface: var(--color-pal-8);
+  --color-piano-white-pressed: var(--color-pal-7);
+  --color-piano-white-shadow: var(--color-pal-6);
+  --color-piano-white-highlight: var(--color-pal-9);
+
+  --color-piano-felt: var(--color-pal-12);
+  --color-piano-accent: var(--color-pal-15);
+  --color-piano-accent-dim: var(--color-pal-14);
+
+  /* --- Spacing --- */
   --spacing-key-w: 24px;
   --spacing-key-h: 150px;
   --spacing-black-w: 14px;
   --spacing-black-h: 96px;
-  --spacing-black-z: 12px;
-  --spacing-octave: 168px;
 
-  /* Custom Borders */
-  --border-width-12: 12px;
-  --border-width-6: 6px;
-
-  /* Shadows */
-  --shadow-key-separator: inset -1px 0 0 0 #9CA3AF;
-  --shadow-pixel-black: 0 4px 0 0 #000000;
+  /* --- Styles --- */
+  /* Hard shadow for separators - NO BLUR */
+  --shadow-hard: 1px 0 0 0 var(--color-pal-6); 
+  --shadow-hard-inset: inset 0 -1px 0 0 var(--color-pal-6);
 
   /* Animations */
-  --ease-press: cubic-bezier(0, 0, 0.2, 1);
-  --ease-release: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Snappy "Press" - instant or very fast */
+  --ease-pixel: cubic-bezier(0, 0, 0, 1); 
 }
 
 body {
@@ -68,24 +80,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: none;
-  /* Crisper pixel fonts */
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Utility for pixelated images if needed */
-.image-pixelated {
   image-rendering: pixelated;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
+/* Scrollbar Hiding */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

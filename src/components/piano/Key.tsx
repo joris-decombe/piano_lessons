@@ -1,4 +1,3 @@
-
 import { twMerge } from "tailwind-merge";
 
 interface KeyProps {
@@ -20,175 +19,182 @@ interface KeyProps {
 
 export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
 
-    // Helper to generate dynamic shadow (Box Shadow: Full Height)
-    const getBoxShadow = () => {
-        // Base Shadow for Idle Black Keys (restored)
-        if (isBlack) return "inset 0 2px 4px rgba(0,0,0,0.5)";
+    // --- GEOMETRY & PHYSICS ---
 
-        // White Keys: Conditional shadows based on neighbors
-        // Note: Static separator is now handled by border-right.
+    // White Key "Face Shift" (Pivoting Away)
+    // Idle: Full Height (150px). Pressed: Shortened by 2px (South edge moves North).
+    // The 'Bed' (Container background) becomes visible at the bottom.
+    const whiteFaceHeight = isActive ? "calc(100% - 2px)" : "100%";
+
+    // Black Key "Submersion" (Sinking In)
+    // The Top Face (Light) extends downwards to cover the Front Face (Dark).
+    // Idle: Top Face is shorter (revealing 10px front). Pressed: Top Face is longer (revealing 2px front).
+    const blackTopHeight = isActive ? "calc(100% - 2px)" : "calc(100% - 10px)";
+    
+    // --- SHADOWS (Hard Pixel Art) ---
+
+    // White Key Internal Depth (Cast by neighbors)
+    const getInternalShadows = () => {
+        if (isBlack || !isActive) return "none";
+        // We are down (Active White).
         const shadows = [];
-
-        // --- White Key Separators (Dynamic Depth) ---
-
-        // LEFT SIDE
-        if (isActive && !isLeftNeighborActive) {
-            // We are down, neighbor is up => Strong shadow on our left wall
-            shadows.push("inset 4px 0 4px -2px rgba(0,0,0,0.4)");
-        } else if (isActive && isLeftNeighborActive) {
-            // Both down => Fine separator
-            shadows.push("inset 1px 0 0 0 rgba(0,0,0,0.3)");
-        }
-
-        // RIGHT SIDE
-        if (isActive && !isRightNeighborActive) {
-             shadows.push("inset -4px 0 4px -2px rgba(0,0,0,0.4)");
+        
+        // Left Neighbor UP? Casts shadow on our Left Wall.
+        if (!isLeftNeighborActive) {
+            // Hard band, 3px wide.
+            shadows.push("inset 3px 0 0 0 var(--color-pal-6)");
         }
         
-        // NOTE: Black Key Casting Shadows moved to `backgroundImage` to control height.
-
+        // Right Neighbor UP? Casts shadow on our Right Wall.
+        if (!isRightNeighborActive) {
+            shadows.push("inset -3px 0 0 0 var(--color-pal-6)");
+        }
+        
         return shadows.length > 0 ? shadows.join(", ") : "none";
     };
 
-    // Helper to generate gradient shadows (Background Image: Partial Height)
-    const getShadowGradient = () => {
-        if (isBlack || isActive) return "none"; // Only idle white keys receive these shadows
-
-        const gradients = [];
-        const shadowH = "96px"; // Matches Black Key Height
-
-        // LEFT Neighbor Shadow (Gradient L->R)
+    // Black Key AO (Ambient Occlusion) on White Keys
+    // Implemented as Hard Bands (Banding)
+    const getAOOverlay = () => {
+        if (isBlack || isActive) return null; // Only Idle White Keys get AO
+        
+        const bands = [];
+        
+        // Left Black Neighbor Shadow (L->R)
         if (leftBlackNeighborState === 'idle') {
-            gradients.push(`linear-gradient(to right, rgba(0,0,0,0.3) 0px, transparent 4px)`);
+            // 3px wide band
+            bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[3px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
         } else if (leftBlackNeighborState === 'active') {
-             gradients.push(`linear-gradient(to right, rgba(0,0,0,0.2) 0px, transparent 2px)`);
+            // 1px wide band (Active black key is lower, less shadow)
+            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
         }
 
-        // RIGHT Neighbor Shadow (Gradient R->L)
+        // Right Black Neighbor Shadow (R->L)
         if (rightBlackNeighborState === 'idle') {
-             gradients.push(`linear-gradient(to left, rgba(0,0,0,0.3) 0px, transparent 4px)`);
+             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[3px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
         } else if (rightBlackNeighborState === 'active') {
-             gradients.push(`linear-gradient(to left, rgba(0,0,0,0.2) 0px, transparent 2px)`);
+             bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
         }
-
-        return gradients.length > 0 ? gradients.join(", ") : "none";
+        
+        return bands;
     };
 
-    const getBackgroundSize = () => {
-        if (isBlack || isActive) return undefined;
-        // We want the gradients to be 100% width but only 96px height
-        // If we have multiple gradients, we need multiple sizes?
-        // Actually, since they are L->R and R->L, they can overlap.
-        // We can set one common size if they are same height.
-        return `100% 96px`; 
-    };
-
-    const getBackgroundRepeat = () => {
-         return "no-repeat";
-    };
-
-    // Precise Geometry Masking with Chamfer (Rounding)
+    // --- CLIP PATH (White Keys) ---
     const getClipPath = () => {
         if (isBlack || (cutLeft === 0 && cutRight === 0)) return undefined;
-
-        const cutH = "100px";
-
-        const x1 = cutLeft;
-        const cutRightPx = cutRight;
-
-        // Chamfer Radius
-        const r = 2;
-
-        let path = "";
-
-        // LEFT CUT Handling
-        if (x1 > 0) {
-            path += `${x1 + r}px 0, `;
-        } else {
-            path += `0 0, `;
-        }
-
-        // RIGHT CUT Handling
-        if (cutRight > 0) {
-            path += `calc(100% - ${cutRight + r}px) 0, `;
-            path += `calc(100% - ${cutRight}px) ${r}px, `;
-            path += `calc(100% - ${cutRight}px) ${cutH}, `;
-        } else {
-            path += `100% 0, 100% ${cutH}, `;
-        }
-
-        // Bottom Area
-        path += `100% ${cutH}, 100% 100%, 0 100%, 0 ${cutH}, `;
-
-        // Finish Left Cut Logic
-        if (x1 > 0) {
-            path += `${x1}px ${cutH}, `;
-            path += `${x1}px ${r}px, `;
-        } else {
-            path += `0 ${cutH}, `;
-        }
-
-        return `polygon(${path.replace(/, $/, "")})`;
+        // Simple polygon cutout
+        // Note: cutLeft/Right are widths of the cutout.
+        const cutH = "96px"; // Height of black key well
+        return `polygon(
+            ${cutLeft}px 0, 
+            ${cutLeft}px ${cutH}, 
+            0 ${cutH}, 
+            0 100%, 
+            100% 100%, 
+            100% ${cutH}, 
+            calc(100% - ${cutRight}px) ${cutH}, 
+            calc(100% - ${cutRight}px) 0
+        )`;
+    };
+    
+    // --- REFLECTION (Per-Key) ---
+    // Renders a "Ghost" block above the key on the Nameboard.
+    // Only for White Keys (Black keys are matte/too far back).
+    const renderReflection = () => {
+        if (isBlack) return null;
+        return (
+            <div 
+                className="absolute left-0 w-full h-[24px] pointer-events-none"
+                style={{
+                    top: "-24px", // Moves it up onto nameboard
+                    backgroundColor: isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.15)", // Dimmer when pressed (angled away)
+                    // Dithering pattern could go here
+                }}
+            />
+        );
     };
 
+    // --- RENDER ---
+    
+    if (isBlack) {
+        // === BLACK KEY ===
+        return (
+            <div
+                data-note={note}
+                className="absolute top-0 select-none"
+                style={{
+                    ...style,
+                    zIndex: 30, // Always above white
+                    // Container doesn't move.
+                }}
+            >
+                {/* 1. The Bed/Front Face (Dark Base) */}
+                <div className="absolute inset-0 bg-[var(--color-pal-2)] rounded-sm" />
+                
+                {/* 2. The Top Face (Light Highlight) - Dynamic Height */}
+                <div 
+                    className={twMerge(
+                        "absolute top-0 left-0 w-full bg-[var(--color-pal-3)] transition-all duration-75 ease-pixel",
+                        isActive && activeColor ? "" : ""
+                    )}
+                    style={{
+                        height: blackTopHeight,
+                        backgroundColor: isActive && activeColor ? activeColor : undefined,
+                        border: isActive && activeColor ? `1px solid rgba(0,0,0,0.3)` : undefined
+                    }}
+                >
+                     {/* Highlight Line (1px at top) */}
+                     <div className="absolute top-0 left-0 w-full h-[1px] bg-[rgba(255,255,255,0.1)]" />
+                </div>
+            </div>
+        );
+    }
+
+    // === WHITE KEY ===
     return (
         <div
             data-note={note}
-            className={twMerge(
-                "absolute top-0 select-none overflow-hidden box-border",
-                "transition-all duration-75 ease-press",
-                !isActive && "duration-150 ease-release"
-            )}
+            className="absolute top-0 select-none"
             style={{
                 ...style,
-                // Animation Logic (Refined: -1px Travel)
-                transform: isActive
-                    ? (isBlack ? "translateY(1px)" : "translateY(-1px)")
-                    : "translateY(0)",
-
-                // Colors
-                backgroundColor: isActive && activeColor
-                    ? activeColor
-                    : (isBlack ? "var(--color-piano-black-surface)" : "var(--color-piano-white-surface)"),
-
-                // Border Color
-                borderColor: isBlack && isActive && activeColor
-                    ? `color-mix(in srgb, ${activeColor}, black 20%)`
-                    : (isBlack ? "var(--color-piano-black-face)" : "transparent"),
-
-                // Borders
-                borderBottomWidth: isBlack ? (isActive ? "2px" : "12px") : "0px",
-                borderBottomStyle: isBlack ? "solid" : "none",
-                
-                // Explicit Separator for White Keys
-                borderRightWidth: isBlack ? "0px" : "1px",
-                borderRightStyle: isBlack ? "none" : "solid",
-                borderRightColor: "var(--color-piano-white-shadow)",
-
-                boxShadow: getBoxShadow(),
-                backgroundImage: getShadowGradient(),
-                backgroundSize: getBackgroundSize(),
-                backgroundRepeat: getBackgroundRepeat(),
-                clipPath: getClipPath(),
+                zIndex: 10,
+                backgroundColor: "var(--color-pal-0)", // The Bed is Void/Black
             }}
         >
-            {/* Note Label */}
-            {!isBlack && label && (
-                <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
-                    <span className="text-[10px] font-sans text-gray-600 font-bold opacity-75 block">{label}</span>
-                </div>
-            )}
+             {/* Nameboard Reflection */}
+             {renderReflection()}
 
-            {/* Black Key Highlight */}
-            {isBlack && (
-                <div
-                    className="absolute top-0 left-0 w-full pointer-events-none"
-                    style={{
-                        height: "1px",
-                        backgroundColor: "rgba(255,255,255,0.1)"
-                    }}
-                />
-            )}
+            {/* The Face (Dynamic Height) */}
+            <div 
+                className={twMerge(
+                    "absolute top-0 left-0 w-full transition-all duration-75 ease-pixel bg-[var(--color-piano-white-surface)]",
+                )}
+                style={{
+                    height: whiteFaceHeight,
+                    clipPath: getClipPath(),
+                    backgroundColor: isActive && activeColor ? activeColor : undefined,
+                    boxShadow: getInternalShadows(), // Inner shadows when pressed
+                    // Hard Right Border (Separator)
+                    borderRight: "1px solid var(--color-pal-6)",
+                    borderLeft: "1px solid rgba(255,255,255,0.2)" // Highlight left edge
+                }}
+            >
+                 {/* Label */}
+                 {label && (
+                    <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
+                        <span className="text-[10px] font-sans text-[var(--color-pal-4)] font-bold opacity-100 block">{label}</span>
+                    </div>
+                 )}
+                 
+                 {/* AO Overlays (Black Shadows) */}
+                 {getAOOverlay()}
+            </div>
+            
+            {/* The Exposed Bed (When pressed, bottom 2px reveals this) 
+                Actually, the container bg is black, so it reveals black. 
+                We might want 'Key Slip' color (Gray 900) if it's hitting the frame.
+                But 'Bed' implies the interior. Let's stick to Void for now.
+            */}
         </div>
     );
 }
