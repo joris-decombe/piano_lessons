@@ -171,8 +171,11 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             {/* Action Area: Waterfall flows BEHIND Keyboard */}
             <div className="relative flex-1 flex flex-col min-h-0">
                 
-                {/* 1. Waterfall Layer (z-10) - Stops at Keyboard Top (150px from bottom) */}
-                <div className="absolute top-0 bottom-[150px] left-[36px] right-[36px] z-10 pointer-events-none">
+                {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
+                <div 
+                  data-testid="waterfall-container"
+                  className="absolute top-0 bottom-[174px] left-[36px] right-[36px] z-40 pointer-events-none"
+                >
                     <Waterfall
                         midi={audio.midi}
                         currentTick={audio.currentTick}
@@ -187,8 +190,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
                 <div className="flex-1" />
 
-                {/* 3. Keyboard Layer (z-20) */}
-                <div className="relative z-20 shrink-0 mb-2 md:mb-4">
+                {/* 3. Keyboard Layer (No Z-Index wrapper to allow interleaving) */}
+                <div className="relative shrink-0">
                     <Keyboard keys={coloredKeys} />
                 </div>
             </div>
