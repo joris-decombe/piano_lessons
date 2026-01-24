@@ -1,6 +1,6 @@
 # **Pixel Piano: Player's Perspective Specifications**
 
-**Version:** 3.1 (Fixed Tables)  
+**Version:** 3.2 (Refined Implementation)  
 **Reference:** Based on Master Specs v2.8  
 **Perspective:** The user is looking directly down at the keyboard (Orthographic Top-Down).  
 **North:** Towards the Nameboard/Logo.  
@@ -26,7 +26,7 @@ From the player's point of view, the piano is a rigid furniture frame that "cups
 3. **Back Rail (Nameboard):**  
    * **Visual:** The dark vertical board at the North end.  
       * **Material:** Slightly glossy/reflective.
-      * **Reflection:** Subtle vertical banding (`bg-piano-reflection`) running North-South to mimic overhead studio lighting on a lacquered surface.
+      * **Reflection:** Should be a subtle reflection of the white keys on the vertical face, consistent with a lacquered piano finish (avoiding artificial vertical banding).
       * **Interaction:** Touches the top of the Cheek Blocks.
 ## **2\. The Keyboard (Dynamic Elements)**
 
@@ -55,11 +55,11 @@ This is the most critical visual update. We simulate the mechanics of a fulcrum 
 When the player presses a white key, the front of the key pivots downward and slightly *away* from them.
 
 * **Action:** The key moves **North** (Up on screen) and gets darker.  
-* **Translation:** translateY(-2px) (Negative Y is North).  
+* **Translation:** translateY(-1px) (Negative Y is North).  
 * **Color Shift:** Change from \#E2E4E9 (Lit) to \#D1D5DB (Shadowed).  
 * **Visual Result:**  
   * The "Lip" of the key retreats away from the player.  
-  * This exposes **more** of the Key Slip/Frame underneath (widening the visible gap from 4px to 6px).  
+  * This exposes **more** of the Key Slip/Frame underneath (widening the visible gap from 4px to 5px).  
   * This creates a realistic "teeter-totter" feeling rather than a sliding drawer feeling.
 
 **Realism Assessment:**
@@ -72,9 +72,9 @@ The black keys do not just move down; they sink into a hole.
 
 * **Action:** The 3D front face collapses as the key submerges into the Key Pocket.  
 * **Animation:**  
-  * border-bottom-width transitions from **12px** (Idle) to **0px** (Pressed).  
-  * transform transitions translateY(2px) (South) to compensate for the border shrinking, keeping the top surface visually centered in the pocket.  
-* **Visual Result:** The key looks like it is being swallowed by the white keys.
+  * border-bottom-width transitions from **12px** (Idle) to **2px** (Pressed).  
+  * transform transitions translateY(1px) (South) to compensate for the border shrinking.  
+* **Visual Result:** The key looks like it is being swallowed by the white keys, retaining a subtle 2px lip to maintain solidity.
 
 **Realism Assessment:**
 *   **The Cheat:** Real black keys don't lose their front face. However, in "2.5D" projection, removing the bottom border is the only way to convey "depth = 0".
@@ -99,12 +99,14 @@ From the Top-Down view, the white keys have "bites" taken out of them to form th
 
 **Implementation Note:**
 
-* **The Void:** The pocket background is pure black (`#000000`/`bg-piano-black-void`).
+* **The Void:** The pocket background is pure black (`#000000`/`bg-piano-black-void`) to provide maximum contrast and depth, simulating the dark interior of the piano.
 * **Clearance (Margins):** The well must be slightly wider than the black key to prevent visual "jamming".
   * *Recommended Clearance:* 1px on Left/Right/North.
   * *Black Key Width:* 14px.
   * *Well Width:* ~16px.
-* **Shadows:** The well itself casts no shadow; it *receives* the black key.
+* **Shadows:** The implementation uses **Dynamic Neighbor Shadows**:
+  * **White-on-White:** A white key casts a shadow on its neighbor if the neighbor is pressed (lower). If both are pressed, a fine 1px separator line is drawn.
+  * **Black-on-White:** Idle black keys cast ambient occlusion shadows on the adjacent white keys. These shadows disappear when the black key is pressed to keep the look clean.
 * When a black key sinks, it sinks into this specific dark void.
 
 ## **5\. Technical Dimensions Reference (Player View)**
@@ -124,14 +126,39 @@ All coordinates are relative to the top-left of the octave container.
 * **Key Slip Offset:** The Key Slip is positioned such that its bottom edge aligns with the bottom edge of the Cheek Blocks.  
 * **White Key Offset:** The White Keys stop **4px North** of the Cheek Block's bottom edge.
 
+### **The Octave Layout (Integer Lookup Table)**
+
+**Total Octave Width:** 168px (Strict Integer Grid).
+**Realism Note:** While real octaves are ~165mm, we use 168px (7 * 24px) to ensure every white key is exactly 24px wide with zero sub-pixel rendering.
+
+| Key | Type | X-Pos (Left) | Width | Note |
+| :---- | :---- | :---- | :---- | :---- |
+| **C** | White | **0px** | 24px | |
+| **C#** | Black | **15px** | 14px | Left-biased |
+| **D** | White | **24px** | 24px | |
+| **D#** | Black | **43px** | 14px | Right-biased |
+| **E** | White | **48px** | 24px | |
+| **F** | White | **72px** | 24px | |
+| **F#** | Black | **85px** | 14px | Strong Left-biased |
+| **G** | White | **96px** | 24px | |
+| **G#** | Black | **113px** | 14px | Centered |
+| **A** | White | **120px** | 24px | |
+| **A#** | Black | **141px** | 14px | Strong Right-biased |
+| **B** | White | **144px** | 24px | |
+
+**Realism vs. Stylism Verdict:**
+*   **Horizontal Scale:** The 24px grid is a "Stylized" choice for perfect rendering, deviating slightly from the ~23.5mm reality.
+*   **Vertical Scale:** The cheek blocks (154px) being deeper than the keys (150px) is a "Realistic" detail that provides the necessary heavy furniture feel.
+*   **Black Keys:** 14px width (58% of white) is a highly accurate "Realistic" proportion (Steinway is ~58%), balancing the stylized grid with authentic playability.
+
 ## **6\. Color Palette (Player POV)**
 
 | Component | Color Code | Role |
 | :---- | :---- | :---- |
 | **Frame (Blocks/Slip)** | \#111827 (Gray 900\) | The static container. Dark and heavy. |
-| **Key Pocket (Void)** | \#000000 (Pure Black) | The empty space between white keys where black keys sit. |
+| **Key Pocket (Void)** | \#000000 (Pure Black) | The empty space between white keys. |
 | **White Key (Lit)** | \#E2E4E9 (Cool Gray) | The main surface catching overhead light. |
 | **White Key (Shadow)** | \#9CA3AF (Gray 400\) | The pressed state (in shadow). |
 | **Black Key (Top)** | \#1F2937 (Gray 800\) | Matte surface. |
-| **Reflections** | white @ 10% Opacity | Subtle vertical banding on the Nameboard. |
+| **Reflections** | white @ 15% Opacity | Subtle key reflections on the Nameboard. |
 

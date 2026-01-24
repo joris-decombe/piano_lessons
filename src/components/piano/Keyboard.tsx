@@ -63,18 +63,23 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
             {/* 1. TOP: Nameboard & Logo */}
             {/* Z-Index 20 matches Cheek Blocks */}
             <div className="w-full h-8 bg-black border-b-4 border-[var(--color-piano-black-face)] relative flex items-center justify-center shadow-lg z-20 overflow-hidden">
-                {/* Reflection Overlay (Specs v3.1) - Smooth Bottom-Up Gradient (No Vertical Lines) */}
-                <div
+                {/* Reflection Overlay (Specs v3.2) - Soft Periodic Keys (Lacquered Finish) */}
+                <div 
                     className="absolute inset-0 z-10 pointer-events-none"
                     style={{
-                        background: "linear-gradient(0deg, rgba(255,255,255,0.15) 0%, transparent 40%)"
+                        // Soft repeating highlight centered on keys (12px), fading to edges (0/24px).
+                        // No hard vertical lines to avoid banding artifacts.
+                        background: "repeating-linear-gradient(90deg, transparent 0px, transparent 4px, rgba(255,255,255,0.1) 12px, transparent 20px, transparent 24px)",
+                        // Fade out towards top (North) using mask to simulate reflection depth
+                        maskImage: "linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%)",
+                        WebkitMaskImage: "linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%)"
                     }}
                 />
             </div>
 
             {/* 2. MIDDLE: The Action Area */}
             {/* BG Matches Frame so cavities look deep */}
-            <div className="relative z-[10] flex flex-row shadow-2xl bg-[var(--color-piano-black-face)]">
+            <div className="relative z-[10] flex flex-row shadow-2xl bg-[var(--color-piano-black-face)]"> 
 
                 {/* Left Cheek Block: Height 154px - z-20 (Frame) */}
                 <div className="w-[36px] h-[154px] bg-[var(--color-piano-black-surface)] border-b-[12px] border-[var(--color-piano-black-face)] box-border relative z-[20]" />
@@ -85,13 +90,12 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                     className="relative h-[150px]"
                     style={{ width: `${totalWidth}px` }}
                 >
-                    {/* Nameboard Cover (Lip) - REMOVED to eliminate North Gap (Zero Gap) */}
-
-                    {/* Cavity (Behind Keys) */}
-                    <div className="w-full h-full bg-[var(--color-piano-black-face)] absolute top-0 left-0 right-0 -z-10" />
-
-                    {/* Keys */}
-                    {keysData.map((key) => {
+                                        {/* Nameboard Cover (Lip) - REMOVED to eliminate North Gap (Zero Gap) */}
+                    
+                                        {/* Cavity (Behind Keys) */}
+                                        <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 -z-10" />
+                    
+                                        {/* Keys */}                    {keysData.map((key) => {
                         const { isActive, color } = getActiveState(key.note);
 
                         // Check neighbors (by MIDI index) for White Keys
