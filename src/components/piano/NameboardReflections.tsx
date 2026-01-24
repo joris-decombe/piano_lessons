@@ -22,18 +22,19 @@ export function NameboardReflections({ keysData, activeKeys }: NameboardReflecti
     return (
         <div className="relative w-full h-full pointer-events-none overflow-hidden">
             {keysData.map((key) => {
-                const activeData = getActiveData(key.note);
-                
                 // Mirroring the key's material color
                 // White Keys reflect light gray, Black Keys reflect dark gray
-                let color = key.isBlack ? "rgba(31,41,55,0.4)" : "rgba(226,228,233,0.2)";
+                // We do NOT reflect the active color overlay (per user feedback)
+                const color = key.isBlack ? "rgba(31,41,55,0.6)" : "rgba(226,228,233,0.3)";
                 let opacity = 1;
                 let height = "2px";
 
+                // We can still subtly change opacity or height if active to show "movement"
+                // but keep the color neutral.
+                const activeData = getActiveData(key.note);
                 if (activeData) {
-                    color = activeData.color;
                     opacity = 0.8;
-                    height = "4px"; // Bloom effect for active keys
+                    height = "4px"; // Bloom/Motion
                 }
 
                 // Narrow band at the bottom edge facing the keys
@@ -47,7 +48,7 @@ export function NameboardReflections({ keysData, activeKeys }: NameboardReflecti
                             height: height,
                             backgroundColor: color,
                             opacity: opacity,
-                            // Subtle glow for active
+                            // White/Dark Glow
                             boxShadow: activeData ? `0 0 4px ${color}` : "none",
                         }}
                     />

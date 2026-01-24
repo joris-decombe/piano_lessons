@@ -132,10 +132,12 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
                             width: `${note.width}px`,
                             bottom: note.bottom,
                             height: note.height,
-                            // High transparency to reveal background/reflections
-                            background: `linear-gradient(to bottom, ${note.color} 0%, color-mix(in srgb, ${note.color}, black 20%) 100%)`,
-                            opacity: 0.6,
-                            boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.2)`,
+                            // Pure vibrant color
+                            background: note.color, 
+                            opacity: 0.9,
+                            // Glow effect
+                            filter: `drop-shadow(0 0 2px ${note.color})`,
+                            boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.2)`, // Inner highlight
                         }}
                     />
                 ))}

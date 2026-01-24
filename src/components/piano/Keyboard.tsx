@@ -61,16 +61,22 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
     return (
         <div className="flex flex-col items-center bg-black select-none">
 
-            {/* 1. TOP: Nameboard & Logo (z-30 to cover waterfall) */}
+            {/* 1. TOP: Nameboard & Logo (z-30) */}
             <div 
                 className="h-8 bg-[var(--color-pal-1)] border-b-4 border-[var(--color-pal-2)] relative flex flex-row items-center justify-center z-30 overflow-hidden"
                 style={{ width: `${totalPianoWidth}px` }}
             >
                 <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
-                <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full flex-shrink-0">
-                    <NameboardReflections keysData={keysData} activeKeys={activeKeys} />
-                </div>
+                {/* Reflections placeholder (removed from here) */}
+                <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full flex-shrink-0" />
                 <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
+            </div>
+
+            {/* Global Reflection Layer (z-60) - Renders ON TOP of Waterfall and Nameboard */}
+            <div className="absolute top-0 w-full flex justify-center z-60 pointer-events-none" style={{ height: '32px' }}>
+                 <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full">
+                    <NameboardReflections keysData={keysData} activeKeys={activeKeys} />
+                 </div>
             </div>
 
             {/* 2. MIDDLE: The Action Area */}
