@@ -135,7 +135,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showPreview]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
       {/* ... (Portrait Warning and Exit Button unchanged) ... */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
         <div className="text-4xl mb-4">↻</div>
@@ -160,16 +160,16 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       </header>
 
       {/* Main Visual Area */}
-      <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--color-piano-bg)]">
+      <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--background)]">
 
         {/* Unified Scroll Container */}
-        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col">
+        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Centered Content Wrapper (auto margins handle centering if fits, left-align if scroll) */}
           <div className="mx-auto h-full flex flex-col relative" style={{ minWidth: 'fit-content' }}>
 
             {/* Waterfall Container */}
-            <div data-testid="waterfall-container" className="flex-1 relative w-full pl-[64px]">
+            <div data-testid="waterfall-container" className="flex-1 relative w-full pl-[36px]">
               <Waterfall
                 midi={audio.midi}
                 currentTick={audio.currentTick}

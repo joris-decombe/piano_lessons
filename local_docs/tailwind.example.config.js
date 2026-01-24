@@ -5,63 +5,57 @@ module.exports = {
     ],
     theme: {
         extend: {
-            // 1. Define the specific "Satie" Palette
             colors: {
                 piano: {
-                    bg: '#0F172A',      // Slate 900 (App Background)
+                    bg: '#0F172A',      // Slate 900
                     white: {
-                        surface: '#E2E4E9', // Cool Grey (Key Top)
-                        lip: '#FFFFFF',     // Pure White (Key Front)
-                        side: '#9CA3AF',    // Shadow/Separator
-                        active: '#D1D5DB',  // Pressed State
+                        surface: '#E2E4E9', // Cool Grey 200
+                        pressed: '#D1D5DB', // Gray 300
+                        shadow: '#9CA3AF',  // Gray 400 (Separator)
                     },
                     black: {
-                        surface: '#1F2937', // Charcoal (Key Top)
-                        face: '#111827',    // Deep Black (Key 3D Height)
-                        highlight: '#374151', // Top Edge
+                        surface: '#1F2937', // Gray 800 (Top)
+                        face: '#111827',    // Gray 900 (Side/Front)
+                        accent: '#374151',  // Gray 700 (Highlight)
+                        void: '#000000',    // Pure Black (Pocket)
                     },
-                    accent: {
-                        DEFAULT: '#38BDF8', // Sky 400 (Falling Notes)
-                        dim: '#0EA5E9',     // Sky 500 (Note Border)
-                        glow: '#60A5FA',    // Active Key Glow
-                    }
+                    felt: '#9F1239',      // Rose 800
+                    reflection: 'rgba(255, 255, 255, 0.1)', // Subtle vertical banding
                 }
             },
-            // 2. Extend spacing for exact pixel art geometry
             spacing: {
-                'key-white': '24px',
-                'key-black': '14px',
-                'key-dip': '6px',     // The distance a key travels down
-                'octave': '168px',    // 24 * 7
+                'key-w': '24px',
+                'key-h': '150px',       // White Key Length
+                'frame-d': '154px',     // Cheek Block / Frame Depth
+                'black-w': '14px',
+                'black-h': '96px',      // Black Key Surface Length
+                'black-z': '12px',      // Black Key 3D Thickness
+                'octave': '168px',
             },
-            // 3. Pixel-Art Specific Shadows (Solid, No Blur)
+            borderWidth: {
+                '12': '12px',           // For Black Key Idle state
+            },
+            zIndex: {
+                'slip': '0',        // Key Slip (Bottom)
+                'cavity': '5',      // Well floor
+                'key': '10',        // White Keys
+                'cheek': '20',      // Cheek Blocks
+                'black': '30',      // Black Keys
+                'felt': '35',       // Red Felt Line
+                'nameboard': '40',  // Top Cover
+            },
             boxShadow: {
-                'pixel-white': 'inset -1px 0 0 0 #9CA3AF', // Right-side separator for white keys
-                'pixel-black': '0 4px 0 0 #111827',        // Solid "3D" height for black keys
-                'pixel-black-pressed': '0 0 0 0 #111827',  // Shadow disappears when pressed
+                // Puts a 1px separator line on the RIGHT inside edge of the key
+                'key-separator': 'inset -1px 0 0 0 #9CA3AF',
             },
-            // 4. Custom Keyframes for the mechanical feel
+            transitionProperty: {
+                'press': 'transform, border-width, background-color', // Animate all 3 for the "Sinking" effect
+            },
             transitionTimingFunction: {
-                'piano-press': 'cubic-bezier(0, 0, 0.2, 1)',      // Instant down
-                'piano-release': 'cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy up
-            },
-            // 5. Utility for disabling anti-aliasing
-            backgroundImage: {
-                'pixel-gradient': 'linear-gradient(to bottom, var(--tw-gradient-stops))',
+                'press': 'cubic-bezier(0, 0, 0.2, 1)',      // Instant Down
+                'release': 'cubic-bezier(0.34, 1.56, 0.64, 1)', // Bouncy Up
             }
         },
     },
-    plugins: [
-        // Simple plugin to add the .pixelated utility
-        function ({ addUtilities }) {
-            addUtilities({
-                '.image-pixelated': {
-                    'image-rendering': 'pixelated',
-                },
-                '.image-crisp': {
-                    'image-rendering': 'crisp-edges',
-                }
-            })
-        }
-    ],
+    plugins: [],
 }

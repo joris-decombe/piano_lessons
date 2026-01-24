@@ -1,8 +1,7 @@
-"use client";
 
 import { useMemo } from "react";
 import { Key } from "./Key";
-import { getKeyPosition, getTotalKeyboardWidth } from "./geometry";
+import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
 
 interface KeyboardKey {
     note: string;
@@ -23,6 +22,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
 
         for (let i = 21; i <= 108; i++) {
             const { left, width, isBlack } = getKeyPosition(i);
+            const { cutLeft, cutRight } = getKeyCuts(i);
 
             const octave = Math.floor(i / 12) - 1;
             const noteIndex = i % 12;
@@ -35,8 +35,10 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                 isBlack,
                 left,
                 width,
-                height: isBlack ? 96 : 150, // From Specs
-                zIndex: isBlack ? 10 : 0,
+                height: isBlack ? 96 : 150,
+                zIndex: isBlack ? 30 : 10,
+                cutLeft, // Precision Geometry
+                cutRight,
                 label: noteName === "C" ? `C${octave}` : undefined
             });
         }
@@ -54,60 +56,110 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
     };
 
     const totalWidth = getTotalKeyboardWidth();
-    const SIDE_BLOCK_WIDTH = 48; // Cheek blocks width
 
     return (
-        /* Main Piano Container */
-        <div className="relative flex flex-col items-center select-none">
+        <div className="flex flex-col items-center bg-[var(--color-piano-bg)] select-none">
 
-            {/* Top Frame Overlay (Fallboard Felt) - Already exists, moved inside the key area */}
-
-            <div className="flex flex-row items-stretch bg-[#0F172A] p-4 pb-0 rounded-xl rounded-b-none shadow-2xl">
-
-                {/* Left Cheek Block */}
+            {/* 1. TOP: Nameboard & Logo */}
+            {/* Z-Index 20 matches Cheek Blocks */}
+            <div className="w-full h-8 bg-black border-b-4 border-[var(--color-piano-black-face)] relative flex items-center justify-center shadow-lg z-20 overflow-hidden">
+                {/* Reflection Overlay (Specs v3.1) - Smooth Bottom-Up Gradient (No Vertical Lines) */}
                 <div
-                    className="relative w-[48px] h-[150px] bg-[#0F172A] border-r-2 border-slate-800 z-50 rounded-l-lg"
-                    style={{ boxShadow: 'inset -2px 0 5px rgba(0,0,0,0.5)' }}
-                >
-                    {/* Wood Grain / Varnish Highlight */}
-                    <div className="absolute top-0 right-0 w-[1px] h-full bg-slate-700 opacity-50" />
-                </div>
+                    className="absolute inset-0 z-10 pointer-events-none"
+                    style={{
+                        background: "linear-gradient(0deg, rgba(255,255,255,0.15) 0%, transparent 40%)"
+                    }}
+                />
+            </div>
 
-                {/* Keys Area */}
+            {/* 2. MIDDLE: The Action Area */}
+            {/* BG Matches Frame so cavities look deep */}
+            <div className="relative z-[10] flex flex-row shadow-2xl bg-[var(--color-piano-black-face)]">
+
+                {/* Left Cheek Block: Height 154px - z-20 (Frame) */}
+                <div className="w-[36px] h-[154px] bg-[var(--color-piano-black-surface)] border-b-[12px] border-[var(--color-piano-black-face)] box-border relative z-[20]" />
+
+                {/* The Keyboard Container */}
                 <div
-                    className="relative h-[150px] shrink-0 bg-[#0F172A] overflow-hidden"
+                    data-testid="keys-container"
+                    className="relative h-[150px]"
                     style={{ width: `${totalWidth}px` }}
                 >
-                    {/* The "Felt" Strip / Fallboard Frame */}
-                    <div
-                        className="absolute top-0 left-0 w-full z-50 pointer-events-none"
-                        style={{
-                            height: '12px',
-                            backgroundColor: '#0F172A',
-                            borderBottom: '4px solid #b91c1c', // Dark Red Felt ? Or Slate? Let's go Red for classic felt look, or Dark Blue for Satie?
-                            // User said Satie palette. Let's stick to Dark Slate but slightly lighter for contrast, or Dark Red as accent.
-                            // Let's use the 'dim' accent or just dark slate.
-                            borderColor: '#334155',
-                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.5)'
-                        }}
-                    />
+                    {/* Nameboard Cover (Lip) - REMOVED to eliminate North Gap (Zero Gap) */}
 
+                    {/* Cavity (Behind Keys) */}
+                    <div className="w-full h-full bg-[var(--color-piano-black-face)] absolute top-0 left-0 right-0 -z-10" />
+
+                    {/* Keys */}
                     {keysData.map((key) => {
-                        const { isActive, color, isPreview } = getActiveState(key.note);
+                        const { isActive, color } = getActiveState(key.note);
 
+                        // Check neighbors (by MIDI index) for White Keys
+                        const keyIndex = key.midi - 21;
+
+                        let leftKeyData = null;
+                        let rightKeyData = null;
+
+                        if (!key.isBlack) {
+                            // Find Left White
+                            let l = keyIndex - 1;
+                            while (l >= 0) {
+                                if (!keysData[l].isBlack) { leftKeyData = keysData[l]; break; }
+                                l--;
+                            }
+                            // Find Right White
+                            let r = keyIndex + 1;
+                            while (r < keysData.length) {
+                                if (!keysData[r].isBlack) { rightKeyData = keysData[r]; break; }
+                                r++;
+                            }
+                        } else {
+                            // For Black keys, simple adjacency
+                            leftKeyData = keysData[keyIndex - 1];
+                            rightKeyData = keysData[keyIndex + 1];
+                        }
+
+                        // Determine Black Neighbor States
+                        const rawLeft = keysData[keyIndex - 1];
+                        const rawRight = keysData[keyIndex + 1];
+
+                        let leftBlackState: 'none' | 'idle' | 'active' = 'none';
+                        let rightBlackState: 'none' | 'idle' | 'active' = 'none';
+
+                        if (rawLeft && rawLeft.isBlack) {
+                            const isActive = getActiveState(rawLeft.note).isActive;
+                            leftBlackState = isActive ? 'active' : 'idle';
+                        }
+
+                        if (rawRight && rawRight.isBlack) {
+                            const isActive = getActiveState(rawRight.note).isActive;
+                            rightBlackState = isActive ? 'active' : 'idle';
+                        }
+
+                        // Determine White Neighbor States
+                        const isLeftActive = leftKeyData ? getActiveState(leftKeyData.note).isActive : false;
+                        const isRightActive = rightKeyData ? getActiveState(rightKeyData.note).isActive : false;
+
+                        // Pass CUT PROPS instead of keyShape
                         return (
                             <Key
                                 key={key.midi}
                                 note={key.note}
                                 isBlack={key.isBlack}
+                                cutLeft={key.cutLeft}   // PIXEL PERFECT CUT
+                                cutRight={key.cutRight} // PIXEL PERFECT CUT
                                 isActive={isActive}
+                                isLeftNeighborActive={isLeftActive}
+                                isRightNeighborActive={isRightActive}
+                                leftBlackNeighborState={leftBlackState}
+                                rightBlackNeighborState={rightBlackState}
                                 activeColor={color}
                                 label={key.label}
-                                isPreview={isPreview}
                                 style={{
                                     left: `${key.left}px`,
                                     width: `${key.width}px`,
                                     height: `${key.height}px`,
+                                    top: key.isBlack ? '2px' : '0px', // North Gap for Black Keys only
                                     zIndex: key.zIndex
                                 }}
                             />
@@ -115,27 +167,19 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                     })}
                 </div>
 
-                {/* Right Cheek Block */}
-                <div
-                    className="relative w-[48px] h-[150px] bg-[#0F172A] border-l-2 border-slate-800 z-50 rounded-r-lg"
-                    style={{ boxShadow: 'inset 2px 0 5px rgba(0,0,0,0.5)' }}
-                >
-                    <div className="absolute top-0 left-0 w-[1px] h-full bg-slate-700 opacity-50" />
-                </div>
+                {/* Right Cheek Block: Height 154px - z-20 */}
+                <div className="w-[36px] h-[154px] bg-[var(--color-piano-black-surface)] border-b-[12px] border-[var(--color-piano-black-face)] box-border relative z-[20]" />
+
             </div>
 
-            {/* Key Slip (Front Frame) - Below the keys */}
-            <div
-                className="w-full h-[24px] bg-[#1e293b] rounded-b-lg relative shadow-lg -mt-[4px] z-40"
-                style={{
-                    width: `${totalWidth + (SIDE_BLOCK_WIDTH * 2) + 32}px`, // +32 for padding
-                    background: 'linear-gradient(to bottom, #1e293b, #0f172a)',
-                    borderTop: '1px solid #0f172a' // Dark border to blend
-                }}
-            >
-                {/* Highlight edge */}
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-white/10" />
-            </div>
+            {/* 3. BOTTOM: Key Slip - z-0 */}
+            <div className="w-full h-6 bg-[var(--color-piano-black-face)] border-t border-[var(--color-piano-black-highlight)] z-[0] -mt-[4px] relative shadow-lg" />
+
+            {/* Global Scroll stopper */}
+            <style jsx global>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
 
         </div>
     );
