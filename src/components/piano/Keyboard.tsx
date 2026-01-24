@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { Key } from "./Key";
 import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
@@ -57,36 +56,28 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
     };
 
     const totalKeysWidth = getTotalKeyboardWidth();
-    // Cheek blocks are 36px each
     const totalPianoWidth = 36 + totalKeysWidth + 36;
 
     return (
         <div className="flex flex-col items-center bg-black select-none">
 
-            {/* 1. TOP: Nameboard & Logo */}
-            {/* Constrained width to match piano body */}
+            {/* 1. TOP: Nameboard & Logo (z-30 to cover waterfall) */}
             <div 
-                className="h-8 bg-black border-b-4 border-[var(--color-pal-1)] relative flex flex-row items-center justify-center z-20 overflow-hidden"
+                className="h-8 bg-[var(--color-pal-1)] border-b-4 border-[var(--color-pal-2)] relative flex flex-row items-center justify-center z-30 overflow-hidden"
                 style={{ width: `${totalPianoWidth}px` }}
             >
-                {/* Spacer for Left Cheek alignment - Colored to match Cheek Block */}
                 <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
-                
-                {/* Reflections Container (Matches Keys Width) */}
                 <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full flex-shrink-0">
                     <NameboardReflections keysData={keysData} activeKeys={activeKeys} />
                 </div>
-
-                {/* Spacer for Right Cheek alignment - Colored to match Cheek Block */}
                 <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
             </div>
 
             {/* 2. MIDDLE: The Action Area */}
-            {/* BG Matches Frame so cavities look deep */}
-            <div className="relative z-[10] flex flex-row bg-[var(--color-pal-1)]">
+            <div className="relative z-[20] flex flex-row bg-transparent">
 
-                {/* Left Cheek Block: Height 154px - z-20 (Frame) */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[20] border-r-2 border-[var(--color-pal-0)]" />
+                {/* Left Cheek Block (z-30) */}
+                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[30] border-r-2 border-[var(--color-pal-0)]" />
 
                 {/* The Keyboard Container */}
                 <div
@@ -94,39 +85,30 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                     className="relative h-[150px]"
                     style={{ width: `${totalKeysWidth}px` }}
                 >
-                    {/* Cavity (Behind Keys) - Void Color */}
-                    <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 -z-10" />
+                    {/* Cavity (Behind Keys) - Void Color (z-0) */}
+                    <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 z-0" />
 
-                    {/* Keys */}
+                    {/* Keys (z-20/25) */}
                     {keysData.map((key) => {
                         const { isActive, color } = getActiveState(key.note);
-
-                        // Check neighbors (by MIDI index) for White Keys
                         const keyIndex = key.midi - 21;
 
                         let leftKeyData = null;
                         let rightKeyData = null;
 
                         if (!key.isBlack) {
-                            // Find Left White
                             let l = keyIndex - 1;
                             while (l >= 0) {
                                 if (!keysData[l].isBlack) { leftKeyData = keysData[l]; break; }
                                 l--;
                             }
-                            // Find Right White
                             let r = keyIndex + 1;
                             while (r < keysData.length) {
                                 if (!keysData[r].isBlack) { rightKeyData = keysData[r]; break; }
                                 r++;
                             }
-                        } else {
-                            // For Black keys, simple adjacency
-                            leftKeyData = keysData[keyIndex - 1];
-                            rightKeyData = keysData[keyIndex + 1];
                         }
 
-                        // Determine Black Neighbor States
                         const rawLeft = keysData[keyIndex - 1];
                         const rawRight = keysData[keyIndex + 1];
 
@@ -134,16 +116,12 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                         let rightBlackState: 'none' | 'idle' | 'active' = 'none';
 
                         if (rawLeft && rawLeft.isBlack) {
-                            const isActive = getActiveState(rawLeft.note).isActive;
-                            leftBlackState = isActive ? 'active' : 'idle';
+                            leftBlackState = getActiveState(rawLeft.note).isActive ? 'active' : 'idle';
                         }
-
                         if (rawRight && rawRight.isBlack) {
-                            const isActive = getActiveState(rawRight.note).isActive;
-                            rightBlackState = isActive ? 'active' : 'idle';
+                            rightBlackState = getActiveState(rawRight.note).isActive ? 'active' : 'idle';
                         }
 
-                        // Determine White Neighbor States
                         const isLeftActive = leftKeyData ? getActiveState(leftKeyData.note).isActive : false;
                         const isRightActive = rightKeyData ? getActiveState(rightKeyData.note).isActive : false;
 
@@ -152,8 +130,8 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                                 key={key.midi}
                                 note={key.note}
                                 isBlack={key.isBlack}
-                                cutLeft={key.cutLeft}   // PIXEL PERFECT CUT
-                                cutRight={key.cutRight} // PIXEL PERFECT CUT
+                                cutLeft={key.cutLeft}
+                                cutRight={key.cutRight}
                                 isActive={isActive}
                                 isLeftNeighborActive={isLeftActive}
                                 isRightNeighborActive={isRightActive}
@@ -165,28 +143,24 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                                     left: `${key.left}px`,
                                     width: `${key.width}px`,
                                     height: `${key.height}px`,
-                                    // Top is managed internally or by geometry.ts?
-                                    // geometry says 'top' isn't returned, only 'left'. 
-                                    // Key.tsx previously had: top: key.isBlack ? '2px' : '0px'.
-                                    // Black keys sit in well. With new Bed system, they sit in bed.
-                                    // Let's keep offset to align visual grid.
                                     top: key.isBlack ? '2px' : '0px', 
-                                    zIndex: key.zIndex
                                 }}
                             />
                         );
                     })}
                 </div>
 
-                {/* Right Cheek Block: Height 154px - z-20 */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[20] border-l-2 border-[var(--color-pal-0)]" />
+                {/* Right Cheek Block (z-30) */}
+                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[30] border-l-2 border-[var(--color-pal-0)]" />
 
             </div>
 
-            {/* 3. BOTTOM: Key Slip - z-0 */}
-            <div className="w-full h-6 bg-[var(--color-pal-1)] border-t-2 border-[var(--color-pal-2)] z-[0] -mt-[4px] relative" />
+            {/* 3. BOTTOM: Key Slip (z-60) */}
+            <div 
+                className="h-6 bg-[var(--color-pal-1)] border-t-2 border-[var(--color-pal-2)] z-[60] -mt-[4px] relative" 
+                style={{ width: `${totalPianoWidth}px` }}
+            />
 
-            {/* Global Scroll stopper */}
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

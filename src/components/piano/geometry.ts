@@ -75,3 +75,7 @@ export function getTotalKeyboardWidth() {
     const { left, width } = getKeyPosition(108);
     return left + width;
 }
+
+export function getTotalPianoWidth() {
+    return 36 + getTotalKeyboardWidth() + 36;
+}

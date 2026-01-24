@@ -165,27 +165,32 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         {/* Unified Scroll Container */}
         <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
-          {/* Centered Content Wrapper (auto margins handle centering if fits, left-align if scroll) */}
+          {/* Centered Content Wrapper */}
           <div className="mx-auto h-full flex flex-col relative" style={{ minWidth: 'fit-content' }}>
+            
+            {/* Action Area: Waterfall flows BEHIND Keyboard */}
+            <div className="relative flex-1 flex flex-col min-h-0">
+                
+                {/* 1. Waterfall Layer (z-10) - Stops at Keyboard Top (150px from bottom) */}
+                <div className="absolute top-0 bottom-[150px] left-[36px] right-[36px] z-10 pointer-events-none">
+                    <Waterfall
+                        midi={audio.midi}
+                        currentTick={audio.currentTick}
+                        playbackRate={audio.playbackRate}
+                        activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                        lookAheadTicks={audio.lookAheadTicks}
+                        showGrid={showGrid}
+                        showPreview={showPreview}
+                    />
+                </div>
 
-            {/* Waterfall Container */}
-            <div data-testid="waterfall-container" className="flex-1 relative w-full pl-[36px]">
-              <Waterfall
-                midi={audio.midi}
-                currentTick={audio.currentTick}
-                playbackRate={audio.playbackRate}
-                activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
-                lookAheadTicks={audio.lookAheadTicks}
-                showGrid={showGrid}
-                showPreview={showPreview}
-              />
-              {/* Hit Line Separator (Pixel Art Style: Solid line) */}
-              <div className="absolute bottom-0 left-[64px] right-0 h-[1px] bg-[var(--color-piano-white-side)] opacity-50 z-40 pointer-events-none" />
-            </div>
+                {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
+                <div className="flex-1" />
 
-            {/* Keyboard Container */}
-            <div className="shrink-0 z-50 mb-2 md:mb-4">
-              <Keyboard keys={coloredKeys} />
+                {/* 3. Keyboard Layer (z-20) */}
+                <div className="relative z-20 shrink-0 mb-2 md:mb-4">
+                    <Keyboard keys={coloredKeys} />
+                </div>
             </div>
 
           </div>
