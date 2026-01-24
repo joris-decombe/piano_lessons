@@ -186,7 +186,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
                     {/* Active Hit Flash (Vertical) */}
                     {note.isActive && (
                         <div
-                            key={`${note.id}-flash`}
+                            key={`${note.id}-flash-v`}
                             className="absolute z-30"
                             style={{
                                 left: `${note.left}px`,
@@ -203,17 +203,23 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
                     {/* Note Body (Rect) */}
                     <div
                         className={twMerge(
-                            "absolute shadow-sm", // No anti-aliasing needed
+                            "absolute shadow-sm overflow-hidden", // No anti-aliasing needed
                             note.isBlack ? "z-20" : "z-10",
                             note.isActive && "brightness-110"
                         )}
                         style={{
                             left: `${note.left}px`,
                             width: `${note.width}px`,
-                            bottom: note.bottom,
-                            height: note.height,
+                            bottom: `calc(${note.bottom} - 4px)`, // Extend down to overlap keys
+                            height: `calc(${note.height} + 4px)`, // Maintain top position relative to bottom change? 
+                            // If we lower bottom by 4px, we need to increase height by 4px to keep top constant?
+                            // Actually, note.bottom is % from bottom. 
+                            // Let's just extend height downwards.
+                            // If bottom is 0%, we want it to be -4px (pixels).
+                            // Mixing % and px in calc is valid.
                             backgroundColor: note.color,
-                            // Pixel Art Style: 1px Inner Border instead of CSS border
+                            opacity: 0.9, // Semi-transparent to see particles behind
+                            // Pixel Art Style: 1px Inner Border
                             boxShadow: `inset 0 0 0 1px ${note.color === '#ffffff' ? '#000000' : 'rgba(0,0,0,0.2)'}`,
                             zIndex: note.isBlack ? 20 : 10,
                         }}

@@ -73,6 +73,13 @@
   /* Animations */
   /* Snappy "Press" - instant or very fast */
   --ease-pixel: cubic-bezier(0, 0, 0, 1); 
+  
+  --animate-scroll: scroll 0.5s linear infinite;
+  
+  @keyframes scroll {
+    from { background-position: 0 0; }
+    to { background-position: 0 100px; } /* Assuming repeat */
+  }
 }
 
 body {

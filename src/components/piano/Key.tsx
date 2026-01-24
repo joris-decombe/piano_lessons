@@ -41,13 +41,13 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
         
         // Left Neighbor UP? Casts shadow on our Left Wall.
         if (!isLeftNeighborActive) {
-            // Hard band, 3px wide.
-            shadows.push("inset 3px 0 0 0 var(--color-pal-6)");
+            // Hard band, 2px wide (Reduced from 3px).
+            shadows.push("inset 2px 0 0 0 var(--color-pal-6)");
         }
         
         // Right Neighbor UP? Casts shadow on our Right Wall.
         if (!isRightNeighborActive) {
-            shadows.push("inset -3px 0 0 0 var(--color-pal-6)");
+            shadows.push("inset -2px 0 0 0 var(--color-pal-6)");
         }
         
         return shadows.length > 0 ? shadows.join(", ") : "none";
@@ -62,18 +62,18 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
         
         // Left Black Neighbor Shadow (L->R)
         if (leftBlackNeighborState === 'idle') {
-            // 3px wide band
-            bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[3px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
+            // 2px wide band, slightly darker
+            bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[2px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none" />);
         } else if (leftBlackNeighborState === 'active') {
-            // 1px wide band (Active black key is lower, less shadow)
-            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
+            // 1px wide band
+            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none" />);
         }
 
         // Right Black Neighbor Shadow (R->L)
         if (rightBlackNeighborState === 'idle') {
-             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[3px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
+             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[2px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none" />);
         } else if (rightBlackNeighborState === 'active') {
-             bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-50 pointer-events-none" />);
+             bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none" />);
         }
         
         return bands;
@@ -97,23 +97,6 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
         )`;
     };
     
-    // --- REFLECTION (Per-Key) ---
-    // Renders a "Ghost" block above the key on the Nameboard.
-    // Only for White Keys (Black keys are matte/too far back).
-    const renderReflection = () => {
-        if (isBlack) return null;
-        return (
-            <div 
-                className="absolute left-0 w-full h-[24px] pointer-events-none"
-                style={{
-                    top: "-24px", // Moves it up onto nameboard
-                    backgroundColor: isActive ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.15)", // Dimmer when pressed (angled away)
-                    // Dithering pattern could go here
-                }}
-            />
-        );
-    };
-
     // --- RENDER ---
     
     if (isBlack) {
@@ -161,9 +144,6 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
                 backgroundColor: "var(--color-pal-0)", // The Bed is Void/Black
             }}
         >
-             {/* Nameboard Reflection */}
-             {renderReflection()}
-
             {/* The Face (Dynamic Height) */}
             <div 
                 className={twMerge(
@@ -184,6 +164,19 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
                     <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
                         <span className="text-[10px] font-sans text-[var(--color-pal-4)] font-bold opacity-100 block">{label}</span>
                     </div>
+                 )}
+                 
+                 {/* Flow Overlay (Waterfall landing on key) */}
+                 {isActive && activeColor && (
+                     <div 
+                        className="absolute inset-0 z-0 pointer-events-none mix-blend-overlay opacity-50 animate-scroll"
+                        style={{
+                            // Stream texture: Horizontal ripples moving down
+                            backgroundImage: "repeating-linear-gradient(0deg, transparent 0px, rgba(255,255,255,0.2) 2px, transparent 8px)",
+                            backgroundSize: "100% 16px", // Loops every 16px
+                            backgroundColor: activeColor
+                        }}
+                     />
                  )}
                  
                  {/* AO Overlays (Black Shadows) */}

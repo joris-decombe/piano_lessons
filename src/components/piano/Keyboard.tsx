@@ -1,6 +1,8 @@
+
 import { useMemo } from "react";
 import { Key } from "./Key";
 import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
+import { NameboardReflections } from "./NameboardReflections";
 
 interface KeyboardKey {
     note: string;
@@ -54,14 +56,29 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
         return { isActive: !match.isPreview, color: match.color, isPreview: match.isPreview };
     };
 
-    const totalWidth = getTotalKeyboardWidth();
+    const totalKeysWidth = getTotalKeyboardWidth();
+    // Cheek blocks are 36px each
+    const totalPianoWidth = 36 + totalKeysWidth + 36;
 
     return (
-        <div className="flex flex-col items-center bg-[var(--color-pal-1)] select-none">
+        <div className="flex flex-col items-center bg-black select-none">
 
             {/* 1. TOP: Nameboard & Logo */}
-            <div className="w-full h-8 bg-black border-b-4 border-[var(--color-pal-1)] relative flex items-center justify-center z-20 overflow-hidden">
-                {/* Global Reflection Removed: Replaced by Per-Key Reflections in Key.tsx */}
+            {/* Constrained width to match piano body */}
+            <div 
+                className="h-8 bg-black border-b-4 border-[var(--color-pal-1)] relative flex flex-row items-center justify-center z-20 overflow-hidden"
+                style={{ width: `${totalPianoWidth}px` }}
+            >
+                {/* Spacer for Left Cheek alignment - Colored to match Cheek Block */}
+                <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
+                
+                {/* Reflections Container (Matches Keys Width) */}
+                <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full flex-shrink-0">
+                    <NameboardReflections keysData={keysData} activeKeys={activeKeys} />
+                </div>
+
+                {/* Spacer for Right Cheek alignment - Colored to match Cheek Block */}
+                <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
             </div>
 
             {/* 2. MIDDLE: The Action Area */}
@@ -69,13 +86,13 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
             <div className="relative z-[10] flex flex-row bg-[var(--color-pal-1)]">
 
                 {/* Left Cheek Block: Height 154px - z-20 (Frame) */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-0)] box-border relative z-[20] border-r-2 border-[var(--color-pal-0)]" />
+                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[20] border-r-2 border-[var(--color-pal-0)]" />
 
                 {/* The Keyboard Container */}
                 <div
                     data-testid="keys-container"
                     className="relative h-[150px]"
-                    style={{ width: `${totalWidth}px` }}
+                    style={{ width: `${totalKeysWidth}px` }}
                 >
                     {/* Cavity (Behind Keys) - Void Color */}
                     <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 -z-10" />
@@ -162,7 +179,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                 </div>
 
                 {/* Right Cheek Block: Height 154px - z-20 */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-0)] box-border relative z-[20] border-l-2 border-[var(--color-pal-0)]" />
+                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[20] border-l-2 border-[var(--color-pal-0)]" />
 
             </div>
 
