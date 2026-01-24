@@ -32,7 +32,8 @@ export function NameboardReflections({ keysData, activeKeys }: NameboardReflecti
                 // We can still subtly change opacity or height if active to show "movement"
                 // but keep the color neutral.
                 const activeData = getActiveData(key.note);
-                if (activeData) {
+                // Ignore previews for reflection animation (physical key isn't pressed)
+                if (activeData && !activeData.isPreview) {
                     opacity = 0.8;
                     height = "4px"; // Bloom/Motion
                 }

@@ -111,7 +111,6 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
                     clipPath: getClipPath(),
                     boxShadow: getInternalShadows(), 
                     borderRight: "1px solid var(--color-pal-6)",
-                    // borderLeft removed to prevent "light line" artifact
                 }}
             >
                  {/* Active Color Overlay */}
