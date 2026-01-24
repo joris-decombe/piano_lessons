@@ -1,54 +1,64 @@
 # **Pixel Piano: v4 Pixel Art & Dynamism Specs**
 
-**Status:** Draft / Research  
-**Goal:** Transition from "Clean Vector UI" to "Dynamic Pixel Art" and fix geometric alignment issues.
+**Status:** Research Complete  
+**Goal:** Transition to a strict "2.5D Orthographic Pixel Art" style with "Face Shift" mechanics.
 
-## **1. Visual Alignment & Geometry**
+## **1. Geometry & Animation: The "Face Shift" Mechanic**
 
-### **1.1. Nameboard Reflections**
-*   **Issue:** Current `repeating-linear-gradient` is an approximation that drifts out of alignment with specific key groups (B-C, E-F gaps).
-*   **Fix:** Reflections must be **Grid-Deterministic**.
-    *   Instead of a global overlay, the Reflection should be rendered as a specific SVG or Canvas layer that uses the exact `NOTE_OFFSETS` from `geometry.ts`.
-    *   **Pixel Art Style:** The reflection should not be a "gradient fade". It should be a dithered pattern or a semi-transparent block of pixels exactly 24px wide, directly above each white key.
-    *   **Artifacts:** Remove the white line artifact between the nameboard and waterfall (likely a sub-pixel rendering or border leakage issue).
+### **1.1. The Problem (Traveling Pockets)**
+*   **Observation:** Translating the entire key component (`translateY`) moves the "void" cutouts, causing visual collisions with black keys.
+*   **The Solution:** **Separation of Concerns.**
+    *   **Layer 1: The Bed (Static):** The dark container, the void, and the black key holes. This **NEVER MOVES**.
+    *   **Layer 2: The Face (Dynamic):** The white/black top surface.
+*   **Animation Logic:**
+    *   **Unpressed:** Face covers the Bed entirely (height: 100%).
+    *   **Pressed:** Face "Shortens" or "Slides North".
+        *   **Action:** The *South Edge* of the Face moves North by 1px or 2px.
+        *   **Result:** This exposes the **Bed** (or Key Slip) at the bottom.
+        *   **Constraint:** The North Edge (Pivot) and the Cutouts must remain pixel-perfectly static relative to the Bed.
 
-### **1.2. The "Static Pocket" Rule (Fixing the Pivot)**
-*   **Issue:** Currently, pressing a white key translates the whole SVG `North`. This moves the "cutout" well, making it look like the white key is sliding into the black key.
-*   **Refined Physics (Pixel Logic):**
-    *   **No X/Y Translation of the Container:** The footprint of the key must remain absolute static to preserve the grid.
-    *   **Internal Animation:** "Depth" is conveyed by shifting the *Top Face* pixels south (down) within the container, or simply by reducing the "Front Lip" height.
-    *   **The visual result:** The key gets "shorter" (South edge moves North) or "darker", but the North cutouts defining the black key pockets **must never move**.
+### **1.2. Black Key "Submersion"**
+*   **Current:** `border-bottom` changes thickness.
+*   **Refined:** The Black Key Face (lighter top pixel block) moves South (down) *over* its own darker "Front Face" (border).
+    *   **Pressed:** The Lighter Top Face obscures the Darker Front Face. The total silhouette remains roughly the same, but the "Face" creates the motion.
 
-## **2. Waterfall Dynamism**
+## **2. Visual Style: Strict Pixel Art**
 
-### **2.1. Flow Continuity**
-*   **Concept:** The falling note shouldn't just "trigger a light" when it hits the key. It should feel like physical "water" or "light" pouring *onto* and *over* the key.
-*   **Behavior:**
-    *   The waterfall block falls -> Hits Key Top -> **Continues scrolling down the key surface**.
-    *   This creates a continuous visual stream from top of screen to bottom of key.
-*   **Implementation Constraint:** The flow on the key must be masked strictly to the key's irregular shape (including cuts).
+### **2.1. No Blurs / No Alpha Blends**
+*   **Rule:** `box-shadow`, `blur()`, and `opacity` (unless for scanlines) are banned.
+*   **Replacement:**
+    *   **Shadows:** Use **Dithering** (1px checkerboard pattern) or hard-edged dark bands.
+    *   **Gradients:** Use **Banding** (Stepped colors).
 
-## **3. Pixel Art Aesthetic Overhaul**
+### **2.2. The Palette**
+*   Define a strict **16-Color Palette** (e.g., Pico-8 Extended or custom).
+*   All colors (Highlights, Shadows, Voids) must pick from this palette.
+    *   *Void:* `#000000`
+    *   *Frame:* `#1d2b53` (Dark Blue/Grey)
+    *   *White Key:* `#c2c3c7` (Light Grey) -> `#fff1e8` (Highlight)
+    *   *Black Key:* `#292d3e` -> `#5f574f` (Highlight)
 
-### **3.1. Strict "No Blur" Rule**
-*   **Shadows:** Eliminate all `box-shadow` blur radii.
-    *   *Bad:* `box-shadow: 0 4px 6px rgba(0,0,0,0.5)`
-    *   *Good:* `box-shadow: 0 4px 0px rgba(0,0,0,0.5)` (Hard Cast Shadow)
-*   **Gradients:** Replace smooth `linear-gradient` with **Dithering** or **Banding**.
-    *   Use CSS `repeating-linear-gradient` with hard stops for banding effects.
-    *   Use SVG patterns for dithering (checkerboards) to simulate lower opacity shadows.
+### **2.3. Reflections (Grid Alignment)**
+*   **Issue:** Global gradient misaligns with keys.
+*   **Fix:** **Per-Key Reflections.**
+    *   The Nameboard is a static dark bar.
+    *   Each `Key` component renders a "Ghost Reflection" div *above* itself (negative Y), masked by the Nameboard container.
+    *   This ensures the reflection aligns 1:1 with the key, regardless of gap width.
 
-### **3.2. Outlines & Borders**
-*   **Global Outline:** Every distinct object (Key, Cheek Block) needs a 1px or 2px distinct border.
-*   **Contrast:** "Void" areas should be pure black (or darkest palette color). Edges touching the void need high-contrast outlines (e.g., almost white highlight on top edges, dark distinct line on bottom edges).
+## **3. Waterfall Dynamism: "Surface Flow"**
 
-### **3.3. Palette**
-*   Define a strict 16 or 32-color palette.
-*   All colors in the app must map to this palette (no random `opacity-50` blends creating new hex values, unless simulating CRT scanlines).
+### **3.1. The "Paint" Effect**
+*   **Concept:** The note isn't a separate block that stops; it is "paint" pouring onto the key.
+*   **Implementation:**
+    *   The falling note is `z-index: 50`.
+    *   The Key Face is `z-index: 10`.
+    *   **The Trick:** When a note hits the key, we render a **"Key Overlay"** on the Key Face.
+    *   This overlay is masked to the Key's exact shape but colored to match the note.
+    *   **Animation:** The overlay can "scroll" texture down the key to simulate flow velocity.
 
-## **4. Implementation Roadmap**
+## **4. Implementation Plan**
 
-1.  **Geometry Fix:** Refactor `Key` component to support "Internal Depress" animation (moving inner face vs moving container).
-2.  **Reflection System:** Build a `NameboardReflection` component that maps `keysData` to generate exact reflection blocks.
-3.  **Style Migration:** Strip `globals.css` of smooth blurs. Introduce pixel-border utilities.
-4.  **Waterfall Upgrade:** Experiment with `mask-image` on Keys to allow passing "flow" elements to be visible on the key face.
+1.  **Refactor `Key.tsx`**: Split into `<KeyBed />` and `<KeyFace />`. Move `onClick` / animation logic to affect `<KeyFace />` transform/height only.
+2.  **Palette System:** Create `palette.ts` and Tailwind config for the 16 colors. Replace all hex/RGB colors.
+3.  **Dithering Utils:** Create generic SVG patterns for shadows.
+4.  **Reflection Component:** Move reflection logic into the `Key` (or a mapped sibling).
