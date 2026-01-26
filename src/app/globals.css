@@ -91,6 +91,7 @@ body {
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: grayscale;
   image-rendering: pixelated;
+  overscroll-behavior: none;
 }
 
 /* Scrollbar Hiding */

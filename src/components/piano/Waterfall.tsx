@@ -20,7 +20,7 @@ interface WaterfallProps {
     showPreview?: boolean;
 }
 
-export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, lookAheadTicks = 0, showGrid = true, showPreview = true }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0, showGrid = true }: WaterfallProps) {
 
     const totalWidth = getTotalKeyboardWidth();
 
@@ -52,7 +52,8 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
         if (!midi || allNotes.length === 0) return [];
 
         const PPQ = midi.header.ppq;
-        const windowSizeTicks = 6 * PPQ;
+        // Use lookAheadTicks if provided, otherwise default to 6 beats
+        const windowSizeTicks = (lookAheadTicks && lookAheadTicks > 0) ? lookAheadTicks : 6 * PPQ;
         const endTime = currentTick + windowSizeTicks;
 
         let startIdx = 0;
@@ -98,7 +99,7 @@ export function Waterfall({ midi, currentTick, playbackRate = 1, activeColors, l
             }
         }
         return active;
-    }, [midi, currentTick, allNotes, maxDuration]);
+    }, [midi, currentTick, allNotes, maxDuration, lookAheadTicks]);
 
     return (
         <div

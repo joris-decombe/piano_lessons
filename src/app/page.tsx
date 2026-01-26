@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
@@ -75,7 +75,28 @@ interface PianoLessonProps {
 }
 
 function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps) {
-  const [lookAheadTime, setLookAheadTime] = useState(1.5);
+  const [waterfallHeight, setWaterfallHeight] = useState(0);
+  const waterfallContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Track height for constant-speed waterfall
+  useEffect(() => {
+    if (!waterfallContainerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      setWaterfallHeight(entries[0].contentRect.height);
+    });
+    obs.observe(waterfallContainerRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Dynamic LookAhead calculation based on Height (Constant Speed)
+  // Target: 180px per second. 
+  const lookAheadTime = useMemo(() => {
+    if (waterfallHeight > 0) {
+      return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));
+    }
+    return 1.5;
+  }, [waterfallHeight]);
+
   const audio = usePianoAudio(song, { lookAheadTime });
 
   const [splitHands, setSplitHands] = useState(true);
@@ -135,7 +156,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showPreview]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden">
       {/* ... (Portrait Warning and Exit Button unchanged) ... */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
         <div className="text-4xl mb-4">↻</div>
@@ -145,7 +166,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
       <button
         onClick={onExit}
-        className="absolute top-4 left-4 z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
+        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
         aria-label="Return to Song List"
       >
         <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,6 +194,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 
                 {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
                 <div 
+                  ref={waterfallContainerRef}
                   data-testid="waterfall-container"
                   className="absolute top-0 bottom-[174px] left-[36px] right-[36px] z-40 pointer-events-none"
                 >
@@ -217,7 +239,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             unifiedColor, setUnifiedColor,
             splitStrategy, setSplitStrategy,
             splitPoint, setSplitPoint,
-            lookAheadTime, setLookAheadTime,
+            lookAheadTime, 
+            setLookAheadTime: () => {}, // Disabled manual override for now
             showGrid, setShowGrid,
             showPreview, setShowPreview
           }}
