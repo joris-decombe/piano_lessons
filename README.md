@@ -13,7 +13,7 @@ A modern, interactive piano learning application built with Next.js and Web Audi
 ## Features
 
 - **Real-time MIDI Visualization:** "Waterfall" style note rendering synchronized with high-quality audio.
-- **Smart Preview:** Visual hints for upcoming notes with configurable lookahead time (0.1s - 3.0s).
+- **16-bit Pixel Art Visuals:** Authentic "Satie-16" palette, strict pixel grid, and "Tetris" block styling.
 - **Octave Grid Lines:** Vertical guidelines at 'C' notes for better keyboard orientation.
 - **Loop & Repeat:** Practice difficult sections with integrated loop controls and visual timeline.
 - **Mobile Optimized:** Fullscreen mode (Android/iPad), PWA installation hints (iOS), and responsive landscape layout.
@@ -30,8 +30,7 @@ The application features a modern, minimalist control bar for a seamless learnin
 - **Looping:** Set custom loop points to practice specific sections repeatedly.
 - **Settings Menu:** 
   - **Speed Control:** Adjustable playback rate (0.1x to 2.0x) for practicing difficult passages.
-  - **Preview Duration:** Configure lookahead time for upcoming note hints.
-  - **Visual Customization:** Toggle split-hand coloring, customize note colors, show/hide grid lines and preview hints.
+  - **Visual Customization:** Toggle split-hand coloring, customize note colors, and show/hide grid lines.
 - **Fullscreen:** Dedicated button for an immersive, distraction-free view on supported devices.
 - **Navigation:** Top-left button to stop playback and return to the song selection screen.
 

@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 interface NameboardReflectionsProps {
     keysData: Array<{
         midi: number;
@@ -8,7 +6,7 @@ interface NameboardReflectionsProps {
         left: number;
         width: number;
     }>;
-    activeKeys: Array<{ note: string; color: string; isPreview?: boolean }>;
+    activeKeys: Array<{ note: string; color: string }>;
 }
 
 export function NameboardReflections({ keysData, activeKeys }: NameboardReflectionsProps) {
@@ -32,8 +30,8 @@ export function NameboardReflections({ keysData, activeKeys }: NameboardReflecti
                 // We can still subtly change opacity or height if active to show "movement"
                 // but keep the color neutral.
                 const activeData = getActiveData(key.note);
-                // Ignore previews for reflection animation (physical key isn't pressed)
-                if (activeData && !activeData.isPreview) {
+                
+                if (activeData) {
                     opacity = 0.8;
                     height = "4px"; // Bloom/Motion
                 }

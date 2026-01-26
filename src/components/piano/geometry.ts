@@ -56,7 +56,7 @@ export function getKeyCuts(midi: number) {
 
     // Check Right Neighbor (midi + 1)
     if (midi < 108) { // Not C8
-        const { left: nextLeft, width: nextWidth, isBlack: nextIsBlack } = getKeyPosition(midi + 1);
+        const { left: nextLeft, isBlack: nextIsBlack } = getKeyPosition(midi + 1);
         if (nextIsBlack) {
             // Overlap = Current End - Next Start
             const currentRight = currentLeft + currentWidth;

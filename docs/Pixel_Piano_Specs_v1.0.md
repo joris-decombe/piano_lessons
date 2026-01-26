@@ -55,13 +55,17 @@ Strict 16-color palette defined in `globals.css`.
 ### **3.1. Waterfall**
 *   **Behavior:** Notes stop visually at the **Top of the Visible Key** (contact line).
 *   **Clipping:** Constrained by parent container to never overlap the keys.
-*   **Style:** `opacity: 0.9`, `drop-shadow`.
+*   **Style:**
+    *   **Fill:** Solid Color with "Nested Bevel" (16-bit style).
+    *   **Border:** 1px solid black (`rgba(0,0,0,1)`).
+    *   **Bevels:** 2px nested (Inner white 90%/40%, Inner black 60%/30%).
+    *   **No Blur:** `drop-shadow` removed.
 
 ### **3.2. Keys**
 *   **Animation:** "Face Shift"
     *   **White Key:** Face height reduces (`100%` -> `calc(100% - 2px)`), revealing the Bed at the south edge.
     *   **Black Key:** Top Face moves South (`calc(100% - 10px)` -> `calc(100% - 2px)`), covering the Front Face.
-*   **Active State:** Renders a colored overlay (`opacity-40` to `60`) on the face.
+*   **Active State:** Renders a colored overlay (`opacity-50` to `60`) with **Nested Bevel** highlights.
 *   **Borders:**
     *   **Right:** `1px solid var(--color-pal-6)` (Separator).
     *   **Left:** None (to avoid double borders with neighbor).
@@ -75,7 +79,6 @@ Strict 16-color palette defined in `globals.css`.
     *   **Source:** Reflects the **Key Material** (White/Black).
     *   **Geometry:** Narrow band (`2px` Idle, `4px` Active) at the bottom edge.
     *   **Active State:** Adds a bloom (`box-shadow`) but maintains neutral color (White/Black).
-    *   **Preview:** Ignores preview notes; only reflects physical presses.
 
 ---
 

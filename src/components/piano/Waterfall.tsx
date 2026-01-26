@@ -17,10 +17,10 @@ interface WaterfallProps {
     };
     lookAheadTicks?: number;
     showGrid?: boolean;
-    showPreview?: boolean;
+    containerHeight: number; // New: Pixel height of the container
 }
 
-export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0, showGrid = true }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0, showGrid = true, containerHeight }: WaterfallProps) {
 
     const totalWidth = getTotalKeyboardWidth();
 
@@ -75,15 +75,16 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
             renderStartIdx--;
         }
 
-        const active: { id: string; left: number; width: number; bottom: string; height: string; isBlack: boolean; color: string; }[] = [];
+        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; }[] = [];
 
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
             if (note.ticks > endTime) break;
 
             if (note.ticks + note.durationTicks > currentTick) {
-                const bottomPct = ((note.ticks - currentTick) / windowSizeTicks) * 100;
-                const heightPct = (note.durationTicks / windowSizeTicks) * 100;
+                // Calculate pixel positions (Snapped to grid)
+                const bottomPx = Math.round(((note.ticks - currentTick) / windowSizeTicks) * containerHeight);
+                const heightPx = Math.round((note.durationTicks / windowSizeTicks) * containerHeight);
 
                 const { left, width, isBlack } = getKeyPosition(note.midi);
 
@@ -91,15 +92,15 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                     id: `${note.name}-${note.ticks}`,
                     left,
                     width,
-                    bottom: `${bottomPct}%`,
-                    height: `${heightPct}%`,
+                    bottom: bottomPx,
+                    height: heightPx,
                     isBlack,
                     color: note.color,
                 });
             }
         }
         return active;
-    }, [midi, currentTick, allNotes, maxDuration, lookAheadTicks]);
+    }, [midi, currentTick, allNotes, maxDuration, lookAheadTicks, containerHeight]);
 
     return (
         <div
@@ -114,8 +115,12 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                 return (
                     <div
                         key={`guide-c-${i}`}
-                        className="absolute top-0 bottom-0 w-[1px] bg-white/5 pointer-events-none z-0"
-                        style={{ left: `${left}px` }}
+                        className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-0"
+                        style={{ 
+                            left: `${left}px`,
+                            backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.2) 50%, transparent 50%)',
+                            backgroundSize: '1px 4px'
+                        }}
                     />
                 );
             })}
@@ -125,20 +130,27 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                     <div 
                         key={note.id}
                         className={twMerge(
-                            "absolute shadow-sm",
+                            "absolute",
                             note.isBlack ? "z-15" : "z-10"
                         )}
                         style={{
                             left: `${note.left}px`,
                             width: `${note.width}px`,
-                            bottom: note.bottom,
-                            height: note.height,
-                            // Pure vibrant color
-                            background: note.color, 
-                            opacity: 0.9,
-                            // Glow effect
-                            filter: `drop-shadow(0 0 2px ${note.color})`,
-                            boxShadow: `inset 0 0 0 1px rgba(255,255,255,0.2)`, // Inner highlight
+                            bottom: `${note.bottom}px`,
+                            height: `${note.height}px`,
+                            // Pixel Art: High-Contrast "Tetris" Block Style
+                            backgroundColor: note.color,
+                            // 1. Crisp Outer Border
+                            border: '1px solid rgba(0,0,0,1)',
+                            // 2. Multi-layered Nested Bevel (16-bit style)
+                            boxShadow: `
+                                inset 1px 1px 0 0 rgba(255, 255, 255, 0.9), 
+                                inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
+                                inset -1px -1px 0 0 rgba(0, 0, 0, 0.6),
+                                inset -2px -2px 0 0 rgba(0, 0, 0, 0.3)
+                            `,
+                            // Ensure crisp edges
+                            imageRendering: 'pixelated'
                         }}
                     />
                 ))}

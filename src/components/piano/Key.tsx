@@ -82,7 +82,13 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
                 >
                      {/* Active Color Overlay */}
                      {isActive && activeColor && (
-                         <div className="absolute inset-0 opacity-60" style={{ backgroundColor: activeColor }} />
+                         <div 
+                            className="absolute inset-0 opacity-60" 
+                            style={{ 
+                                backgroundColor: activeColor,
+                                boxShadow: "inset 2px 2px 0 0 rgba(255,255,255,0.4), inset -2px -2px 0 0 rgba(0,0,0,0.2)"
+                            }} 
+                         />
                      )}
                      <div className="absolute top-0 left-0 w-full h-[1px] bg-[rgba(255,255,255,0.1)]" />
                 </div>
@@ -115,7 +121,13 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
             >
                  {/* Active Color Overlay */}
                  {isActive && activeColor && (
-                     <div className="absolute inset-0 opacity-40 z-[1]" style={{ backgroundColor: activeColor }} />
+                     <div 
+                        className="absolute inset-0 opacity-50 z-[1]" 
+                        style={{ 
+                            backgroundColor: activeColor,
+                            boxShadow: "inset 2px 2px 0 0 rgba(255,255,255,0.4), inset -2px -2px 0 0 rgba(0,0,0,0.2)"
+                        }} 
+                     />
                  )}
 
                  {label && (

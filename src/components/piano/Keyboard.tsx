@@ -6,7 +6,6 @@ import { NameboardReflections } from "./NameboardReflections";
 interface KeyboardKey {
     note: string;
     color: string;
-    isPreview?: boolean;
 }
 
 interface KeyboardProps {
@@ -51,8 +50,8 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
         const target = normalize(keyNote);
         const match = activeKeys.find(k => normalize(k.note) === target);
 
-        if (!match) return { isActive: false, color: undefined, isPreview: false };
-        return { isActive: !match.isPreview, color: match.color, isPreview: match.isPreview };
+        if (!match) return { isActive: false, color: undefined };
+        return { isActive: true, color: match.color };
     };
 
     const totalKeysWidth = getTotalKeyboardWidth();

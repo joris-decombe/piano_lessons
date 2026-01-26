@@ -106,7 +106,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
   const [showGrid, setShowGrid] = useState(true);
-  const [showPreview, setShowPreview] = useState(true);
 
   // Auto-detect strategy on song load
   useEffect(() => {
@@ -116,9 +115,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     }
   }, [audio.midi]);
 
-  // Combine Active and Preview notes for visualization
+  // Combine Active notes for visualization
   const coloredKeys = useMemo(() => {
-    const activeMapping = audio.activeNotes.map(activeNote => {
+    return audio.activeNotes.map(activeNote => {
       let trackColor;
       if (splitHands) {
         if (splitStrategy === 'point') {
@@ -130,30 +129,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       } else {
         trackColor = unifiedColor;
       }
-      return { note: activeNote.note, color: trackColor, isPreview: false };
+      return { note: activeNote.note, color: trackColor };
     });
-
-    const activeNoteSet = new Set(audio.activeNotes.map(n => n.note));
-
-    const previewMapping = showPreview ? audio.previewNotes
-      .filter(n => !activeNoteSet.has(n.note))
-      .map(previewNote => {
-        let trackColor;
-        if (splitHands) {
-          if (splitStrategy === 'point') {
-            const noteNumber = Tone.Frequency(previewNote.note).toMidi();
-            trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
-          } else {
-            trackColor = previewNote.track === 0 ? rightColor : leftColor;
-          }
-        } else {
-          trackColor = unifiedColor;
-        }
-        return { note: previewNote.note, color: trackColor, isPreview: true };
-      }) : [];
-
-    return [...activeMapping, ...previewMapping];
-  }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showPreview]);
+  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
   return (
     <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden">
@@ -205,7 +183,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                         activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
                         lookAheadTicks={audio.lookAheadTicks}
                         showGrid={showGrid}
-                        showPreview={showPreview}
+                        containerHeight={waterfallHeight}
                     />
                 </div>
 
@@ -239,10 +217,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             unifiedColor, setUnifiedColor,
             splitStrategy, setSplitStrategy,
             splitPoint, setSplitPoint,
-            lookAheadTime, 
-            setLookAheadTime: () => {}, // Disabled manual override for now
-            showGrid, setShowGrid,
-            showPreview, setShowPreview
+            showGrid, setShowGrid
           }}
           songSettings={{
             songs: allSongs,
