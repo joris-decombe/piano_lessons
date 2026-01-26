@@ -7,6 +7,7 @@ import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
+import { validateFile } from "@/lib/validation";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -262,12 +263,16 @@ export default function Home() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      if (validation.error) alert(validation.error);
+      return;
+    }
 
-    if (file.name.endsWith('.xml') || file.name.endsWith('.musicxml')) {
-      try {
-        const text = await file.text();
+    try {
+      const text = await file.text();
 
-        // 1. Parse MusicXML
+      // 1. Parse MusicXML
         const parser = new MusicXMLParser();
         const score = parser.parse(text);
 
@@ -289,12 +294,9 @@ export default function Home() {
         setCurrentSong(newSong);
         setHasStarted(true);
 
-      } catch (error) {
-        console.error('Error converting MusicXML:', error);
-        alert(error instanceof Error ? error.message : 'Failed to convert file');
-      }
-    } else {
-      alert("Please upload a .xml or .musicxml file.");
+    } catch (error) {
+      console.error('Error converting MusicXML:', error);
+      alert(error instanceof Error ? error.message : 'Failed to convert file');
     }
   };
 
