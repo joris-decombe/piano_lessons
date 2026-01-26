@@ -49,7 +49,7 @@ export function getKeyCuts(midi: number) {
             // Overlap = Previous End - Current Start
             const prevRight = prevLeft + prevWidth;
             if (prevRight > currentLeft) {
-                cutLeft = (prevRight - currentLeft) + 1; // Specs v3.2: 1px Clearance
+                cutLeft = (prevRight - currentLeft) + 1; // 1px Clearance
             }
         }
     }
@@ -61,7 +61,7 @@ export function getKeyCuts(midi: number) {
             // Overlap = Current End - Next Start
             const currentRight = currentLeft + currentWidth;
             if (currentRight > nextLeft) {
-                cutRight = (currentRight - nextLeft) + 1; // Specs v3.2: 1px Clearance
+                cutRight = (currentRight - nextLeft) + 1; // 1px Clearance
             }
         }
     }

@@ -1,4 +1,4 @@
-# **Pixel Piano: Master Specifications v1.0**
+# **Pixel Piano: Master Specifications**
 
 **Status:** Live Implementation  
 **Theme:** "Satie" (Pixel Art / 2.5D Orthographic)  
