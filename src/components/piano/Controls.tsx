@@ -141,6 +141,7 @@ export function Controls({
                     <button
                         onClick={onToggleLoop}
                         aria-label="Toggle Loop"
+                        title="Toggle Loop"
                         className={`flex-shrink-0 flex items-center justify-center w-12 h-12 -mx-2 rounded-full transition-all active:scale-95 ${isLooping ? 'text-indigo-400 bg-indigo-500/10 ring-1 ring-indigo-500/50' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                     >
                         <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -152,6 +153,7 @@ export function Controls({
                             if (isLooping) onToggleLoop(); // Disable loop on reset
                         }}
                         aria-label="Return to start"
+                        title="Return to start"
                         className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
@@ -162,6 +164,7 @@ export function Controls({
                         onClick={onTogglePlay}
                         data-testid="play-button"
                         aria-label={isPlaying ? "Pause" : "Play"}
+                        title={isPlaying ? "Pause" : "Play"}
                         className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
                     >
                         {isPlaying ? (
@@ -186,6 +189,7 @@ export function Controls({
                             onClick={toggleFullscreen}
                             data-testid="fullscreen-button"
                             aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                             className="p-2 rounded-full transition-colors text-zinc-400 hover:text-white hover:bg-zinc-800"
                         >
                             {isFullscreen ? (
@@ -202,6 +206,7 @@ export function Controls({
                     <button
                         onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                         aria-label="Settings"
+                        title="Settings"
                         aria-expanded={isSettingsOpen}
                         className={`p-2 rounded-full transition-colors ${isSettingsOpen ? 'bg-zinc-800 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                     >
@@ -267,6 +272,7 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
+                                aria-valuetext={`${playbackRate.toFixed(1)}x`}
                                 className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
                             />
                         </div>
@@ -330,6 +336,8 @@ export function Controls({
                                                     max={108}
                                                     value={visualSettings.splitPoint}
                                                     onChange={(e) => visualSettings.setSplitPoint(parseInt(e.target.value))}
+                                                    aria-label="Split point"
+                                                    aria-valuetext={`${visualSettings.splitPoint} (C${Math.floor(visualSettings.splitPoint / 12) - 1})`}
                                                     className="w-full h-1 bg-zinc-700 rounded-lg appearance-none accent-indigo-500"
                                                 />
                                             </div>
