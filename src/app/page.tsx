@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
@@ -75,7 +75,28 @@ interface PianoLessonProps {
 }
 
 function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps) {
-  const [lookAheadTime, setLookAheadTime] = useState(1.5);
+  const [waterfallHeight, setWaterfallHeight] = useState(0);
+  const waterfallContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Track height for constant-speed waterfall
+  useEffect(() => {
+    if (!waterfallContainerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      setWaterfallHeight(entries[0].contentRect.height);
+    });
+    obs.observe(waterfallContainerRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Dynamic LookAhead calculation based on Height (Constant Speed)
+  // Target: 180px per second. 
+  const lookAheadTime = useMemo(() => {
+    if (waterfallHeight > 0) {
+      return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));
+    }
+    return 1.5;
+  }, [waterfallHeight]);
+
   const audio = usePianoAudio(song, { lookAheadTime });
 
   const [splitHands, setSplitHands] = useState(true);
@@ -85,7 +106,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
   const [showGrid, setShowGrid] = useState(true);
-  const [showPreview, setShowPreview] = useState(true);
 
   // Auto-detect strategy on song load
   useEffect(() => {
@@ -95,9 +115,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     }
   }, [audio.midi]);
 
-  // Combine Active and Preview notes for visualization
+  // Combine Active notes for visualization
   const coloredKeys = useMemo(() => {
-    const activeMapping = audio.activeNotes.map(activeNote => {
+    return audio.activeNotes.map(activeNote => {
       let trackColor;
       if (splitHands) {
         if (splitStrategy === 'point') {
@@ -109,33 +129,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       } else {
         trackColor = unifiedColor;
       }
-      return { note: activeNote.note, color: trackColor, isPreview: false };
+      return { note: activeNote.note, color: trackColor };
     });
-
-    const activeNoteSet = new Set(audio.activeNotes.map(n => n.note));
-
-    const previewMapping = showPreview ? audio.previewNotes
-      .filter(n => !activeNoteSet.has(n.note))
-      .map(previewNote => {
-        let trackColor;
-        if (splitHands) {
-          if (splitStrategy === 'point') {
-            const noteNumber = Tone.Frequency(previewNote.note).toMidi();
-            trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
-          } else {
-            trackColor = previewNote.track === 0 ? rightColor : leftColor;
-          }
-        } else {
-          trackColor = unifiedColor;
-        }
-        return { note: previewNote.note, color: trackColor, isPreview: true };
-      }) : [];
-
-    return [...activeMapping, ...previewMapping];
-  }, [audio.activeNotes, audio.previewNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showPreview]);
+  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-zinc-950 px-4 py-6 md:px-8 landscape:py-1 relative overflow-hidden">
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden">
       {/* ... (Portrait Warning and Exit Button unchanged) ... */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
         <div className="text-4xl mb-4">↻</div>
@@ -145,7 +144,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
       <button
         onClick={onExit}
-        className="absolute top-4 left-4 z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
+        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
         aria-label="Return to Song List"
       >
         <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,25 +159,44 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       </header>
 
       {/* Main Visual Area */}
-      <main className="relative flex-1 min-h-0 w-full flex flex-col">
-        {/* Waterfall Container */}
-        <div data-testid="waterfall-container" className="flex-1 w-full max-w-[1200px] mx-auto bg-zinc-900/50 border-x border-zinc-800 relative ">
-          <Waterfall
-            midi={audio.midi}
-            currentTick={audio.currentTick}
-            playbackRate={audio.playbackRate}
-            activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
-            lookAheadTicks={audio.lookAheadTicks}
-            showGrid={showGrid}
-            showPreview={showPreview}
-          />
-          {/* Hit Line Separator */}
-          <div className="absolute bottom-0 left-0 w-full h-[2px] bg-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.4)] z-40 pointer-events-none" />
-        </div>
+      <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--background)]">
 
-        {/* Keyboard Container */}
-        <div className="w-full shrink-0 z-50 landscape:h-auto mb-2 md:mb-4">
-          <Keyboard keys={coloredKeys} />
+        {/* Unified Scroll Container */}
+        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+
+          {/* Centered Content Wrapper */}
+          <div className="mx-auto h-full flex flex-col relative" style={{ minWidth: 'fit-content' }}>
+            
+            {/* Action Area: Waterfall flows BEHIND Keyboard */}
+            <div className="relative flex-1 flex flex-col min-h-0">
+                
+                {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
+                <div 
+                  ref={waterfallContainerRef}
+                  data-testid="waterfall-container"
+                  className="absolute top-0 bottom-[174px] left-[36px] right-[36px] z-40 pointer-events-none"
+                >
+                    <Waterfall
+                        midi={audio.midi}
+                        currentTick={audio.currentTick}
+                        playbackRate={audio.playbackRate}
+                        activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                        lookAheadTicks={audio.lookAheadTicks}
+                        showGrid={showGrid}
+                        containerHeight={waterfallHeight}
+                    />
+                </div>
+
+                {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
+                <div className="flex-1" />
+
+                {/* 3. Keyboard Layer (No Z-Index wrapper to allow interleaving) */}
+                <div className="relative shrink-0">
+                    <Keyboard keys={coloredKeys} />
+                </div>
+            </div>
+
+          </div>
         </div>
       </main>
 
@@ -199,9 +217,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             unifiedColor, setUnifiedColor,
             splitStrategy, setSplitStrategy,
             splitPoint, setSplitPoint,
-            lookAheadTime, setLookAheadTime,
-            showGrid, setShowGrid,
-            showPreview, setShowPreview
+            showGrid, setShowGrid
           }}
           songSettings={{
             songs: allSongs,

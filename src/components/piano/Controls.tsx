@@ -20,12 +20,8 @@ interface VisualSettings {
     setSplitStrategy: (val: 'tracks' | 'point') => void;
     splitPoint: number;
     setSplitPoint: (val: number) => void;
-    lookAheadTime: number;
-    setLookAheadTime: (val: number) => void;
     showGrid: boolean;
     setShowGrid: (val: boolean) => void;
-    showPreview: boolean;
-    setShowPreview: (val: boolean) => void;
 }
 
 interface Song {
@@ -277,26 +273,6 @@ export function Controls({
 
                         <div className="h-[1px] bg-white/5 w-full" />
 
-                        {/* Preview Duration */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                                <span>Preview</span>
-                                <span className="text-indigo-400">{visualSettings.lookAheadTime?.toFixed(1) || "1.5"}s</span>
-                            </div>
-                            <input
-                                type="range"
-                                min={0.1}
-                                max={3.0}
-                                step={0.1}
-                                value={visualSettings.lookAheadTime || 1.5}
-                                onChange={(e) => visualSettings.setLookAheadTime(parseFloat(e.target.value))}
-                                aria-label="Preview duration"
-                                className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
-                            />
-                        </div>
-
-                        <div className="h-[1px] bg-white/5 w-full" />
-
                         {/* Visual Settings */}
                         <div className="space-y-3">
                             <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Appearance</label>
@@ -307,16 +283,6 @@ export function Controls({
                                     type="checkbox"
                                     checked={visualSettings.showGrid}
                                     onChange={(e) => visualSettings.setShowGrid(e.target.checked)}
-                                    className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
-                                />
-                            </label>
-
-                            <label className="flex items-center justify-between cursor-pointer group">
-                                <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">Note Preview</span>
-                                <input
-                                    type="checkbox"
-                                    checked={visualSettings.showPreview}
-                                    onChange={(e) => visualSettings.setShowPreview(e.target.checked)}
                                     className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
                                 />
                             </label>

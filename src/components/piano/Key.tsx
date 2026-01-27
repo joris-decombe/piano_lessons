@@ -1,72 +1,142 @@
+
 import { twMerge } from "tailwind-merge";
 
 interface KeyProps {
-    note: string; // e.g. "C4", "Db4"
+    note: string;
     isBlack: boolean;
     isActive: boolean;
-    label?: string; // e.g. "C"
-    isPreview?: boolean;
+    isLeftNeighborActive?: boolean;
+    isRightNeighborActive?: boolean;
+    // Black Neighbor States
+    leftBlackNeighborState?: 'none' | 'idle' | 'active';
+    rightBlackNeighborState?: 'none' | 'idle' | 'active';
+    // Precise Cut Geometry (Pixels)
+    cutLeft?: number;
+    cutRight?: number;
+    label?: string;
+    activeColor?: string;
+    style?: React.CSSProperties;
 }
 
-export function Key({ note, isBlack, isActive, activeColor, label, isPreview }: KeyProps & { activeColor?: string }) {
-    // Determine beam color (default to cyan/rose if not provided, or gold fallback)
-    // Actually activeColor is passed from page.tsx (Cyan/Rose).
-    const glowColor = activeColor || (isBlack ? "#fbbf24" : "#38bdf8"); // Fallback Gold/Sky
+export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
+
+    // --- GEOMETRY & PHYSICS ---
+    // Physical dip (-1px North for white, +1px South for black)
+    const transform = isActive 
+        ? (isBlack ? "translateY(1px)" : "translateY(-1px)") 
+        : "translateY(0)";
+
+    const whiteFaceHeight = "100%";
+    const blackTopHeight = isActive ? "calc(100% - 2px)" : "calc(100% - 10px)";
+    
+    // --- SHADOWS (Hard Pixel Art) ---
+
+    // White Key Internal Depth (Cast by neighbors)
+    const getInternalShadows = () => {
+        if (isBlack || !isActive) return "none";
+        const shadows = [];
+        if (!isLeftNeighborActive) shadows.push("inset 2px 0 0 0 var(--color-pal-6)");
+        if (!isRightNeighborActive) shadows.push("inset -2px 0 0 0 var(--color-pal-6)");
+        return shadows.length > 0 ? shadows.join(", ") : "none";
+    };
+
+    // Black Key AO (Ambient Occlusion) on White Keys
+    const getAOOverlay = () => {
+        if (isBlack || isActive) return null;
+        const bands = [];
+        if (leftBlackNeighborState === 'idle') {
+            bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[2px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+        } else if (leftBlackNeighborState === 'active') {
+            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+        }
+        if (rightBlackNeighborState === 'idle') {
+             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[2px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+        } else if (rightBlackNeighborState === 'active') {
+             bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+        }
+        return bands;
+    };
+
+    const getClipPath = () => {
+        if (isBlack || (cutLeft === 0 && cutRight === 0)) return undefined;
+        const cutH = "96px"; 
+        return `polygon(${cutLeft}px 0, ${cutLeft}px ${cutH}, 0 ${cutH}, 0 100%, 100% 100%, 100% ${cutH}, calc(100% - ${cutRight}px) ${cutH}, calc(100% - ${cutRight}px) 0)`;
+    };
+    
+    if (isBlack) {
+        return (
+            <div
+                data-note={note}
+                className="absolute top-0 select-none"
+                style={{ ...style, zIndex: 25, transform }}
+            >
+                {/* 1. The Bed/Front Face (Dark Base) */}
+                <div className="absolute inset-0 bg-[var(--color-pal-2)] rounded-sm" />
+                
+                {/* 2. The Top Face */}
+                <div 
+                    className={twMerge(
+                        "absolute top-0 left-0 w-full transition-all duration-75 ease-pixel bg-[var(--color-pal-3)]",
+                    )}
+                    style={{ height: blackTopHeight }}
+                >
+                     {/* Active Color Overlay */}
+                     {isActive && activeColor && (
+                         <div 
+                            className="absolute inset-0 opacity-60" 
+                            style={{ 
+                                backgroundColor: activeColor,
+                                boxShadow: "inset 2px 2px 0 0 rgba(255,255,255,0.4), inset -2px -2px 0 0 rgba(0,0,0,0.2)"
+                            }} 
+                         />
+                     )}
+                     <div className="absolute top-0 left-0 w-full h-[1px] bg-[rgba(255,255,255,0.1)]" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
             data-note={note}
-            className={twMerge(
-                "relative flex items-end justify-center rounded-b-md transition-all duration-100 ease-out border-black/10 border origin-top",
-                isBlack
-                    ? "z-10 -mx-[0.625%] h-[60%] w-[1.25%] bg-black text-white shadow-lg"
-                    : "z-0 h-full flex-1 bg-white text-gray-500 shadow-sm",
-                isActive && isBlack && !activeColor && "bg-slate-800 scale-y-[0.99] !shadow-none border-transparent border-t-0",
-                isActive && !isBlack && !activeColor && "bg-slate-200 scale-y-[0.99] border-transparent border-t-0",
-                isActive && "border-transparent border-t-0", // Ensure custom colored active keys also lose border
-                isPreview && "border-transparent border-t-0", // Remove border for preview keys to avoid black line at top
-                "select-none"
-            )}
+            className="absolute top-0 select-none"
             style={{
-                backgroundColor: isActive && activeColor ? activeColor : undefined,
-                transform: isActive ? "scaleY(0.99)" : undefined,
-                boxShadow: isActive
-                    ? `0 0 20px ${activeColor || glowColor}, 0 0 10px ${activeColor || glowColor} inset`
-                    : undefined,
-                borderColor: undefined, // Remove border color
-                borderWidth: undefined, // Remove border width
-                // Z-Index Layering:
-                // Black Active: 40
-                // Black Inactive: 30
-                // White Active: 20
-                // White Inactive: 0
-                // This ensures Black Keys are ALWAYS above White Keys.
-                zIndex: isBlack ? (isActive ? 40 : 30) : (isActive ? 20 : 0)
+                ...style,
+                zIndex: 20,
+                backgroundColor: "var(--color-pal-0)", 
+                transform
             }}
         >
-            {/* Preview Overlay (Top Half Only) */}
-            {isPreview && (
-                <div
-                    className="absolute top-0 left-0 w-full h-[50%] pointer-events-none rounded-t-[1px]"
-                    style={{
-                        background: `linear-gradient(to bottom, ${activeColor || glowColor}80, transparent)`,
-                    }}
-                />
-            )}
+            {/* The Face */}
+            <div 
+                className={twMerge(
+                    "absolute top-0 left-0 w-full transition-all duration-75 ease-pixel bg-[var(--color-piano-white-surface)]",
+                )}
+                style={{
+                    height: whiteFaceHeight,
+                    clipPath: getClipPath(),
+                    boxShadow: getInternalShadows(), 
+                    borderRight: "1px solid var(--color-pal-6)",
+                }}
+            >
+                 {/* Active Color Overlay */}
+                 {isActive && activeColor && (
+                     <div 
+                        className="absolute inset-0 opacity-50 z-[1]" 
+                        style={{ 
+                            backgroundColor: activeColor,
+                            boxShadow: "inset 2px 2px 0 0 rgba(255,255,255,0.4), inset -2px -2px 0 0 rgba(0,0,0,0.2)"
+                        }} 
+                     />
+                 )}
 
-            {/* Laser Beam Effect */}
-            {isActive && (
-                <div
-                    className="absolute bottom-full left-0 w-full pointer-events-none"
-                    style={{
-                        height: "200px", // Shorter beam
-                        background: `linear-gradient(to top, ${activeColor || glowColor}33, transparent)`, // Lower opacity (0.2)
-                        filter: "blur(8px)", // Soften edges
-                        zIndex: -1
-                    }}
-                />
-            )}
-            {!isBlack && label && <span className="mb-2 text-xs font-semibold opacity-50">{label}</span>}
+                 {label && (
+                    <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
+                        <span className="text-[10px] font-sans text-[var(--color-pal-4)] font-bold opacity-100 block">{label}</span>
+                    </div>
+                 )}
+                 {getAOOverlay()}
+            </div>
         </div>
     );
 }

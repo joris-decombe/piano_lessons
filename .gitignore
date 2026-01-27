@@ -38,6 +38,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# gemini
+.gemini-clipboard/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/local_docs/**
