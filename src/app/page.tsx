@@ -7,6 +7,7 @@ import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
+import { validateMusicXMLFile } from "@/lib/validation";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -279,38 +280,40 @@ export default function Home() {
     if (!file) return;
 
 
-    if (file.name.endsWith('.xml') || file.name.endsWith('.musicxml')) {
-      try {
-        const text = await file.text();
+    const validation = validateMusicXMLFile(file);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
 
-        // 1. Parse MusicXML
-        const parser = new MusicXMLParser();
-        const score = parser.parse(text);
+    try {
+      const text = await file.text();
 
-        // 2. Generate MIDI
-        const generator = new MIDIGenerator();
-        const midiBase64 = generator.generate(score);
-        const midiUrl = `data:audio/midi;base64,${midiBase64}`;
+      // 1. Parse MusicXML
+      const parser = new MusicXMLParser();
+      const score = parser.parse(text);
 
-        const newSong: Song = {
-          id: `upload-${Date.now()}`,
-          title: score.title || file.name.replace(/\.(xml|musicxml)$/i, ''),
-          artist: 'Uploaded (MusicXML)',
-          url: midiUrl,
-          type: 'midi'
-        };
+      // 2. Generate MIDI
+      const generator = new MIDIGenerator();
+      const midiBase64 = generator.generate(score);
+      const midiUrl = `data:audio/midi;base64,${midiBase64}`;
 
-        setAllSongs(prev => [...prev, newSong]);
-        saveToLocalStorage(newSong);
-        setCurrentSong(newSong);
-        setHasStarted(true);
+      const newSong: Song = {
+        id: `upload-${Date.now()}`,
+        title: score.title || file.name.replace(/\.(xml|musicxml)$/i, ''),
+        artist: 'Uploaded (MusicXML)',
+        url: midiUrl,
+        type: 'midi'
+      };
 
-      } catch (error) {
-        console.error('Error converting MusicXML:', error);
-        alert(error instanceof Error ? error.message : 'Failed to convert file');
-      }
-    } else {
-      alert("Please upload a .xml or .musicxml file.");
+      setAllSongs(prev => [...prev, newSong]);
+      saveToLocalStorage(newSong);
+      setCurrentSong(newSong);
+      setHasStarted(true);
+
+    } catch (error) {
+      console.error('Error converting MusicXML:', error);
+      alert(error instanceof Error ? error.message : 'Failed to convert file');
     }
   };
 
