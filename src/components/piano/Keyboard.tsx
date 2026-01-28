@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Key } from "./Key";
 import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
-import { NameboardReflections } from "./NameboardReflections";
 
 interface KeyboardKey {
     note: string;
@@ -55,34 +54,13 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
     };
 
     const totalKeysWidth = getTotalKeyboardWidth();
-    const totalPianoWidth = 36 + totalKeysWidth + 36;
+    // Case removed: totalPianoWidth is just the keys width
+    // const totalPianoWidth = 36 + totalKeysWidth + 36; 
 
     return (
-        <div className="flex flex-col items-center bg-black select-none">
-
-            {/* 1. TOP: Nameboard & Logo (z-30) */}
-            <div 
-                className="h-8 bg-[var(--color-pal-1)] border-b-4 border-[var(--color-pal-2)] relative flex flex-row items-center justify-center z-30 overflow-hidden"
-                style={{ width: `${totalPianoWidth}px` }}
-            >
-                <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
-                {/* Reflections placeholder (removed from here) */}
-                <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full flex-shrink-0" />
-                <div className="w-[36px] h-full flex-shrink-0 bg-[var(--color-pal-1)]" />
-            </div>
-
-            {/* Global Reflection Layer (z-60) - Renders ON TOP of Waterfall and Nameboard */}
-            <div className="absolute top-0 w-full flex justify-center z-60 pointer-events-none" style={{ height: '32px' }}>
-                 <div style={{ width: `${totalKeysWidth}px` }} className="relative h-full">
-                    <NameboardReflections keysData={keysData} activeKeys={activeKeys} />
-                 </div>
-            </div>
-
-            {/* 2. MIDDLE: The Action Area */}
+        <div className="flex flex-col items-center select-none">
+            {/* The Action Area - Simplified */}
             <div className="relative z-[20] flex flex-row bg-transparent">
-
-                {/* Left Cheek Block (z-30) */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[30] border-r-2 border-[var(--color-pal-0)]" />
 
                 {/* The Keyboard Container */}
                 <div
@@ -154,17 +132,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                         );
                     })}
                 </div>
-
-                {/* Right Cheek Block (z-30) */}
-                <div className="w-[36px] h-[154px] bg-[var(--color-pal-1)] border-b-[12px] border-[var(--color-pal-2)] box-border relative z-[30] border-l-2 border-[var(--color-pal-0)]" />
-
             </div>
-
-            {/* 3. BOTTOM: Key Slip (z-60) */}
-            <div 
-                className="h-6 bg-[var(--color-pal-1)] border-t-2 border-[var(--color-pal-2)] z-[60] -mt-[4px] relative" 
-                style={{ width: `${totalPianoWidth}px` }}
-            />
 
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }

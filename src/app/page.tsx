@@ -175,7 +175,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 <div 
                   ref={waterfallContainerRef}
                   data-testid="waterfall-container"
-                  className="absolute top-0 bottom-[174px] left-[36px] right-[36px] z-40 pointer-events-none"
+                  className="absolute top-0 bottom-[150px] left-0 right-0 z-40 pointer-events-none"
                 >
                     <Waterfall
                         midi={audio.midi}
