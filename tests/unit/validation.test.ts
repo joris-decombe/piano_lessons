@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateMusicXMLFile } from '../../src/lib/validation';
+import { validateMusicXMLFile, validateSong } from '../../src/lib/validation';
 
 describe('validateMusicXMLFile', () => {
     it('should validate a correct file', () => {
@@ -38,5 +38,83 @@ describe('validateMusicXMLFile', () => {
         // @ts-expect-error Testing runtime check
         const result = validateMusicXMLFile(null);
         expect(result.valid).toBe(false);
+    });
+});
+
+describe('validateSong', () => {
+    it('should validate a correct MIDI song', () => {
+        const song = {
+            id: '1',
+            title: 'Test Song',
+            artist: 'Test Artist',
+            type: 'midi',
+            url: 'https://example.com/song.mid'
+        };
+        expect(validateSong(song)).toBe(true);
+    });
+
+    it('should validate a correct ABC song', () => {
+        const song = {
+            id: '2',
+            title: 'ABC Song',
+            artist: 'Test Artist',
+            type: 'abc',
+            abc: 'C D E F'
+        };
+        expect(validateSong(song)).toBe(true);
+    });
+
+    it('should reject missing required fields', () => {
+        expect(validateSong({ title: 'No ID' })).toBe(false);
+        expect(validateSong({ id: '1', artist: 'Artist' })).toBe(false); // Missing title
+    });
+
+    it('should reject invalid types', () => {
+        const song = {
+            id: '1',
+            title: 'Test',
+            artist: 'Test',
+            type: 'invalid'
+        };
+        expect(validateSong(song)).toBe(false);
+    });
+
+    it('should reject javascript: URLs', () => {
+        const song = {
+            id: '1',
+            title: 'Hacked',
+            artist: 'Hacker',
+            type: 'midi',
+            url: 'javascript:alert(1)'
+        };
+        expect(validateSong(song)).toBe(false);
+    });
+
+    it('should reject javascript: URLs with different casing', () => {
+        const song = {
+            id: '1',
+            title: 'Hacked',
+            artist: 'Hacker',
+            type: 'midi',
+            url: 'JavaScript:alert(1)'
+        };
+        expect(validateSong(song)).toBe(false);
+    });
+
+    it('should reject non-object inputs', () => {
+        expect(validateSong(null)).toBe(false);
+        expect(validateSong('string')).toBe(false);
+        expect(validateSong(123)).toBe(false);
+    });
+
+    it('should validate data: URLs', () => {
+         const song = {
+            id: '1',
+            title: 'Uploaded',
+            artist: 'Me',
+            type: 'midi',
+            url: 'data:audio/midi;base64,abc'
+        };
+        expect(validateSong(song)).toBe(true);
     });
 });
