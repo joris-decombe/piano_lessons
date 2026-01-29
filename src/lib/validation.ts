@@ -42,3 +42,38 @@ export function validateMusicXMLFile(file: FileLike): ValidationResult {
 
     return { valid: true };
 }
+
+export interface Song {
+    id: string;
+    title: string;
+    artist: string;
+    url?: string;
+    abc?: string;
+    type: 'midi' | 'abc';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function validateSong(song: any): song is Song {
+    if (!song || typeof song !== 'object') return false;
+
+    // Check required fields
+    if (typeof song.id !== 'string' || !song.id) return false;
+    if (typeof song.title !== 'string' || !song.title) return false;
+    if (typeof song.artist !== 'string') return false; // artist can be empty string but must be string
+    if (song.type !== 'midi' && song.type !== 'abc') return false;
+
+    // Check URL if present
+    if (song.url !== undefined) {
+        if (typeof song.url !== 'string') return false;
+        // Prevent javascript: protocol
+        // Also good to check for data: or http/https, but for now blocking javascript: is critical
+        if (song.url.trim().toLowerCase().startsWith('javascript:')) return false;
+    }
+
+    // Check ABC if present
+    if (song.abc !== undefined) {
+        if (typeof song.abc !== 'string') return false;
+    }
+
+    return true;
+}
