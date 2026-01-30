@@ -42,3 +42,42 @@ export function validateMusicXMLFile(file: FileLike): ValidationResult {
 
     return { valid: true };
 }
+
+export interface Song {
+    id: string;
+    title: string;
+    artist: string;
+    url?: string;
+    abc?: string;
+    type: 'midi' | 'abc';
+}
+
+export function validateSong(data: unknown): data is Song {
+    if (typeof data !== 'object' || data === null) return false;
+
+    // Check required fields
+    const s = data as Partial<Song>;
+
+    if (typeof s.id !== 'string' || s.id.length > 100) return false;
+    if (typeof s.title !== 'string' || s.title.length > 200) return false;
+    if (typeof s.artist !== 'string' || s.artist.length > 200) return false;
+
+    if (s.type !== 'midi' && s.type !== 'abc') return false;
+
+    // Check URL
+    if (s.url !== undefined) {
+        if (typeof s.url !== 'string') return false;
+        // 7MB max for data URIs (5MB file * 1.33 base64 overhead)
+        if (s.url.length > 7 * 1024 * 1024) return false;
+        if (s.url.trim().toLowerCase().startsWith('javascript:')) return false;
+    }
+
+    // Check ABC
+    if (s.abc !== undefined) {
+        if (typeof s.abc !== 'string') return false;
+        // 100KB for ABC notation
+        if (s.abc.length > 100 * 1024) return false;
+    }
+
+    return true;
+}
