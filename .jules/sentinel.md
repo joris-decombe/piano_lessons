@@ -7,3 +7,8 @@
 **Vulnerability:** File upload logic was tightly coupled to the DOM `File` API, making unit testing difficult and leading to weak client-side validation.
 **Learning:** Decoupling validation logic using a `FileLike` interface (name, size) allows robust unit testing without mocking DOM globals.
 **Prevention:** Always extract validation logic into pure functions accepting plain objects/interfaces rather than DOM types.
+
+## 2026-01-26 - Insecure LocalStorage Deserialization
+**Vulnerability:** Application trusted `JSON.parse(localStorage.getItem(...))` directly, allowing potential XSS via injected `javascript:` URLs in song objects.
+**Learning:** `localStorage` is not a trusted source; data persisted there can be tampered with or corrupted.
+**Prevention:** Always validate and sanitize data retrieved from client-side storage before using it in the application, especially for sensitive fields like URLs.

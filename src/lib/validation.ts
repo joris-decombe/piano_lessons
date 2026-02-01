@@ -16,6 +16,15 @@ export interface ValidationResult {
     error?: string;
 }
 
+export interface Song {
+    id: string;
+    title: string;
+    artist: string;
+    url?: string;
+    abc?: string;
+    type: 'midi' | 'abc';
+}
+
 export function validateMusicXMLFile(file: FileLike): ValidationResult {
     if (!file) {
         return { valid: false, error: "No file provided." };
@@ -41,4 +50,36 @@ export function validateMusicXMLFile(file: FileLike): ValidationResult {
     }
 
     return { valid: true };
+}
+
+export function validateSong(data: unknown): data is Song {
+    if (typeof data !== 'object' || data === null) {
+        return false;
+    }
+
+    // Cast to any to access properties safely
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const song = data as any;
+
+    // Check required string fields
+    if (typeof song.id !== 'string' || song.id.trim() === '') return false;
+    if (typeof song.title !== 'string') return false;
+    if (typeof song.artist !== 'string') return false;
+
+    // Check type enum
+    if (song.type !== 'midi' && song.type !== 'abc') return false;
+
+    // Check URL if present
+    if (song.url !== undefined) {
+        if (typeof song.url !== 'string') return false;
+        // Block javascript: protocol
+        if (song.url.trim().toLowerCase().startsWith('javascript:')) return false;
+    }
+
+    // Check ABC if present
+    if (song.abc !== undefined) {
+        if (typeof song.abc !== 'string') return false;
+    }
+
+    return true;
 }
