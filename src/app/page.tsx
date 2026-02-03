@@ -7,20 +7,10 @@ import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
-import { validateMusicXMLFile } from "@/lib/validation";
+import { validateMusicXMLFile, Song, validateSong } from "@/lib/validation";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
-
-// Song Management
-interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  url?: string;
-  abc?: string;
-  type: 'midi' | 'abc';
-}
 
 const defaultSongs: Song[] = [
   { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi' },
@@ -251,12 +241,17 @@ export default function Home() {
     try {
       const saved = localStorage.getItem('piano_lessons_uploads');
       if (saved) {
-        const uploadedSongs = JSON.parse(saved) as Song[];
-        // Deduplicate
-        const defaultIds = new Set(defaultSongs.map(s => s.id));
-        const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
-        if (newUploads.length > 0) {
-          setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Validate structure and sanitize URLs
+          const validSongs = parsed.filter(validateSong);
+
+          // Deduplicate
+          const defaultIds = new Set(defaultSongs.map(s => s.id));
+          const newUploads = validSongs.filter(u => !defaultIds.has(u.id));
+          if (newUploads.length > 0) {
+            setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
+          }
         }
       }
     } catch (e: unknown) {
