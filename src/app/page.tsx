@@ -8,6 +8,7 @@ import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
+import { calculateKeyboardScale } from "@/lib/audio-logic";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -78,6 +79,17 @@ interface PianoLessonProps {
 function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps) {
   const [waterfallHeight, setWaterfallHeight] = useState(0);
   const waterfallContainerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  // Auto-scale to fit screen width
+  useEffect(() => {
+    const updateScale = () => {
+      setScale(calculateKeyboardScale(window.innerWidth));
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
   
   // Track height for constant-speed waterfall
   useEffect(() => {
@@ -99,6 +111,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, [waterfallHeight]);
 
   const audio = usePianoAudio(song, { lookAheadTime });
+  // ... (rest of the component logic)
 
   const [splitHands, setSplitHands] = useState(true);
   const [leftColor, setLeftColor] = useState("#fb7185"); // Rose default
@@ -166,7 +179,13 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Centered Content Wrapper */}
-          <div className="mx-auto h-full flex flex-col relative" style={{ minWidth: 'fit-content' }}>
+          <div 
+            className="mx-auto h-full flex flex-col relative transition-transform duration-300 ease-out" 
+            style={{ 
+              minWidth: 'fit-content',
+              zoom: scale,
+            } as React.CSSProperties}
+          >
             
             {/* Action Area: Waterfall flows BEHIND Keyboard */}
             <div className="relative flex-1 flex flex-col min-h-0">
@@ -368,6 +387,9 @@ export default function Home() {
               try {
                 const Tone = await import('tone');
                 await Tone.start();
+                if (Tone.context.state === 'suspended') {
+                  await Tone.context.resume();
+                }
               } catch (e) {
                 console.error('Failed to start audio context:', e);
               }
