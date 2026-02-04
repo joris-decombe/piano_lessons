@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
+import { validatePlaybackRate } from "@/lib/audio-logic";
 
 export interface ActiveNote {
     note: string;
@@ -67,7 +68,13 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const activeNotesRef = useRef<Map<string, ActiveNote>>(new Map());
     const lastProcessedTickRef = useRef(0);
     const [playbackRate, setPlaybackRate] = useState(1);
+    const playbackRateRef = useRef(1);
     const baseBpmRef = useRef<number>(120);
+
+    // Keep ref in sync
+    useEffect(() => {
+        playbackRateRef.current = playbackRate;
+    }, [playbackRate]);
     // Ref to hold mutable loop state for the animation loop
     const loopStateRef = useRef({ isLooping: false, loopStartTick: 0, loopEndTick: 0 });
 
@@ -114,12 +121,13 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     useEffect(() => {
         let mounted = true;
         let part: Tone.Part | null = null;
+        let sampler: Tone.Sampler | null = null;
 
         async function init() {
             if (!source) return;
 
             // 1. Setup Sampler
-            const sampler = new Tone.Sampler({
+            sampler = new Tone.Sampler({
                 urls: {
                     A0: "A0.mp3",
                     C1: "C1.mp3",
@@ -157,6 +165,10 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             }).toDestination();
 
             await Tone.loaded();
+            if (!mounted) {
+                sampler.dispose();
+                return;
+            }
             samplerRef.current = sampler;
 
             // 2. Load MIDI or Parse ABC
@@ -175,18 +187,24 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
             const midi = new Midi(arrayBuffer);
 
-            if (!mounted) return;
+            if (!mounted) {
+                sampler.dispose();
+                return;
+            }
 
             // 3. Schedule Notes using Tone.Part & Ticks
+            // Ensure transport is stopped before modifying PPQ
+            Tone.Transport.stop();
             Tone.Transport.cancel();
 
             // Set PPQ from MIDI to match tick resolution
             Tone.Transport.PPQ = midi.header.ppq || 480;
 
             // Get initial BPM from MIDI or default
-            const initialBpm = midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 60;
+            const initialBpm = midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 120;
             baseBpmRef.current = initialBpm;
-            Tone.Transport.bpm.value = initialBpm;
+            // Apply current playback rate to the initial BPM
+            Tone.Transport.bpm.value = initialBpm * playbackRateRef.current;
 
             const notes: NoteEvent[] = [];
             midi.tracks.forEach((track) => {
@@ -209,7 +227,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     if (!value.duration || value.duration <= 0) {
                         return;
                     }
-                    sampler.triggerAttackRelease(
+                    samplerRef.current?.triggerAttackRelease(
                         value.note,
                         value.duration,
                         time,
@@ -242,8 +260,6 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             timelineKeysRef.current = Array.from(timeline.keys()).sort((a, b) => a - b);
 
 
-            // Loop adjustment? No, user wants linear play.
-
             setState((prev) => ({
                 ...prev,
                 isLoaded: true,
@@ -264,7 +280,14 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
         return () => {
             mounted = false;
-            if (part) part.dispose();
+            if (part) {
+                part.stop();
+                part.dispose();
+            }
+            if (sampler) {
+                sampler.releaseAll();
+                sampler.dispose();
+            }
             Tone.Transport.stop();
             Tone.Transport.cancel();
             Tone.Transport.seconds = 0;
@@ -476,8 +499,9 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     };
 
     const changeSpeed = (rate: number) => {
-        setPlaybackRate(rate);
-        Tone.Transport.bpm.value = baseBpmRef.current * rate;
+        const validatedRate = validatePlaybackRate(rate);
+        setPlaybackRate(validatedRate);
+        Tone.Transport.bpm.value = baseBpmRef.current * validatedRate;
     };
 
     const toggleLoop = () => {
