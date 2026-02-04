@@ -1,6 +1,11 @@
 import { XMLParser } from 'fast-xml-parser';
 import { ParsedScore, ParsedTrack, NoteEvent } from './types';
 
+// Security Limits to prevent DoS
+const MAX_MEASURES = 2000;
+const MAX_EVENTS = 30000;
+const MAX_TITLE_LENGTH = 256;
+
 export class MusicXMLParser {
     private parser: XMLParser;
 
@@ -20,7 +25,10 @@ export class MusicXMLParser {
             throw new Error("Invalid MusicXML: Missing score-partwise element");
         }
 
-        const title = scorePartwise['work']?.['work-title'] || "Untitled";
+        let title = scorePartwise['work']?.['work-title'] || "Untitled";
+        if (title.length > MAX_TITLE_LENGTH) {
+            title = title.substring(0, MAX_TITLE_LENGTH);
+        }
 
         // Basic metadata extraction (simplified)
         // TODO: Extract global tempo and time signature from the first measure of the first part if possible
@@ -50,6 +58,10 @@ export class MusicXMLParser {
             const measures = Array.isArray(part['measure'])
                 ? part['measure']
                 : [part['measure']];
+
+            if (measures.length > MAX_MEASURES) {
+                throw new Error(`File too large: Exceeds ${MAX_MEASURES} measures.`);
+            }
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             measures.forEach((measure: any) => {
@@ -123,6 +135,10 @@ export class MusicXMLParser {
                     }
 
                     if (!isRest) {
+                        if (events.length >= MAX_EVENTS) {
+                            throw new Error(`File too complex: Exceeds ${MAX_EVENTS} notes.`);
+                        }
+
                         // Extract Pitch
                         let pitch = "C4";
                         if (note['pitch']) {

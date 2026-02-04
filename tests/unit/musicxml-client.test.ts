@@ -74,4 +74,26 @@ describe('Client-Side MusicXML Conversion', () => {
         // Basic check for MIDI header MThd (Base64 'TVRoZA' start)
         expect(base64.startsWith('TVRoZA')).toBe(true);
     });
+
+    it('should reject files exceeding measure limits', () => {
+        const parser = new MusicXMLParser();
+        // Construct a huge XML manually
+        let measures = '';
+        // Create 2001 measures (Limit is 2000)
+        for (let i = 0; i < 2001; i++) {
+            measures += `<measure number="${i + 1}"><note><rest/><duration>24</duration></note></measure>`;
+        }
+
+        const HUGE_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+  <part-list>
+    <score-part id="P1"><part-name>P1</part-name></score-part>
+  </part-list>
+  <part id="P1">
+    ${measures}
+  </part>
+</score-partwise>`;
+
+        expect(() => parser.parse(HUGE_XML)).toThrow(/Exceeds 2000 measures/);
+    });
 });
