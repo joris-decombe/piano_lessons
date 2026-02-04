@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { formatTime } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
+import { useTouchDevice } from "@/hooks/useTouchDevice";
 import { Timeline } from "./Timeline";
 
 // ... (interfaces remain same)
@@ -76,6 +77,7 @@ export function Controls({
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
     const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
+    const isTouch = useTouchDevice();
 
     // Load persisted songs on mount
     useEffect(() => {
@@ -106,10 +108,10 @@ export function Controls({
         <div className="relative w-full">
 
             {/* Minimalist Control Bar */}
-            <div className="relative w-full bg-zinc-900/90 backdrop-blur-md rounded-full border border-zinc-700/50 px-4 py-2 shadow-xl flex items-center justify-between gap-4 h-[56px] md:h-[64px]">
+            <div className={`relative w-full bg-zinc-900/90 backdrop-blur-md rounded-full border border-zinc-700/50 px-4 py-2 shadow-xl flex items-center justify-between gap-4 ${isTouch ? 'h-[72px] md:h-[80px]' : 'h-[56px] md:h-[64px]'}`}>
 
                 {/* Timeline Area (Elevated when looping to avoid overlap) */}
-                <div className={`absolute top-0 left-4 right-4 w-auto transition-all duration-300 ease-out z-10 ${isLooping ? '-mt-[26px]' : '-mt-[10px]'}`}>
+                <div className={`absolute top-0 left-4 right-4 w-auto transition-all duration-300 ease-out z-10 ${isLooping ? (isTouch ? '-mt-[32px]' : '-mt-[26px]') : '-mt-[10px]'}`}>
                     <Timeline
                         currentTime={currentTime}
                         duration={duration}
@@ -135,15 +137,14 @@ export function Controls({
                     </span>
                 </div>
 
-                {/* Center: Play/Pause */}
                 {/* Center: Play/Pause & Rewind */}
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onToggleLoop}
                         aria-label="Toggle Loop"
-                        className={`flex-shrink-0 flex items-center justify-center w-12 h-12 -mx-2 rounded-full transition-all active:scale-95 ${isLooping ? 'text-indigo-400 bg-indigo-500/10 ring-1 ring-indigo-500/50' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                        className={`flex-shrink-0 flex items-center justify-center -mx-2 rounded-full transition-all active:scale-95 ${isLooping ? 'text-indigo-400 bg-indigo-500/10 ring-1 ring-indigo-500/50' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'} ${isTouch ? 'w-14 h-14' : 'w-12 h-12'}`}
                     >
-                        <svg className="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        <svg className={`${isTouch ? 'w-6 h-6' : 'w-5 h-5'} pointer-events-none`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
 
                     <button
@@ -152,9 +153,9 @@ export function Controls({
                             if (isLooping) onToggleLoop(); // Disable loop on reset
                         }}
                         aria-label="Return to start"
-                        className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
+                        className={`flex-shrink-0 flex items-center justify-center rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95 ${isTouch ? 'w-12 h-12' : 'w-10 h-10 md:w-12 md:h-12'}`}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`${isTouch ? 'w-6 h-6' : 'w-5 h-5 md:w-6 md:h-6'}`}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                         </svg>
                     </button>
@@ -162,14 +163,14 @@ export function Controls({
                         onClick={onTogglePlay}
                         data-testid="play-button"
                         aria-label={isPlaying ? "Pause" : "Play"}
-                        className="flex-shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
+                        className={`flex-shrink-0 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95 ${isTouch ? 'w-14 h-14' : 'w-10 h-10 md:w-12 md:h-12'}`}
                     >
                         {isPlaying ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`${isTouch ? 'w-7 h-7' : 'w-5 h-5 md:w-6 md:h-6'}`}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                             </svg>
                         ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 md:w-6 md:h-6 ml-0.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`${isTouch ? 'w-7 h-7' : 'w-5 h-5 md:w-6 md:h-6 ml-0.5'}`}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
                             </svg>
                         )}
@@ -186,7 +187,7 @@ export function Controls({
                             onClick={toggleFullscreen}
                             data-testid="fullscreen-button"
                             aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                            className="p-2 rounded-full transition-colors text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            className={`p-2 rounded-full transition-colors text-zinc-400 hover:text-white hover:bg-zinc-800 ${isTouch ? 'scale-125 mx-1' : ''}`}
                         >
                             {isFullscreen ? (
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,7 +204,7 @@ export function Controls({
                         onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                         aria-label="Settings"
                         aria-expanded={isSettingsOpen}
-                        className={`p-2 rounded-full transition-colors ${isSettingsOpen ? 'bg-zinc-800 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                        className={`p-2 rounded-full transition-colors ${isSettingsOpen ? 'bg-zinc-800 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'} ${isTouch ? 'scale-125 ml-1' : ''}`}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
@@ -267,7 +268,7 @@ export function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
-                                className="w-full cursor-pointer h-4 md:h-2 bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none"
+                                className={`w-full cursor-pointer bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none ${isTouch ? 'h-4' : 'h-2'}`}
                             />
                         </div>
 

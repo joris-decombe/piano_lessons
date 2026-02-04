@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { formatTime } from "@/lib/utils";
+import { useTouchDevice } from "@/hooks/useTouchDevice";
 
 interface TimelineProps {
     currentTime: number;
@@ -22,6 +23,7 @@ export function Timeline({
 }: TimelineProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState<'start' | 'end' | 'seek' | null>(null);
+    const isTouch = useTouchDevice();
 
     // Ensure loop points are valid
     const safeStart = Math.max(0, loopStart);
@@ -82,10 +84,10 @@ export function Timeline({
     return (
         <div
             ref={containerRef}
-            className={`relative w-full group select-none ${isLooping ? 'h-8 mt-2 mb-1' : 'h-[2px] -mt-[1px] hover:h-2 transition-all'}`}
+            className={`relative w-full group select-none ${isLooping ? (isTouch ? 'h-10 mt-3 mb-2' : 'h-8 mt-2 mb-1') : 'h-[2px] -mt-[1px] hover:h-2 transition-all'}`}
         >
             {/* Background Track */}
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-zinc-700/50 rounded-full overflow-hidden">
+            <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 bg-zinc-700/50 rounded-full overflow-hidden ${isTouch ? 'h-2' : 'h-1'}`}>
                 {/* Loop Region Highlight */}
                 {isLooping && (
                     <div
@@ -100,7 +102,7 @@ export function Timeline({
                 className="absolute inset-y-0 left-0 bg-indigo-500 rounded-full pointer-events-none"
                 style={{
                     top: isLooping ? '50%' : '0',
-                    height: isLooping ? '4px' : '100%',
+                    height: isLooping ? (isTouch ? '8px' : '4px') : '100%',
                     transform: isLooping ? 'translateY(-50%)' : 'none',
                     width: `${progressPercent}%`
                 }}
@@ -111,12 +113,12 @@ export function Timeline({
                 <>
                     {/* Start Handle */}
                     <div
-                        className="absolute top-1/2 -translate-y-1/2 w-4 h-8 cursor-ew-resize group/start z-20 flex items-center justify-center -ml-2 hover:scale-110 transition-transform"
+                        className={`absolute top-1/2 -translate-y-1/2 cursor-ew-resize group/start z-20 flex items-center justify-center -ml-2 hover:scale-110 transition-transform ${isTouch ? 'w-8 h-12' : 'w-4 h-8'}`}
                         style={{ left: `${loopStartPercent}%` }}
                         onMouseDown={(e) => handleInteraction(e, 'start')}
                         onTouchStart={(e) => handleInteraction(e, 'start')}
                     >
-                        <div className="w-1 h-4 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)]" />
+                        <div className={`bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)] ${isTouch ? 'w-2 h-6' : 'w-1 h-4'}`} />
                         {/* Time Tooltip */}
                         <div className="absolute bottom-full mb-1 text-[10px] bg-zinc-800 text-white px-1 rounded opacity-0 group-hover/start:opacity-100 pointer-events-none whitespace-nowrap">
                             {formatTime(safeStart)}
@@ -125,12 +127,12 @@ export function Timeline({
 
                     {/* End Handle */}
                     <div
-                        className="absolute top-1/2 -translate-y-1/2 w-4 h-8 cursor-ew-resize group/end z-20 -ml-2 flex items-center justify-center hover:scale-110 transition-transform"
+                        className={`absolute top-1/2 -translate-y-1/2 cursor-ew-resize group/end z-20 -ml-2 flex items-center justify-center hover:scale-110 transition-transform ${isTouch ? 'w-8 h-12' : 'w-4 h-8'}`}
                         style={{ left: `${loopEndPercent}%` }}
                         onMouseDown={(e) => handleInteraction(e, 'end')}
                         onTouchStart={(e) => handleInteraction(e, 'end')}
                     >
-                        <div className="w-1 h-4 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)]" />
+                        <div className={`bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)] ${isTouch ? 'w-2 h-6' : 'w-1 h-4'}`} />
                         <div className="absolute bottom-full mb-1 text-[10px] bg-zinc-800 text-white px-1 rounded opacity-0 group-hover/end:opacity-100 pointer-events-none whitespace-nowrap">
                             {formatTime(safeEnd)}
                         </div>
