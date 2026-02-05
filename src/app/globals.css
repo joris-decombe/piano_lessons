@@ -3,61 +3,142 @@
 
 @import "tailwindcss";
 
+/* ============================================
+   THEME SYSTEM - 3 Pixel Art Color Themes
+   ============================================ */
+
 :root {
-  --background: #000000;
+  /* Default to cool theme */
+  --background: #0a0a0f;
   --foreground: #E2E4E9;
+}
+
+/* --- COOL THEME (Cyber/Neon) --- */
+:root, [data-theme="cool"] {
+  /* Voids & Darks */
+  --color-void: #0a0a0f;
+  --color-bg: #12121a;
+  --color-surface: #1a1a24;
+  --color-elevated: #22222e;
+
+  /* Neutrals */
+  --color-border: #3a3a4a;
+  --color-muted: #5a5a6a;
+  --color-subtle: #8a8a9a;
+  --color-text: #cacad4;
+  --color-text-bright: #eaeaf0;
+
+  /* Piano Keys */
+  --color-key-white: #d8dae0;
+  --color-key-white-hi: #eaecf0;
+  --color-key-white-lo: #a8aab0;
+  --color-key-black: #2a2a34;
+  --color-key-black-hi: #3a3a44;
+  --color-key-black-lo: #1a1a24;
+
+  /* Accents */
+  --color-accent-primary: #38bdf8;    /* Cyan */
+  --color-accent-secondary: #fb7185;  /* Rose */
+  --color-accent-tertiary: #a78bfa;   /* Purple */
+  --color-ui-active: #6366f1;         /* Indigo */
+
+  /* Note Colors (Left/Right hands) */
+  --color-note-left: #fb7185;
+  --color-note-right: #38bdf8;
+  --color-note-unified: #a78bfa;
+}
+
+/* --- WARM THEME (Vintage/Sepia) --- */
+[data-theme="warm"] {
+  /* Voids & Darks */
+  --color-void: #0f0a06;
+  --color-bg: #1a140e;
+  --color-surface: #2a2018;
+  --color-elevated: #3a2e22;
+
+  /* Neutrals */
+  --color-border: #5a4a3a;
+  --color-muted: #7a6a5a;
+  --color-subtle: #9a8a7a;
+  --color-text: #d4c8b8;
+  --color-text-bright: #f0e8dc;
+
+  /* Piano Keys - Ivory & Ebony */
+  --color-key-white: #f5f0e0;
+  --color-key-white-hi: #fffbf0;
+  --color-key-white-lo: #c8c0a8;
+  --color-key-black: #1a1810;
+  --color-key-black-hi: #2a2820;
+  --color-key-black-lo: #0a0806;
+
+  /* Accents */
+  --color-accent-primary: #f59e0b;    /* Amber */
+  --color-accent-secondary: #ef4444;  /* Red */
+  --color-accent-tertiary: #d97706;   /* Orange */
+  --color-ui-active: #b45309;         /* Amber dark */
+
+  /* Note Colors */
+  --color-note-left: #ef4444;
+  --color-note-right: #f59e0b;
+  --color-note-unified: #fbbf24;
+}
+
+/* --- MONO THEME (Terminal/Minimal) --- */
+[data-theme="mono"] {
+  /* Voids & Darks - Pure blacks */
+  --color-void: #000000;
+  --color-bg: #0a0a0a;
+  --color-surface: #141414;
+  --color-elevated: #1e1e1e;
+
+  /* Neutrals - Grayscale */
+  --color-border: #333333;
+  --color-muted: #555555;
+  --color-subtle: #777777;
+  --color-text: #aaaaaa;
+  --color-text-bright: #dddddd;
+
+  /* Piano Keys - High contrast B&W */
+  --color-key-white: #e0e0e0;
+  --color-key-white-hi: #f0f0f0;
+  --color-key-white-lo: #a0a0a0;
+  --color-key-black: #1a1a1a;
+  --color-key-black-hi: #2a2a2a;
+  --color-key-black-lo: #0a0a0a;
+
+  /* Accents - Phosphor green (like old CRTs) */
+  --color-accent-primary: #22c55e;    /* Green */
+  --color-accent-secondary: #22c55e;  /* Same green */
+  --color-accent-tertiary: #16a34a;   /* Darker green */
+  --color-ui-active: #15803d;         /* Even darker */
+
+  /* Note Colors - All green */
+  --color-note-left: #4ade80;
+  --color-note-right: #22c55e;
+  --color-note-unified: #22c55e;
 }
 
 /* stylelint-disable-next-line at-rule-no-unknown */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-void);
+  --color-foreground: var(--color-text);
   --font-sans: "Pixelify Sans", system-ui, sans-serif;
   --font-mono: "Pixelify Sans", monospace;
 
-  /* --- Satie-16 Pixel Palette --- */
-  
-  /* 0-3: Voids & Darks */
-  --color-pal-0: #000000; /* Pure Void */
-  --color-pal-1: #111827; /* Gray 900 (Frame Bed) */
-  --color-pal-2: #1F2937; /* Gray 800 (Black Key Face) */
-  --color-pal-3: #374151; /* Gray 700 (Black Key Highlight) */
-  
-  /* 4-7: Mids */
-  --color-pal-4: #4B5563; /* Gray 600 (Labels/Outlines) */
-  --color-pal-5: #6B7280; /* Gray 500 */
-  --color-pal-6: #9CA3AF; /* Gray 400 (White Key Shadow) */
-  --color-pal-7: #D1D5DB; /* Gray 300 (White Key Pressed) */
+  /* --- Semantic Mappings (use theme vars) --- */
+  --color-piano-void: var(--color-void);
+  --color-piano-bg: var(--color-bg);
+  --color-piano-frame-dark: var(--color-void);
+  --color-piano-frame-light: var(--color-surface);
 
-  /* 8-11: Lights */
-  --color-pal-8: #E2E4E9; /* Cool Gray 200 (White Key Face) */
-  --color-pal-9: #F3F4F6; /* Gray 100 (Highlights) */
-  --color-pal-10: #FFFFFF; /* Pure White */
-  
-  /* 12-15: Accents */
-  --color-pal-12: #9F1239; /* Rose 800 (Felt) */
-  --color-pal-13: #E11D48; /* Rose 600 */
-  --color-pal-14: #0284C7; /* Sky 600 (Waterfall Dark) */
-  --color-pal-15: #38BDF8; /* Sky 400 (Waterfall Light) */
+  --color-piano-black-bed: var(--color-key-black-lo);
+  --color-piano-black-face: var(--color-key-black);
+  --color-piano-black-highlight: var(--color-key-black-hi);
 
-  /* --- Semantic Mappings --- */
-  --color-piano-void: var(--color-pal-0);
-  --color-piano-bg: var(--color-pal-1); /* Frame Main */
-  --color-piano-frame-dark: var(--color-pal-0);
-  --color-piano-frame-light: var(--color-pal-2);
-
-  --color-piano-black-bed: var(--color-pal-0);
-  --color-piano-black-face: var(--color-pal-2);
-  --color-piano-black-highlight: var(--color-pal-3);
-
-  --color-piano-white-surface: var(--color-pal-8);
-  --color-piano-white-pressed: var(--color-pal-7);
-  --color-piano-white-shadow: var(--color-pal-6);
-  --color-piano-white-highlight: var(--color-pal-9);
-
-  --color-piano-felt: var(--color-pal-12);
-  --color-piano-accent: var(--color-pal-15);
-  --color-piano-accent-dim: var(--color-pal-14);
+  --color-piano-white-surface: var(--color-key-white);
+  --color-piano-white-pressed: var(--color-key-white-lo);
+  --color-piano-white-shadow: var(--color-key-white-lo);
+  --color-piano-white-highlight: var(--color-key-white-hi);
 
   /* --- Spacing --- */
   --spacing-key-w: 24px;
@@ -65,12 +146,19 @@
   --spacing-black-w: 14px;
   --spacing-black-h: 96px;
 
-  /* --- Styles --- */
-  /* Hard shadow for separators - NO BLUR */
-  --shadow-hard: 1px 0 0 0 var(--color-pal-6);
-  --shadow-hard-inset: inset 0 -1px 0 0 var(--color-pal-6);
+  /* --- Pixel Art Shadows --- */
 
-  /* Pixel Art Bevel Shadows (16-bit Tetris style) */
+  /* Raised button/panel bevel (light top-left, dark bottom-right) */
+  --shadow-bevel-raised:
+    inset 2px 2px 0 0 var(--color-key-white-hi),
+    inset -2px -2px 0 0 var(--color-border);
+
+  /* Pressed/inset bevel */
+  --shadow-bevel-pressed:
+    inset 2px 2px 0 0 var(--color-border),
+    inset -2px -2px 0 0 var(--color-key-white-hi);
+
+  /* Note blocks (Tetris style) */
   --shadow-bevel-note:
     inset 1px 1px 0 0 rgba(255, 255, 255, 0.9),
     inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
@@ -83,11 +171,14 @@
     inset -2px -2px 0 0 rgba(0, 0, 0, 0.2);
 
   /* White key neighbor shadows (when pressed) */
-  --shadow-key-left: inset 2px 0 0 0 var(--color-pal-6);
-  --shadow-key-right: inset -2px 0 0 0 var(--color-pal-6);
+  --shadow-key-left: inset 2px 0 0 0 var(--color-key-white-lo);
+  --shadow-key-right: inset -2px 0 0 0 var(--color-key-white-lo);
+
+  /* Hard shadow for separators */
+  --shadow-hard: 1px 0 0 0 var(--color-border);
+  --shadow-hard-inset: inset 0 -1px 0 0 var(--color-border);
 
   /* Animations */
-  /* Snappy "Press" - instant or very fast */
   --ease-pixel: cubic-bezier(0, 0, 0, 1);
 }
 
@@ -101,8 +192,8 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-void);
+  color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: grayscale;
@@ -114,15 +205,77 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Pixel Art Utilities */
-.pixel-dither {
-  mask-image: url("data:image/svg+xml,%3Csvg width='2' height='2' viewBox='0 0 2 2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 0v1h1V0H1zm-1 1v1h1V1H0z' fill-rule='evenodd'/%3E%3C/svg%3E");
-  mask-repeat: repeat;
-  mask-size: 4px; /* Scaled up for visibility */
+/* ============================================
+   PIXEL ART UI COMPONENTS
+   ============================================ */
+
+/* Raised panel (like Windows 95 buttons) */
+.pixel-panel {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-elevated),
+    inset -1px -1px 0 0 var(--color-void);
 }
 
-.pixel-border {
-  box-shadow: 
-    inset 1px 1px 0 0 rgba(255, 255, 255, 0.4),
-    inset -1px -1px 0 0 rgba(0, 0, 0, 0.4);
+/* Raised button */
+.pixel-btn {
+  background: var(--color-surface);
+  border: 2px solid transparent;
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-text),
+    inset -1px -1px 0 0 var(--color-void),
+    1px 1px 0 0 var(--color-void);
+  transition: none;
 }
+
+.pixel-btn:hover {
+  background: var(--color-elevated);
+}
+
+.pixel-btn:active {
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-void),
+    inset -1px -1px 0 0 var(--color-text);
+}
+
+/* Primary action button (colored) */
+.pixel-btn-primary {
+  background: var(--color-ui-active);
+  color: var(--color-text-bright);
+  border: 2px solid transparent;
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-accent-primary),
+    inset -1px -1px 0 0 var(--color-void),
+    1px 1px 0 0 var(--color-void);
+}
+
+.pixel-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.pixel-btn-primary:active {
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-void),
+    inset -1px -1px 0 0 var(--color-accent-primary);
+}
+
+/* Inset/pressed area */
+.pixel-inset {
+  background: var(--color-void);
+  border: 2px solid transparent;
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-border),
+    inset -1px -1px 0 0 var(--color-elevated);
+}
+
+/* Divider line */
+.pixel-divider {
+  height: 2px;
+  background: linear-gradient(to bottom, var(--color-border) 50%, var(--color-elevated) 50%);
+}
+
+/* Text styles */
+.pixel-text-muted { color: var(--color-muted); }
+.pixel-text-subtle { color: var(--color-subtle); }
+.pixel-text-accent { color: var(--color-accent-primary); }

@@ -84,27 +84,39 @@ export function Timeline({
     return (
         <div
             ref={containerRef}
-            className={`relative w-full group select-none ${isLooping ? (isTouch ? 'h-10 mt-3 mb-2' : 'h-8 mt-2 mb-1') : 'h-[2px] -mt-[1px] hover:h-2 transition-all'}`}
+            className={`relative w-full group select-none ${isLooping ? (isTouch ? 'h-10 mt-3 mb-2' : 'h-8 mt-2 mb-1') : 'h-[2px] -mt-[1px] hover:h-2'}`}
         >
-            {/* Background Track */}
-            <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 bg-zinc-700/50 rounded-full overflow-hidden ${isTouch ? 'h-2' : 'h-1'}`}>
+            {/* Background Track - Pixel inset style */}
+            <div
+                className={`absolute inset-x-0 top-1/2 -translate-y-1/2 overflow-hidden ${isTouch ? 'h-2' : 'h-1'}`}
+                style={{
+                    backgroundColor: 'var(--color-void)',
+                    boxShadow: 'inset 1px 1px 0 0 var(--color-border)'
+                }}
+            >
                 {/* Loop Region Highlight */}
                 {isLooping && (
                     <div
-                        className="absolute top-0 h-full bg-indigo-500/20"
-                        style={{ left: `${loopStartPercent}%`, width: `${loopEndPercent - loopStartPercent}%` }}
+                        className="absolute top-0 h-full"
+                        style={{
+                            left: `${loopStartPercent}%`,
+                            width: `${loopEndPercent - loopStartPercent}%`,
+                            backgroundColor: 'var(--color-ui-active)',
+                            opacity: 0.3
+                        }}
                     />
                 )}
             </div>
 
             {/* Progress Fill */}
             <div
-                className="absolute inset-y-0 left-0 bg-indigo-500 rounded-full pointer-events-none"
+                className="absolute inset-y-0 left-0 pointer-events-none"
                 style={{
                     top: isLooping ? '50%' : '0',
                     height: isLooping ? (isTouch ? '8px' : '4px') : '100%',
                     transform: isLooping ? 'translateY(-50%)' : 'none',
-                    width: `${progressPercent}%`
+                    width: `${progressPercent}%`,
+                    backgroundColor: 'var(--color-accent-primary)'
                 }}
             />
 
@@ -113,27 +125,47 @@ export function Timeline({
                 <>
                     {/* Start Handle */}
                     <div
-                        className={`absolute top-1/2 -translate-y-1/2 cursor-ew-resize group/start z-20 flex items-center justify-center -ml-2 hover:scale-110 transition-transform ${isTouch ? 'w-8 h-12' : 'w-4 h-8'}`}
+                        className={`absolute top-1/2 -translate-y-1/2 cursor-ew-resize group/start z-20 flex items-center justify-center -ml-2 ${isTouch ? 'w-8 h-12' : 'w-4 h-8'}`}
                         style={{ left: `${loopStartPercent}%` }}
                         onMouseDown={(e) => handleInteraction(e, 'start')}
                         onTouchStart={(e) => handleInteraction(e, 'start')}
                     >
-                        <div className={`bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)] ${isTouch ? 'w-2 h-6' : 'w-1 h-4'}`} />
+                        <div
+                            className={`${isTouch ? 'w-2 h-6' : 'w-1 h-4'}`}
+                            style={{ backgroundColor: 'var(--color-accent-primary)' }}
+                        />
                         {/* Time Tooltip */}
-                        <div className="absolute bottom-full mb-1 text-[10px] bg-zinc-800 text-white px-1 rounded opacity-0 group-hover/start:opacity-100 pointer-events-none whitespace-nowrap">
+                        <div
+                            className="absolute bottom-full mb-1 text-[10px] px-1 opacity-0 group-hover/start:opacity-100 pointer-events-none whitespace-nowrap"
+                            style={{
+                                backgroundColor: 'var(--color-surface)',
+                                color: 'var(--color-text)',
+                                border: '1px solid var(--color-border)'
+                            }}
+                        >
                             {formatTime(safeStart)}
                         </div>
                     </div>
 
                     {/* End Handle */}
                     <div
-                        className={`absolute top-1/2 -translate-y-1/2 cursor-ew-resize group/end z-20 -ml-2 flex items-center justify-center hover:scale-110 transition-transform ${isTouch ? 'w-8 h-12' : 'w-4 h-8'}`}
+                        className={`absolute top-1/2 -translate-y-1/2 cursor-ew-resize group/end z-20 -ml-2 flex items-center justify-center ${isTouch ? 'w-8 h-12' : 'w-4 h-8'}`}
                         style={{ left: `${loopEndPercent}%` }}
                         onMouseDown={(e) => handleInteraction(e, 'end')}
                         onTouchStart={(e) => handleInteraction(e, 'end')}
                     >
-                        <div className={`bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(129,140,248,0.5)] ${isTouch ? 'w-2 h-6' : 'w-1 h-4'}`} />
-                        <div className="absolute bottom-full mb-1 text-[10px] bg-zinc-800 text-white px-1 rounded opacity-0 group-hover/end:opacity-100 pointer-events-none whitespace-nowrap">
+                        <div
+                            className={`${isTouch ? 'w-2 h-6' : 'w-1 h-4'}`}
+                            style={{ backgroundColor: 'var(--color-accent-primary)' }}
+                        />
+                        <div
+                            className="absolute bottom-full mb-1 text-[10px] px-1 opacity-0 group-hover/end:opacity-100 pointer-events-none whitespace-nowrap"
+                            style={{
+                                backgroundColor: 'var(--color-surface)',
+                                color: 'var(--color-text)',
+                                border: '1px solid var(--color-border)'
+                            }}
+                        >
                             {formatTime(safeEnd)}
                         </div>
                     </div>
