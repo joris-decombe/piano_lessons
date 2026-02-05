@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Midi } from "@tonejs/midi";
 import { twMerge } from "tailwind-merge";
 import { getKeyPosition, getTotalKeyboardWidth } from "./geometry";
+import { getColorByTrack } from "@/lib/note-colors";
 
 interface WaterfallProps {
     midi: Midi | null;
@@ -29,10 +30,11 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
         const notes: { ticks: number; durationTicks: number; midi: number; name: string; color: string; }[] = [];
         let maxDur = 0;
 
+        const colors = activeColors ?? { split: true, left: "#fb7185", right: "#22d3ee", unified: "#fbbf24" };
+
         midi.tracks.forEach((track, trackIndex) => {
             if (track.notes.length === 0 || track.instrument.percussion) return;
-            let noteColor = trackIndex === 0 ? activeColors?.right || "#22d3ee" : activeColors?.left || "#fb7185";
-            if (activeColors && !activeColors.split) noteColor = activeColors.unified;
+            const noteColor = getColorByTrack(trackIndex, colors);
 
             track.notes.forEach(note => {
                 if (note.durationTicks > maxDur) maxDur = note.durationTicks;
@@ -138,18 +140,9 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                             width: `${note.width}px`,
                             bottom: `${note.bottom}px`,
                             height: `${note.height}px`,
-                            // Pixel Art: High-Contrast "Tetris" Block Style
                             backgroundColor: note.color,
-                            // 1. Crisp Outer Border
                             border: '1px solid rgba(0,0,0,1)',
-                            // 2. Multi-layered Nested Bevel (16-bit style)
-                            boxShadow: `
-                                inset 1px 1px 0 0 rgba(255, 255, 255, 0.9), 
-                                inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
-                                inset -1px -1px 0 0 rgba(0, 0, 0, 0.6),
-                                inset -2px -2px 0 0 rgba(0, 0, 0, 0.3)
-                            `,
-                            // Ensure crisp edges
+                            boxShadow: 'var(--shadow-bevel-note)',
                             imageRendering: 'pixelated'
                         }}
                     />

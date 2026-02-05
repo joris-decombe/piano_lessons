@@ -9,6 +9,7 @@ import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
+import { getNoteColor } from "@/lib/note-colors";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -131,18 +132,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
   // Combine Active notes for visualization
   const coloredKeys = useMemo(() => {
+    const colors = { split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor };
+    const splitSettings = { strategy: splitStrategy, splitPoint };
+
     return audio.activeNotes.map(activeNote => {
-      let trackColor;
-      if (splitHands) {
-        if (splitStrategy === 'point') {
-          const noteNumber = Tone.Frequency(activeNote.note).toMidi();
-          trackColor = (!isNaN(noteNumber) && noteNumber < splitPoint) ? leftColor : rightColor;
-        } else {
-          trackColor = activeNote.track === 0 ? rightColor : leftColor;
-        }
-      } else {
-        trackColor = unifiedColor;
-      }
+      const midiNumber = Tone.Frequency(activeNote.note).toMidi();
+      const trackColor = getNoteColor(activeNote.track, midiNumber, colors, splitSettings);
       return { note: activeNote.note, color: trackColor };
     });
   }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
@@ -211,7 +206,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 <div 
                   ref={waterfallContainerRef}
                   data-testid="waterfall-container"
-                  className="absolute top-0 bottom-[150px] left-0 right-0 z-40 pointer-events-none"
+                  className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
+                  style={{ bottom: 'var(--spacing-key-h)' }}
                 >
                     <Waterfall
                         midi={audio.midi}

@@ -36,8 +36,8 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
     const getInternalShadows = () => {
         if (isBlack || !isActive) return "none";
         const shadows = [];
-        if (!isLeftNeighborActive) shadows.push("inset 2px 0 0 0 var(--color-pal-6)");
-        if (!isRightNeighborActive) shadows.push("inset -2px 0 0 0 var(--color-pal-6)");
+        if (!isLeftNeighborActive) shadows.push("var(--shadow-key-left)");
+        if (!isRightNeighborActive) shadows.push("var(--shadow-key-right)");
         return shadows.length > 0 ? shadows.join(", ") : "none";
     };
 
@@ -45,15 +45,16 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
     const getAOOverlay = () => {
         if (isBlack || isActive) return null;
         const bands = [];
+        const aoStyle = { height: 'var(--spacing-black-h)' };
         if (leftBlackNeighborState === 'idle') {
-            bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[2px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+            bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[2px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
         } else if (leftBlackNeighborState === 'active') {
-            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
         }
         if (rightBlackNeighborState === 'idle') {
-             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[2px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+            bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[2px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
         } else if (rightBlackNeighborState === 'active') {
-             bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] h-[96px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" />);
+            bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] bg-[var(--color-pal-6)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
         }
         return bands;
     };
@@ -83,12 +84,12 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                 >
                      {/* Active Color Overlay */}
                      {isActive && activeColor && (
-                         <div 
-                            className="absolute inset-0 opacity-60" 
-                            style={{ 
+                         <div
+                            className="absolute inset-0 opacity-60"
+                            style={{
                                 backgroundColor: activeColor,
-                                boxShadow: "inset 2px 2px 0 0 rgba(255,255,255,0.4), inset -2px -2px 0 0 rgba(0,0,0,0.2)"
-                            }} 
+                                boxShadow: "var(--shadow-bevel-active)"
+                            }}
                          />
                      )}
                      <div className="absolute top-0 left-0 w-full h-[1px] bg-[rgba(255,255,255,0.1)]" />
@@ -122,12 +123,12 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
             >
                  {/* Active Color Overlay */}
                  {isActive && activeColor && (
-                     <div 
-                        className="absolute inset-0 opacity-50 z-[1]" 
-                        style={{ 
+                     <div
+                        className="absolute inset-0 opacity-50 z-[1]"
+                        style={{
                             backgroundColor: activeColor,
-                            boxShadow: "inset 2px 2px 0 0 rgba(255,255,255,0.4), inset -2px -2px 0 0 rgba(0,0,0,0.2)"
-                        }} 
+                            boxShadow: "var(--shadow-bevel-active)"
+                        }}
                      />
                  )}
 
