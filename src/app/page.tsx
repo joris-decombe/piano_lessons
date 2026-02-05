@@ -147,6 +147,23 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     });
   }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
+  // Memoize settings objects to prevent Controls re-renders
+  const visualSettings = useMemo(() => ({
+    splitHands, setSplitHands,
+    leftColor, setLeftColor,
+    rightColor, setRightColor,
+    unifiedColor, setUnifiedColor,
+    splitStrategy, setSplitStrategy,
+    splitPoint, setSplitPoint,
+    showGrid, setShowGrid
+  }), [splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showGrid]);
+
+  const songSettingsMemo = useMemo(() => ({
+    songs: allSongs,
+    currentSong: song,
+    onSelectSong: onSongChange
+  }), [allSongs, song, onSongChange]);
+
   return (
     <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden">
       {/* ... (Portrait Warning and Exit Button unchanged) ... */}
@@ -179,12 +196,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
           {/* Centered Content Wrapper */}
-          <div 
-            className="mx-auto h-full flex flex-col relative transition-transform duration-300 ease-out" 
-            style={{ 
+          <div
+            className="mx-auto h-full flex flex-col relative transition-transform duration-300 ease-out origin-top"
+            style={{
               minWidth: 'fit-content',
-              zoom: scale,
-            } as React.CSSProperties}
+              transform: `scale(${scale})`,
+            }}
           >
             
             {/* Action Area: Waterfall flows BEHIND Keyboard */}
@@ -230,20 +247,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           onSeek={audio.seek}
           playbackRate={audio.playbackRate}
           onSetPlaybackRate={audio.setPlaybackRate}
-          visualSettings={{
-            splitHands, setSplitHands,
-            leftColor, setLeftColor,
-            rightColor, setRightColor,
-            unifiedColor, setUnifiedColor,
-            splitStrategy, setSplitStrategy,
-            splitPoint, setSplitPoint,
-            showGrid, setShowGrid
-          }}
-          songSettings={{
-            songs: allSongs,
-            currentSong: song,
-            onSelectSong: onSongChange
-          }}
+          visualSettings={visualSettings}
+          songSettings={songSettingsMemo}
           isLooping={audio.isLooping}
           loopStart={audio.loopStart}
           loopEnd={audio.loopEnd}

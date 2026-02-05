@@ -77,6 +77,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     }, [playbackRate]);
     // Ref to hold mutable loop state for the animation loop
     const loopStateRef = useRef({ isLooping: false, loopStartTick: 0, loopEndTick: 0 });
+    const lastPreviewNotesRef = useRef<PreviewNote[]>([]);
 
     /**
      * Helper to recalculate all active notes from tick 0 up to a target tick.
@@ -365,15 +366,28 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     return;
                 }
 
-                // Calculate Preview Notes
-                const baseLookAhead = lookAheadTime; // seconds
-                const adjustedLookAhead = baseLookAhead * (1 / (playbackRate || 1));
-                const lookAheadTicks = Tone.Time(adjustedLookAhead).toTicks();
-                const previewEndOfWindow = currentTick + lookAheadTicks;
+                // Calculate BPM-invariant time (Song Position)
+                const ppq = Tone.Transport.PPQ;
+                const baseBpm = baseBpmRef.current;
+                const songTime = currentTick / (ppq * (baseBpm / 60));
 
-                const previewNotes: PreviewNote[] = [];
+                // Calculate Preview Notes only if we've moved significantly (every ~10 ticks)
+                // This reduces computation while keeping the waterfall smooth
+                const lastPreview = lastPreviewNotesRef.current;
+                let previewNotes = lastPreview;
+                let previewChanged = false;
 
-                if (state.midi) {
+                // Only recalculate preview notes every ~10 ticks or when notes changed
+                const shouldRecalcPreview = notesChanged || Math.abs(currentTick - lastProcessedTick) > 10 || lastPreview.length === 0;
+
+                if (shouldRecalcPreview && state.midi) {
+                    const baseLookAhead = lookAheadTime;
+                    const adjustedLookAhead = baseLookAhead * (1 / (playbackRate || 1));
+                    const lookAheadTicks = Tone.Time(adjustedLookAhead).toTicks();
+                    const previewEndOfWindow = currentTick + lookAheadTicks;
+
+                    const newPreviewNotes: PreviewNote[] = [];
+
                     state.midi.tracks.forEach((track, trackIndex) => {
                         let low = 0, high = track.notes.length - 1;
                         let startIdx = -1;
@@ -392,30 +406,24 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                             for (let i = startIdx; i < track.notes.length; i++) {
                                 const note = track.notes[i];
                                 if (note.ticks > previewEndOfWindow) break;
-                                previewNotes.push({ note: note.name, track: trackIndex });
+                                newPreviewNotes.push({ note: note.name, track: trackIndex });
                             }
                         }
                     });
+
+                    // Check if preview actually changed
+                    previewChanged =
+                        lastPreview.length !== newPreviewNotes.length ||
+                        !lastPreview.every((n, i) => n.note === newPreviewNotes[i]?.note && n.track === newPreviewNotes[i]?.track);
+
+                    if (previewChanged) {
+                        previewNotes = newPreviewNotes;
+                        lastPreviewNotesRef.current = newPreviewNotes;
+                    }
                 }
 
-                // Calculate BPM-invariant time (Song Position)
-                // Tone.Transport.ticks is the source of truth
-                // Time (s) = ticks / (PPQ * (BaseBPM / 60))
-                // Note: Tone.Transport.PPQ might be default 192, we synced it to MIDI PPQ in init.
-                const ppq = Tone.Transport.PPQ;
-                const baseBpm = baseBpmRef.current;
-                // Calculate seconds at 1x speed
-                const songTime = currentTick / (ppq * (baseBpm / 60));
-
+                // Only update state if something has actually changed to prevent re-renders
                 setState(prev => {
-                    const newActiveNotes = Array.from(activeNotesRef.current.values());
-
-                    // Deep comparison for preview notes to avoid render
-                    const previewChanged =
-                        prev.previewNotes.length !== previewNotes.length ||
-                        !prev.previewNotes.every((n, i) => n.note === previewNotes[i].note && n.track === previewNotes[i].track);
-
-                    // Only update state if something has actually changed to prevent re-renders
                     if (
                         Math.abs(prev.currentTime - songTime) < 0.01 &&
                         prev.currentTick === currentTick &&
@@ -428,11 +436,11 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
                     return {
                         ...prev,
-                        currentTime: songTime, // Use Song Time
+                        currentTime: songTime,
                         currentTick,
                         isPlaying: true,
-                        activeNotes: newActiveNotes,
-                        previewNotes
+                        activeNotes: notesChanged ? Array.from(activeNotesRef.current.values()) : prev.activeNotes,
+                        previewNotes: previewChanged ? previewNotes : prev.previewNotes
                     };
                 });
 
