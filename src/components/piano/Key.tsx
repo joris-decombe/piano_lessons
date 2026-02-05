@@ -1,4 +1,5 @@
 
+import { memo } from "react";
 import { twMerge } from "tailwind-merge";
 
 interface KeyProps {
@@ -18,7 +19,7 @@ interface KeyProps {
     style?: React.CSSProperties;
 }
 
-export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
+export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
 
     // --- GEOMETRY & PHYSICS ---
     // Physical dip (-1px North for white, +1px South for black)
@@ -139,4 +140,4 @@ export function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeig
             </div>
         </div>
     );
-}
+});

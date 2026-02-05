@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { formatTime } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
@@ -57,7 +57,7 @@ interface ControlsProps {
     onSetLoop: (start: number, end: number) => void;
 }
 
-export function Controls({
+export const Controls = memo(function Controls({
     isPlaying,
     onTogglePlay,
     currentTime,
@@ -368,4 +368,4 @@ export function Controls({
 
         </div>
     );
-}
+});

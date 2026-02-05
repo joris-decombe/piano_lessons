@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { Key } from "./Key";
 import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
 
@@ -11,13 +11,42 @@ interface KeyboardProps {
     keys: KeyboardKey[];
 }
 
+// Pre-computed note normalization map for O(1) lookups
+const NOTE_NORMALIZE_MAP: Record<string, string> = {};
+const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+for (let i = 21; i <= 108; i++) {
+    const octave = Math.floor(i / 12) - 1;
+    const noteIndex = i % 12;
+    const noteName = NOTES[noteIndex];
+    const fullName = `${noteName}${octave}`;
+    const normalized = fullName.replace("Db", "C#").replace("Eb", "D#").replace("Gb", "F#").replace("Ab", "G#").replace("Bb", "A#");
+    NOTE_NORMALIZE_MAP[fullName] = normalized;
+    NOTE_NORMALIZE_MAP[normalized] = normalized; // Also map normalized to itself
+}
+
 export function Keyboard({ keys: activeKeys }: KeyboardProps) {
 
-    // Generate 88 keys from A0 (21) to C8 (108)
+    // Generate 88 keys from A0 (21) to C8 (108) with pre-computed neighbor indices
     const keysData = useMemo(() => {
-        const k = [];
-        const NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+        const k: Array<{
+            midi: number;
+            note: string;
+            isBlack: boolean;
+            left: number;
+            width: number;
+            height: number;
+            zIndex: number;
+            cutLeft: number;
+            cutRight: number;
+            label?: string;
+            // Pre-computed neighbor indices
+            leftWhiteIdx: number | null;
+            rightWhiteIdx: number | null;
+            leftBlackIdx: number | null;
+            rightBlackIdx: number | null;
+        }> = [];
 
+        // First pass: create all keys
         for (let i = 21; i <= 108; i++) {
             const { left, width, isBlack } = getKeyPosition(i);
             const { cutLeft, cutRight } = getKeyCuts(i);
@@ -35,23 +64,59 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                 width,
                 height: isBlack ? 96 : 150,
                 zIndex: isBlack ? 30 : 10,
-                cutLeft, // Precision Geometry
+                cutLeft,
                 cutRight,
-                label: noteName === "C" ? `C${octave}` : undefined
+                label: noteName === "C" ? `C${octave}` : undefined,
+                leftWhiteIdx: null,
+                rightWhiteIdx: null,
+                leftBlackIdx: null,
+                rightBlackIdx: null,
             });
         }
+
+        // Second pass: pre-compute neighbor indices (O(n) instead of O(n²))
+        for (let idx = 0; idx < k.length; idx++) {
+            const key = k[idx];
+
+            if (!key.isBlack) {
+                // Find left white neighbor
+                for (let l = idx - 1; l >= 0; l--) {
+                    if (!k[l].isBlack) { key.leftWhiteIdx = l; break; }
+                }
+                // Find right white neighbor
+                for (let r = idx + 1; r < k.length; r++) {
+                    if (!k[r].isBlack) { key.rightWhiteIdx = r; break; }
+                }
+            }
+
+            // Store black neighbor indices (direct neighbors)
+            const rawLeft = k[idx - 1];
+            const rawRight = k[idx + 1];
+            if (rawLeft?.isBlack) key.leftBlackIdx = idx - 1;
+            if (rawRight?.isBlack) key.rightBlackIdx = idx + 1;
+        }
+
         return k;
     }, []);
 
-    // Helper to find state
-    const getActiveState = (keyNote: string) => {
-        const normalize = (n: string) => n.replace("Db", "C#").replace("Eb", "D#").replace("Gb", "F#").replace("Ab", "G#").replace("Bb", "A#");
-        const target = normalize(keyNote);
-        const match = activeKeys.find(k => normalize(k.note) === target);
+    // Build a Map of active keys for O(1) lookups
+    const activeKeyMap = useMemo(() => {
+        const map = new Map<string, string>();
+        for (const k of activeKeys) {
+            const normalized = NOTE_NORMALIZE_MAP[k.note] || k.note.replace("Db", "C#").replace("Eb", "D#").replace("Gb", "F#").replace("Ab", "G#").replace("Bb", "A#");
+            map.set(normalized, k.color);
+        }
+        return map;
+    }, [activeKeys]);
 
-        if (!match) return { isActive: false, color: undefined };
-        return { isActive: true, color: match.color };
-    };
+    // O(1) active state lookup using pre-computed normalized notes
+    const getActiveState = useCallback((keyNote: string) => {
+        const normalized = NOTE_NORMALIZE_MAP[keyNote];
+        const color = activeKeyMap.get(normalized);
+        return color !== undefined
+            ? { isActive: true, color }
+            : { isActive: false, color: undefined };
+    }, [activeKeyMap]);
 
     const totalKeysWidth = getTotalKeyboardWidth();
     // Case removed: totalPianoWidth is just the keys width
@@ -74,39 +139,24 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                     {/* Keys (z-20/25) */}
                     {keysData.map((key) => {
                         const { isActive, color } = getActiveState(key.note);
-                        const keyIndex = key.midi - 21;
 
-                        let leftKeyData = null;
-                        let rightKeyData = null;
-
-                        if (!key.isBlack) {
-                            let l = keyIndex - 1;
-                            while (l >= 0) {
-                                if (!keysData[l].isBlack) { leftKeyData = keysData[l]; break; }
-                                l--;
-                            }
-                            let r = keyIndex + 1;
-                            while (r < keysData.length) {
-                                if (!keysData[r].isBlack) { rightKeyData = keysData[r]; break; }
-                                r++;
-                            }
-                        }
-
-                        const rawLeft = keysData[keyIndex - 1];
-                        const rawRight = keysData[keyIndex + 1];
-
+                        // Use pre-computed neighbor indices (O(1) lookups)
                         let leftBlackState: 'none' | 'idle' | 'active' = 'none';
                         let rightBlackState: 'none' | 'idle' | 'active' = 'none';
 
-                        if (rawLeft && rawLeft.isBlack) {
-                            leftBlackState = getActiveState(rawLeft.note).isActive ? 'active' : 'idle';
+                        if (key.leftBlackIdx !== null) {
+                            leftBlackState = getActiveState(keysData[key.leftBlackIdx].note).isActive ? 'active' : 'idle';
                         }
-                        if (rawRight && rawRight.isBlack) {
-                            rightBlackState = getActiveState(rawRight.note).isActive ? 'active' : 'idle';
+                        if (key.rightBlackIdx !== null) {
+                            rightBlackState = getActiveState(keysData[key.rightBlackIdx].note).isActive ? 'active' : 'idle';
                         }
 
-                        const isLeftActive = leftKeyData ? getActiveState(leftKeyData.note).isActive : false;
-                        const isRightActive = rightKeyData ? getActiveState(rightKeyData.note).isActive : false;
+                        const isLeftActive = key.leftWhiteIdx !== null
+                            ? getActiveState(keysData[key.leftWhiteIdx].note).isActive
+                            : false;
+                        const isRightActive = key.rightWhiteIdx !== null
+                            ? getActiveState(keysData[key.rightWhiteIdx].note).isActive
+                            : false;
 
                         return (
                             <Key
@@ -126,7 +176,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                                     left: `${key.left}px`,
                                     width: `${key.width}px`,
                                     height: `${key.height}px`,
-                                    top: key.isBlack ? '2px' : '0px', 
+                                    top: key.isBlack ? '2px' : '0px',
                                 }}
                             />
                         );
