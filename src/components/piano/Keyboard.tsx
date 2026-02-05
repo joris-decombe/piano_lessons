@@ -130,8 +130,8 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                 {/* The Keyboard Container */}
                 <div
                     data-testid="keys-container"
-                    className="relative h-[150px]"
-                    style={{ width: `${totalKeysWidth}px` }}
+                    className="relative"
+                    style={{ height: 'var(--spacing-key-h)', width: `${totalKeysWidth}px` }}
                 >
                     {/* Cavity (Behind Keys) - Void Color (z-0) */}
                     <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 z-0" />

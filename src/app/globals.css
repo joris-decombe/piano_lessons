@@ -67,12 +67,28 @@
 
   /* --- Styles --- */
   /* Hard shadow for separators - NO BLUR */
-  --shadow-hard: 1px 0 0 0 var(--color-pal-6); 
+  --shadow-hard: 1px 0 0 0 var(--color-pal-6);
   --shadow-hard-inset: inset 0 -1px 0 0 var(--color-pal-6);
+
+  /* Pixel Art Bevel Shadows (16-bit Tetris style) */
+  --shadow-bevel-note:
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.9),
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.6),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.3);
+
+  /* Active key overlay bevel */
+  --shadow-bevel-active:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.4),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.2);
+
+  /* White key neighbor shadows (when pressed) */
+  --shadow-key-left: inset 2px 0 0 0 var(--color-pal-6);
+  --shadow-key-right: inset -2px 0 0 0 var(--color-pal-6);
 
   /* Animations */
   /* Snappy "Press" - instant or very fast */
-  --ease-pixel: cubic-bezier(0, 0, 0, 1); 
+  --ease-pixel: cubic-bezier(0, 0, 0, 1);
 }
 
 @keyframes scroll {
