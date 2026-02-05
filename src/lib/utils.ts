@@ -4,3 +4,10 @@ export const formatTime = (seconds: number): string => {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
+
+export const getNoteName = (midi: number): string => {
+    const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const octave = Math.floor(midi / 12) - 1;
+    const note = NOTES[midi % 12];
+    return `${note}${octave}`;
+};
