@@ -32,7 +32,12 @@ async function setTheme(page, theme) {
 }
 
 async function takeScreenshots() {
-  const browser = await chromium.launch();
+  // Use PLAYWRIGHT_CHROMIUM_PATH env var or fall back to auto-detect
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined;
+  const browser = await chromium.launch({
+    executablePath,
+    args: ['--disable-gpu', '--disable-software-rasterizer', '--disable-dev-shm-usage'],
+  });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 }
   });
