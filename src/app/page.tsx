@@ -5,6 +5,7 @@ import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
+import { useTheme } from "@/hooks/useTheme";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
@@ -47,22 +48,22 @@ E E F G | G F E D | C C D E | D3/2 C/2 C2 |`
 function HelpModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-6 max-w-md w-full shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-400 hover:text-white">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60">
+      <div className="pixel-panel p-6 max-w-md w-full relative">
+        <button onClick={onClose} className="absolute top-4 right-4 pixel-text-muted hover:pixel-text-accent">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
-        <h3 className="text-xl font-bold text-white mb-4">About MusicXML</h3>
-        <div className="space-y-3 text-sm text-zinc-300">
+        <h3 className="text-xl font-bold text-[var(--color-text-bright)] mb-4 uppercase tracking-tighter">About MusicXML</h3>
+        <div className="space-y-3 text-sm text-[var(--color-text)]">
           <p>MusicXML is a standard digital sheet music format that can be exported from most notation software.</p>
-          <p><strong>Where to find .musicxml files:</strong></p>
-          <ul className="list-disc pl-5 space-y-1 text-zinc-400">
-            <li><a href="https://musescore.com" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">MuseScore</a> (Export as MusicXML)</li>
-            <li><a href="https://imslp.org" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">IMSLP</a> (Petrucci Music Library)</li>
-            <li><a href="https://openscore.cc" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">OpenScore</a></li>
+          <p><strong className="pixel-text-accent">Where to find .musicxml files:</strong></p>
+          <ul className="list-disc pl-5 space-y-1 pixel-text-subtle">
+            <li><a href="https://musescore.com" target="_blank" rel="noopener noreferrer" className="hover:pixel-text-accent underline decoration-dotted">MuseScore</a> (Export as MusicXML)</li>
+            <li><a href="https://imslp.org" target="_blank" rel="noopener noreferrer" className="hover:pixel-text-accent underline decoration-dotted">IMSLP</a> (Petrucci Music Library)</li>
+            <li><a href="https://openscore.cc" target="_blank" rel="noopener noreferrer" className="hover:pixel-text-accent underline decoration-dotted">OpenScore</a></li>
           </ul>
-          <div className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-700/50 mt-4">
-            <p className="text-xs text-zinc-400"><strong>Note:</strong> We convert MusicXML to MIDI on our secure server. Your files are processed privately and not shared.</p>
+          <div className="p-3 pixel-inset mt-4">
+            <p className="text-xs pixel-text-muted"><strong>Note:</strong> We convert MusicXML to MIDI on our secure server. Your files are processed privately and not shared.</p>
           </div>
         </div>
       </div>
@@ -81,6 +82,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [waterfallHeight, setWaterfallHeight] = useState(0);
   const waterfallContainerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const { theme } = useTheme();
 
   // Auto-scale to fit screen width
   useEffect(() => {
@@ -112,12 +114,11 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, [waterfallHeight]);
 
   const audio = usePianoAudio(song, { lookAheadTime });
-  // ... (rest of the component logic)
 
   const [splitHands, setSplitHands] = useState(true);
-  const [leftColor, setLeftColor] = useState("#fb7185"); // Rose default
-  const [rightColor, setRightColor] = useState("#22d3ee"); // Cyan default
-  const [unifiedColor, setUnifiedColor] = useState("#fbbf24"); // Gold default
+  const [leftColor, setLeftColor] = useState("var(--color-note-left)");
+  const [rightColor, setRightColor] = useState("var(--color-note-right)");
+  const [unifiedColor, setUnifiedColor] = useState("var(--color-note-unified)");
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
   const [showGrid, setShowGrid] = useState(true);
@@ -160,17 +161,17 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }), [allSongs, song, onSongChange]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--background)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden">
-      {/* ... (Portrait Warning and Exit Button unchanged) ... */}
-      <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-zinc-950/95 text-center p-8 backdrop-blur-sm">
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden" data-theme={theme}>
+      {/* Portrait Warning */}
+      <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
         <div className="text-4xl mb-4">↻</div>
-        <h2 className="text-2xl font-bold text-white mb-2">Please Rotate Your Device</h2>
-        <p className="text-zinc-400">Piano Lessons works best in landscape mode.</p>
+        <h2 className="text-2xl font-bold text-[var(--color-text-bright)] mb-2 uppercase tracking-tighter">Please Rotate Your Device</h2>
+        <p className="pixel-text-muted">Piano Lessons works best in landscape mode.</p>
       </div>
 
       <button
         onClick={onExit}
-        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 p-3 rounded-full bg-zinc-900/50 backdrop-blur-md border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all hover:scale-110 shadow-lg group"
+        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 p-2 pixel-btn-primary hover:scale-110 group"
         aria-label="Return to Song List"
       >
         <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,12 +181,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
       {/* Header / Title - Hidden in mobile landscape to save space */}
       <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
-        <h1 className="text-xl font-bold text-zinc-100">{song.title}</h1>
-        <div className="text-xs text-zinc-400">{song.artist}</div>
+        <h1 className="text-xl font-bold text-[var(--color-text-bright)]">{song.title}</h1>
+        <div className="text-xs pixel-text-muted">{song.artist}</div>
       </header>
 
       {/* Main Visual Area */}
-      <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--background)]">
+      <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--color-void)]">
 
         {/* Unified Scroll Container */}
         <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -265,6 +266,7 @@ export default function Home() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPWAHint, setShowPWAHint] = useState(false);
   const [showSilentModeHint, setShowSilentModeHint] = useState(false);
+  const { theme } = useTheme();
 
   // Load persistence
   useEffect(() => {
@@ -371,12 +373,10 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white p-8 relative overflow-y-auto">
-      {/* Background Ambient Effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/20 to-zinc-950 pointer-events-none" />
-
-      <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Piano Lessons</h1>
-      <p className="text-zinc-400 mb-12 z-10 text-lg">Select a piece to begin practicing</p>
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto" data-theme={theme}>
+      
+      <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-[var(--color-accent-primary)] uppercase tracking-tighter">Piano Lessons</h1>
+      <p className="pixel-text-muted mb-12 z-10 text-lg">Select a piece to begin practicing</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
         {allSongs.map((song) => (
@@ -397,14 +397,12 @@ export default function Home() {
               setCurrentSong(song);
               setHasStarted(true);
             }}
-            className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 hover:border-indigo-500/50 hover:bg-zinc-900/80 transition-all hover:scale-[1.02] text-left"
+            className="group relative flex flex-col items-start p-6 pixel-btn hover:scale-[1.02] text-left"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+            <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">{song.title}</h3>
+            <p className="pixel-text-subtle font-medium">{song.artist}</p>
 
-            <h3 className="text-2xl font-bold text-zinc-100 mb-1">{song.title}</h3>
-            <p className="text-zinc-400 font-medium">{song.artist}</p>
-
-            <div className="mt-6 flex items-center text-indigo-400 text-sm font-bold group-hover:text-indigo-300">
+            <div className="mt-6 flex items-center pixel-text-accent text-sm font-bold">
               <span>Start Lesson</span>
               <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -414,20 +412,16 @@ export default function Home() {
         ))}
 
         {/* Upload New Song Card */}
-
-        {/* Client-Side Conversion: Always enabled now */}
-        <div className="group relative flex flex-col items-start p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800 border-dashed hover:border-cyan-500/50 hover:bg-zinc-900/60 transition-all hover:scale-[1.02] text-left">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
-
+        <div className="group relative flex flex-col items-start p-6 pixel-panel border-dashed hover:pixel-inset transition-all hover:scale-[1.02] text-left">
           <div className="flex w-full justify-between items-start">
-            <h3 className="text-2xl font-bold text-zinc-100 mb-1">Add New Song</h3>
-            <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="text-zinc-500 hover:text-cyan-400 transition-colors">
+            <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">Add New Song</h3>
+            <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="pixel-text-muted hover:pixel-text-accent transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </button>
           </div>
-          <p className="text-zinc-400 font-medium">Import MusicXML files</p>
+          <p className="pixel-text-subtle font-medium">Import MusicXML files</p>
 
-          <label className="mt-6 flex items-center text-cyan-400 text-sm font-bold group-hover:text-cyan-300 cursor-pointer">
+          <label className="mt-6 flex items-center pixel-text-accent text-sm font-bold cursor-pointer hover:pixel-text-bright">
             <span>Select .xml / .musicxml</span>
             <input
               type="file"
@@ -442,11 +436,11 @@ export default function Home() {
 
       {/* Silent Mode Warning for iOS */}
       {showSilentModeHint && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 bg-amber-600/90 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-amber-500/50">
+        <div className="fixed bottom-20 left-4 right-4 z-50 pixel-panel !bg-amber-900/90 p-4">
           <div className="flex items-start gap-3">
             <span className="text-2xl">📱</span>
             <div className="flex-1">
-              <p className="text-sm text-white font-medium">
+              <p className="text-sm text-white font-bold uppercase tracking-tighter">
                 iOS Tip: Turn off silent mode
               </p>
               <p className="text-xs text-amber-100 mt-1">
@@ -471,14 +465,14 @@ export default function Home() {
 
       {/* PWA Install Hint for iPhone */}
       {showPWAHint && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 bg-indigo-600/95 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-indigo-500/50 animate-slide-up">
+        <div className="fixed bottom-4 left-4 right-4 z-50 pixel-panel !bg-[var(--color-ui-active)] p-4">
           <div className="flex items-start gap-3">
             <span className="text-2xl">💡</span>
             <div className="flex-1">
-              <p className="text-sm text-white font-medium">
-                For the best fullscreen experience
+              <p className="text-sm text-white font-bold uppercase tracking-tighter">
+                For the best experience
               </p>
-              <p className="text-xs text-indigo-200 mt-1">
+              <p className="text-xs text-indigo-100 mt-1">
                 Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
               </p>
             </div>
