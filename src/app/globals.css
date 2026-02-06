@@ -1,5 +1,5 @@
-/* 1. Import Pixelify Sans */
-@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap');
+/* 1. Import Pixel Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap');
 
 @import "tailwindcss";
 
@@ -145,7 +145,7 @@
   --color-accent-primary: #e52521;    /* Mario Red */
   --color-accent-secondary: #049cd8;  /* Mario Blue */
   --color-accent-tertiary: #fbd000;   /* Coin Gold */
-  --color-ui-active: #43b047;         /* Pipe Green */
+  --color-ui-active: #0068b8;         /* Mario Blue Dark */
 
   /* Note Colors - NES primaries */
   --color-note-left: #e52521;         /* Red */
@@ -229,6 +229,7 @@
   --color-foreground: var(--color-text);
   --font-sans: "Pixelify Sans", system-ui, sans-serif;
   --font-mono: "Pixelify Sans", monospace;
+  --font-display: "Press Start 2P", monospace;
 
   /* --- Semantic Mappings (use theme vars) --- */
   --color-piano-void: var(--color-void);
@@ -384,3 +385,105 @@ body {
 .pixel-text-muted { color: var(--color-muted); }
 .pixel-text-subtle { color: var(--color-subtle); }
 .pixel-text-accent { color: var(--color-accent-primary); }
+
+/* Display font for titles */
+.pixel-title {
+  font-family: "Press Start 2P", monospace;
+  letter-spacing: 1px;
+  line-height: 1.4;
+}
+
+/* ============================================
+   THEME TRANSITIONS & EFFECTS
+   ============================================ */
+
+/* Smooth theme transitions */
+body {
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.pixel-panel,
+.pixel-btn,
+.pixel-btn-primary,
+.pixel-inset {
+  transition: background-color 300ms ease, box-shadow 300ms ease;
+}
+
+/* Enhanced button hover - satisfying "pop" */
+.pixel-btn:hover {
+  background: var(--color-elevated);
+  transform: translate(-1px, -1px);
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-text),
+    inset -1px -1px 0 0 var(--color-void),
+    2px 2px 0 0 var(--color-void);
+}
+
+.pixel-btn:active {
+  transform: translate(0, 0);
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-void),
+    inset -1px -1px 0 0 var(--color-text);
+}
+
+/* ============================================
+   CRT / RETRO EFFECTS
+   ============================================ */
+
+/* Scanlines for retro themes */
+[data-theme="8bit"] .crt-effect::after,
+[data-theme="16bit"] .crt-effect::after,
+[data-theme="mono"] .crt-effect::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  z-index: 9999;
+}
+
+/* Phosphor glow for mono/terminal theme */
+[data-theme="mono"] .pixel-text-accent,
+[data-theme="mono"] .pixel-btn-primary {
+  text-shadow: 0 0 8px var(--color-accent-primary);
+}
+
+[data-theme="mono"] h1,
+[data-theme="mono"] .glow {
+  text-shadow:
+    0 0 4px var(--color-accent-primary),
+    0 0 12px var(--color-accent-primary);
+}
+
+/* Subtle noise texture for hi-bit theme */
+[data-theme="hibit"] .noise-texture::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  z-index: 9998;
+}
+
+/* ============================================
+   THEME COLOR SWATCHES
+   ============================================ */
+
+.theme-swatch {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.theme-swatch > div {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}

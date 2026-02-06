@@ -161,7 +161,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }), [allSongs, song, onSongChange]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden" data-theme={theme}>
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
       {/* Portrait Warning */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
         <div className="text-4xl mb-4">↻</div>
@@ -373,9 +373,9 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto" data-theme={theme}>
-      
-      <h1 className="text-4xl md:text-6xl font-bold mb-2 z-10 text-[var(--color-accent-primary)] uppercase tracking-tighter">Piano Lessons</h1>
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto crt-effect" data-theme={theme}>
+
+      <h1 className="pixel-title text-2xl md:text-4xl mb-4 z-10 text-[var(--color-accent-primary)]">Piano Lessons</h1>
       <p className="pixel-text-muted mb-12 z-10 text-lg">Select a piece to begin practicing</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
@@ -444,8 +444,14 @@ export default function Home() {
               onClick={() => setTheme(t.id as Theme)}
               className={`flex flex-col items-center p-3 text-xs ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
             >
+              {/* Color swatches */}
+              <div className="theme-swatch">
+                {t.swatches.map((color, i) => (
+                  <div key={i} style={{ backgroundColor: color }} />
+                ))}
+              </div>
               <span className="font-bold">{t.name}</span>
-              <span className="text-[10px] opacity-70 mt-1">{t.description}</span>
+              <span className="text-[10px] opacity-70">{t.description}</span>
             </button>
           ))}
         </div>
