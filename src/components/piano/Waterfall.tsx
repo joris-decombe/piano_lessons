@@ -30,7 +30,12 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
         const notes: { ticks: number; durationTicks: number; midi: number; name: string; color: string; }[] = [];
         let maxDur = 0;
 
-        const colors = activeColors ?? { split: true, left: "#fb7185", right: "#22d3ee", unified: "#fbbf24" };
+        const colors = activeColors ?? { 
+            split: true, 
+            left: "var(--color-note-left)", 
+            right: "var(--color-note-right)", 
+            unified: "var(--color-note-unified)" 
+        };
 
         midi.tracks.forEach((track, trackIndex) => {
             if (track.notes.length === 0 || track.instrument.percussion) return;
@@ -120,8 +125,9 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                         className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-0"
                         style={{ 
                             left: `${left}px`,
-                            backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.2) 50%, transparent 50%)',
-                            backgroundSize: '1px 4px'
+                            backgroundImage: 'linear-gradient(to bottom, var(--color-border) 50%, transparent 50%)',
+                            backgroundSize: '1px 4px',
+                            opacity: 0.4
                         }}
                     />
                 );

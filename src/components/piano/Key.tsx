@@ -72,7 +72,7 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                 style={{ ...style, zIndex: 25, transform }}
             >
                 {/* 1. The Bed/Front Face (Dark Base) */}
-                <div className="absolute inset-0 bg-[var(--color-key-black-lo)] rounded-sm" />
+                <div className="absolute inset-0 bg-[var(--color-key-black-lo)]" />
 
                 {/* 2. The Top Face */}
                 <div

@@ -37,26 +37,26 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-950 text-white p-8">
-          <div className="max-w-md text-center">
-            <div className="text-6xl mb-6">:(</div>
+        <div className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8">
+          <div className="max-w-md text-center pixel-panel p-8">
+            <div className="text-6xl mb-6 font-mono">:(</div>
             <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-            <p className="text-zinc-400 mb-6">
+            <p className="pixel-text-muted mb-6">
               The piano encountered an unexpected error. This might be a temporary issue.
             </p>
             {this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="text-sm text-zinc-500 cursor-pointer hover:text-zinc-300">
+                <summary className="text-sm pixel-text-subtle cursor-pointer hover:pixel-text-accent">
                   Technical details
                 </summary>
-                <pre className="mt-2 p-3 bg-zinc-900 rounded-lg text-xs text-zinc-400 overflow-auto max-h-32">
+                <pre className="mt-2 p-3 pixel-inset text-xs pixel-text-muted overflow-auto max-h-32">
                   {this.state.error.message}
                 </pre>
               </details>
             )}
             <button
               onClick={this.handleRetry}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg font-medium transition-colors"
+              className="px-6 py-3 pixel-btn-primary font-bold"
             >
               Try Again
             </button>
