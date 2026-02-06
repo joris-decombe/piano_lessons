@@ -6,6 +6,8 @@ import fs from 'fs';
 const baseURL = 'http://localhost:3000/piano_lessons/';
 const screenshotDir = path.join('.github', 'screenshots');
 
+const THEMES = ['8bit', '16bit', 'hibit', 'cool', 'warm', 'mono'];
+
 // Ensure screenshot directory exists
 if (!fs.existsSync(screenshotDir)) {
   fs.mkdirSync(screenshotDir, { recursive: true });
@@ -21,63 +23,65 @@ async function hideDevTools(page) {
   });
 }
 
+async function setTheme(page, theme) {
+  await page.evaluate((t) => {
+    localStorage.setItem('piano_lessons_theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+  }, theme);
+  await page.waitForTimeout(400); // Wait for transition
+}
+
 async function takeScreenshots() {
   const browser = await chromium.launch();
   const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 }
+    viewport: { width: 1280, height: 800 }
   });
   const page = await context.newPage();
 
   try {
     console.log('📸 Taking screenshots for Piano Lessons...\n');
 
-    // 1. Landing Page
-    console.log('1/3 Landing page...');
+    // Take theme screenshots on landing page
+    console.log('Taking theme screenshots on landing page...');
     await page.goto(baseURL);
     await page.waitForLoadState('networkidle');
     await hideDevTools(page);
 
-    await page.screenshot({
-      path: path.join(screenshotDir, '01-landing.png'),
-      fullPage: true
-    });
+    for (const theme of THEMES) {
+      console.log(`  - ${theme} theme...`);
+      await setTheme(page, theme);
+      await page.screenshot({
+        path: path.join(screenshotDir, `theme-${theme}.png`)
+      });
+    }
 
-    // 2. Player View (Idle)
-    console.log('2/3 Player view (Idle)...');
+    // Player view with default theme (cool)
+    console.log('\nTaking player screenshots...');
+    await setTheme(page, 'cool');
+
     // Click on the first song card
     await page.click('text="Gnossienne No. 1"');
-
-    // Wait for the player to load (look for the keyboard or canvas)
-    // The keyboard container has a class that likely contains "Keyboard" or just look for the footer controls
     await page.waitForSelector('footer');
-    // No canvas element in DOM (div-based), just wait for render
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(3000);
     await hideDevTools(page);
 
     await page.screenshot({
-      path: path.join(screenshotDir, '02-player-idle.png'),
-      fullPage: true
+      path: path.join(screenshotDir, 'player-idle.png')
     });
 
-    // 3. Player View (Active)
-    console.log('3/3 Player view (Active)...');
-    // Click the Play button using its test ID
+    // Play for a bit
     await page.click('[data-testid="play-button"]');
-
-    // Wait for some notes to fall and keys to light up
-    await page.waitForTimeout(6000);
+    await page.waitForTimeout(4000);
     await hideDevTools(page);
 
     await page.screenshot({
-      path: path.join(screenshotDir, '03-player-active.png'),
-      fullPage: true
+      path: path.join(screenshotDir, 'player-active.png')
     });
 
     console.log(`\n✅ Screenshots saved to ${screenshotDir}`);
 
   } catch (error) {
     console.error('❌ Error taking screenshots:', error);
-    // If we fail, try to take a debug screenshot
     try {
       await page.screenshot({ path: 'error-screenshot.png' });
       console.log('Saved error-screenshot.png');
