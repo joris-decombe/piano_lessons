@@ -118,6 +118,111 @@
   --color-note-unified: #22c55e;
 }
 
+/* --- 8-BIT THEME (NES/Mario Bros Era) --- */
+[data-theme="8bit"] {
+  /* Voids & Darks - NES deep blue-black */
+  --color-void: #000000;
+  --color-bg: #0c0c28;
+  --color-surface: #181850;
+  --color-elevated: #282878;
+
+  /* Neutrals - Limited NES palette feel */
+  --color-border: #5050a0;
+  --color-muted: #7878b8;
+  --color-subtle: #9898d0;
+  --color-text: #c8c8e8;
+  --color-text-bright: #fcfcfc;
+
+  /* Piano Keys - Classic NES white/gray */
+  --color-key-white: #fcfcfc;
+  --color-key-white-hi: #ffffff;
+  --color-key-white-lo: #b8b8b8;
+  --color-key-black: #282828;
+  --color-key-black-hi: #484848;
+  --color-key-black-lo: #080808;
+
+  /* Accents - Mario Bros palette */
+  --color-accent-primary: #e52521;    /* Mario Red */
+  --color-accent-secondary: #049cd8;  /* Mario Blue */
+  --color-accent-tertiary: #fbd000;   /* Coin Gold */
+  --color-ui-active: #43b047;         /* Pipe Green */
+
+  /* Note Colors - NES primaries */
+  --color-note-left: #e52521;         /* Red */
+  --color-note-right: #049cd8;        /* Blue */
+  --color-note-unified: #fbd000;      /* Gold */
+}
+
+/* --- 16-BIT THEME (SNES/Street Fighter Era) --- */
+[data-theme="16bit"] {
+  /* Voids & Darks - SF2 character select deep blue */
+  --color-void: #0a0818;
+  --color-bg: #101028;
+  --color-surface: #181840;
+  --color-elevated: #282860;
+
+  /* Neutrals - Richer 16-bit tones */
+  --color-border: #4848a0;
+  --color-muted: #6868c0;
+  --color-subtle: #9090d8;
+  --color-text: #c0c0e8;
+  --color-text-bright: #f0f0ff;
+
+  /* Piano Keys - SNES quality whites */
+  --color-key-white: #f0f0f8;
+  --color-key-white-hi: #ffffff;
+  --color-key-white-lo: #b0b0c0;
+  --color-key-black: #202030;
+  --color-key-black-hi: #383848;
+  --color-key-black-lo: #101018;
+
+  /* Accents - Street Fighter palette */
+  --color-accent-primary: #f08030;    /* Ryu headband orange */
+  --color-accent-secondary: #e03020;  /* Ken red */
+  --color-accent-tertiary: #30a0f0;   /* Chun-Li blue */
+  --color-ui-active: #d06020;         /* Deep orange */
+
+  /* Note Colors - 16-bit fighting game energy */
+  --color-note-left: #e03020;         /* Fireball red */
+  --color-note-right: #30a0f0;        /* Hadouken blue */
+  --color-note-unified: #f08030;      /* Energy orange */
+}
+
+/* --- HI-BIT THEME (Modern Indie Pixel Art) --- */
+[data-theme="hibit"] {
+  /* Voids & Darks - Celeste/HLD inspired deep purple */
+  --color-void: #0d0b1a;
+  --color-bg: #16132d;
+  --color-surface: #1f1b3d;
+  --color-elevated: #2a2550;
+
+  /* Neutrals - Soft lavender tones */
+  --color-border: #4a4270;
+  --color-muted: #6a6290;
+  --color-subtle: #9088b0;
+  --color-text: #c8c0e0;
+  --color-text-bright: #f0ecff;
+
+  /* Piano Keys - Subtle warm whites */
+  --color-key-white: #ebe8f0;
+  --color-key-white-hi: #f8f6ff;
+  --color-key-white-lo: #b0a8c0;
+  --color-key-black: #1a1828;
+  --color-key-black-hi: #2a2840;
+  --color-key-black-lo: #0a0810;
+
+  /* Accents - Modern indie palette (Celeste pinks/cyans) */
+  --color-accent-primary: #ff6188;    /* Hot pink */
+  --color-accent-secondary: #78dce8;  /* Cyan */
+  --color-accent-tertiary: #ab9df2;   /* Lavender */
+  --color-ui-active: #fc9867;         /* Warm peach */
+
+  /* Note Colors - Vibrant modern */
+  --color-note-left: #ff6188;         /* Pink */
+  --color-note-right: #78dce8;        /* Cyan */
+  --color-note-unified: #ab9df2;      /* Lavender */
+}
+
 /* stylelint-disable-next-line at-rule-no-unknown */
 @theme inline {
   --color-background: var(--color-void);

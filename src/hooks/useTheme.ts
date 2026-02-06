@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useSyncExternalStore } from "react";
 
-export type Theme = "cool" | "warm" | "mono";
+export type Theme = "cool" | "warm" | "mono" | "8bit" | "16bit" | "hibit";
 
 const THEME_STORAGE_KEY = "piano_lessons_theme";
 
@@ -10,7 +10,7 @@ const THEME_STORAGE_KEY = "piano_lessons_theme";
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "cool";
   const stored = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-  if (stored && ["cool", "warm", "mono"].includes(stored)) {
+  if (stored && ["cool", "warm", "mono", "8bit", "16bit", "hibit"].includes(stored)) {
     return stored;
   }
   return "cool";
@@ -61,6 +61,9 @@ export function useTheme() {
 
 // Theme metadata for UI
 export const THEMES: { id: Theme; name: string; description: string }[] = [
+  { id: "8bit", name: "8-Bit", description: "NES / Mario Bros" },
+  { id: "16bit", name: "16-Bit", description: "SNES / Street Fighter" },
+  { id: "hibit", name: "Hi-Bit", description: "Modern indie" },
   { id: "cool", name: "Cyber", description: "Neon cyan & rose" },
   { id: "warm", name: "Vintage", description: "Amber & ivory" },
   { id: "mono", name: "Terminal", description: "Phosphor green" },
