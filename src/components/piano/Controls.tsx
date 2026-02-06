@@ -3,8 +3,7 @@ import { formatTime } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
 import { Timeline } from "./Timeline";
-
-// ... (interfaces remain same)
+import { validateSong, type Song } from "@/lib/validation";
 
 // ... (interfaces remain same)
 
@@ -23,15 +22,6 @@ interface VisualSettings {
     setSplitPoint: (val: number) => void;
     showGrid: boolean;
     setShowGrid: (val: boolean) => void;
-}
-
-interface Song {
-    id: string;
-    title: string;
-    artist: string;
-    url?: string;
-    abc?: string;
-    type: 'midi' | 'abc';
 }
 
 interface SongSettings {
@@ -86,17 +76,20 @@ export const Controls = memo(function Controls({
         try {
             const saved = localStorage.getItem('piano_lessons_uploads');
             if (saved) {
-                const uploads: Song[] = JSON.parse(saved);
-                // Filter out duplicates based on ID
-                const existingIds = new Set(songSettings.songs.map(s => s.id));
-                const newUploads = uploads.filter(u => !existingIds.has(u.id));
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    const uploads = parsed.filter(validateSong);
+                    // Filter out duplicates based on ID
+                    const existingIds = new Set(songSettings.songs.map(s => s.id));
+                    const newUploads = uploads.filter(u => !existingIds.has(u.id));
 
-                if (newUploads.length > 0) {
-                    // We need to mutate the songs array or have a way to set it.
-                    // Since songs is passed as a prop, we ideally should have setSongs.
-                    // For now, we push to the array if it's mutable, otherwise this won't trigger re-render
-                    // A better approach would be lifting this state up, but given constraints:
-                    newUploads.forEach(s => songSettings.songs.push(s));
+                    if (newUploads.length > 0) {
+                        // We need to mutate the songs array or have a way to set it.
+                        // Since songs is passed as a prop, we ideally should have setSongs.
+                        // For now, we push to the array if it's mutable, otherwise this won't trigger re-render
+                        // A better approach would be lifting this state up, but given constraints:
+                        newUploads.forEach(s => songSettings.songs.push(s));
+                    }
                 }
             }
         } catch (e) {

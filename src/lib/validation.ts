@@ -42,3 +42,49 @@ export function validateMusicXMLFile(file: FileLike): ValidationResult {
 
     return { valid: true };
 }
+
+export interface Song {
+    id: string;
+    title: string;
+    artist: string;
+    url?: string;
+    abc?: string;
+    type: 'midi' | 'abc';
+}
+
+export function validateSong(song: unknown): song is Song {
+    if (!song || typeof song !== 'object') {
+        return false;
+    }
+
+    const s = song as Partial<Song>;
+
+    if (typeof s.id !== 'string' || !s.id) return false;
+    if (typeof s.title !== 'string' || !s.title) return false;
+    if (typeof s.artist !== 'string') return false;
+    if (s.type !== 'midi' && s.type !== 'abc') return false;
+
+    // URL validation for MIDI
+    if (s.type === 'midi') {
+        if (typeof s.url !== 'string') return false;
+
+        // Scheme check
+        const url = s.url.toLowerCase().trim();
+        const allowedSchemes = ['http://', 'https://', 'data:', 'blob:'];
+        const isRelative = url.startsWith('/');
+
+        const hasValidScheme = allowedSchemes.some(scheme => url.startsWith(scheme)) || isRelative;
+
+        if (!hasValidScheme) return false;
+
+        // Explicitly block javascript:
+        if (url.includes('javascript:')) return false;
+    }
+
+    // ABC validation
+    if (s.type === 'abc') {
+        if (typeof s.abc !== 'string') return false;
+    }
+
+    return true;
+}
