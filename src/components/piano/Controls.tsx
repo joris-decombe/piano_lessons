@@ -1,5 +1,5 @@
 import { useState, useEffect, memo } from "react";
-import { formatTime } from "@/lib/utils";
+import { formatTime, getNoteName } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
 import { Timeline } from "./Timeline";
@@ -268,6 +268,7 @@ export const Controls = memo(function Controls({
                                 value={playbackRate}
                                 onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                 aria-label="Playback speed"
+                                aria-valuetext={`${playbackRate.toFixed(1)}x speed`}
                                 className={`w-full cursor-pointer bg-zinc-700 rounded-lg appearance-none accent-indigo-600 touch-none ${isTouch ? 'h-4' : 'h-2'}`}
                             />
                         </div>
@@ -323,7 +324,7 @@ export const Controls = memo(function Controls({
                                             <div className="pt-1 space-y-1">
                                                 <div className="flex justify-between text-xs text-zinc-400">
                                                     <span>Split Note</span>
-                                                    <span>{visualSettings.splitPoint} (C{Math.floor(visualSettings.splitPoint / 12) - 1})</span>
+                                                    <span>{visualSettings.splitPoint} ({getNoteName(visualSettings.splitPoint)})</span>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -331,6 +332,8 @@ export const Controls = memo(function Controls({
                                                     max={108}
                                                     value={visualSettings.splitPoint}
                                                     onChange={(e) => visualSettings.setSplitPoint(parseInt(e.target.value))}
+                                                    aria-label="Split point note"
+                                                    aria-valuetext={getNoteName(visualSettings.splitPoint)}
                                                     className="w-full h-1 bg-zinc-700 rounded-lg appearance-none accent-indigo-500"
                                                 />
                                             </div>
