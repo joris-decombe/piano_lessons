@@ -376,9 +376,14 @@ export const Controls = memo(function Controls({
                                     <button
                                         key={t.id}
                                         onClick={() => setTheme(t.id as Theme)}
-                                        className={`text-[10px] py-2 px-1 ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                                        className={`flex flex-col items-center text-[10px] py-2 px-1 ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
                                         title={t.description}
                                     >
+                                        <div className="flex gap-[2px] mb-1">
+                                            {t.swatches.map((color, i) => (
+                                                <div key={i} className="w-2 h-2" style={{ backgroundColor: color, border: '1px solid rgba(0,0,0,0.3)' }} />
+                                            ))}
+                                        </div>
                                         {t.name}
                                     </button>
                                 ))}
