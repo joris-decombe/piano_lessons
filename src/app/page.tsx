@@ -7,7 +7,7 @@ import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
-import { validateMusicXMLFile } from "@/lib/validation";
+import { validateMusicXMLFile, validateSong, type Song } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
 import * as Tone from "tone";
@@ -15,15 +15,6 @@ import * as Tone from "tone";
 const BASE_PATH = '/piano_lessons';
 
 // Song Management
-interface Song {
-  id: string;
-  title: string;
-  artist: string;
-  url?: string;
-  abc?: string;
-  type: 'midi' | 'abc';
-}
-
 const defaultSongs: Song[] = [
   { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi' },
   { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi' },
@@ -271,12 +262,15 @@ export default function Home() {
     try {
       const saved = localStorage.getItem('piano_lessons_uploads');
       if (saved) {
-        const uploadedSongs = JSON.parse(saved) as Song[];
-        // Deduplicate
-        const defaultIds = new Set(defaultSongs.map(s => s.id));
-        const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
-        if (newUploads.length > 0) {
-          setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const uploadedSongs = parsed.filter(validateSong);
+          // Deduplicate
+          const defaultIds = new Set(defaultSongs.map(s => s.id));
+          const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
+          if (newUploads.length > 0) {
+            setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
+          }
         }
       }
     } catch (e: unknown) {
@@ -287,7 +281,13 @@ export default function Home() {
   const saveToLocalStorage = (song: Song) => {
     try {
       const saved = localStorage.getItem('piano_lessons_uploads');
-      const uploads: Song[] = saved ? (JSON.parse(saved) as Song[]) : [];
+      let uploads: Song[] = [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          uploads = parsed.filter(validateSong);
+        }
+      }
       uploads.push(song);
       localStorage.setItem('piano_lessons_uploads', JSON.stringify(uploads));
     } catch (e: unknown) {
