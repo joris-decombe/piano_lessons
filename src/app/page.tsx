@@ -5,7 +5,7 @@ import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
 import { Controls } from "@/components/piano/Controls";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme, THEMES, Theme } from "@/hooks/useTheme";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
@@ -266,7 +266,7 @@ export default function Home() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPWAHint, setShowPWAHint] = useState(false);
   const [showSilentModeHint, setShowSilentModeHint] = useState(false);
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   // Load persistence
   useEffect(() => {
@@ -434,16 +434,33 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Theme Selector */}
+      <div className="z-10 mt-12 w-full max-w-4xl px-4">
+        <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-4 text-center">Theme</h2>
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id as Theme)}
+              className={`flex flex-col items-center p-3 text-xs ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
+            >
+              <span className="font-bold">{t.name}</span>
+              <span className="text-[10px] opacity-70 mt-1">{t.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Silent Mode Warning for iOS */}
       {showSilentModeHint && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 pixel-panel !bg-amber-900/90 p-4">
+        <div className="fixed bottom-20 left-4 right-4 z-50 pixel-panel p-4" style={{ backgroundColor: 'var(--color-accent-tertiary)' }}>
           <div className="flex items-start gap-3">
             <span className="text-2xl">📱</span>
             <div className="flex-1">
-              <p className="text-sm text-white font-bold uppercase tracking-tighter">
+              <p className="text-sm text-[var(--color-text-bright)] font-bold uppercase tracking-tighter">
                 iOS Tip: Turn off silent mode
               </p>
-              <p className="text-xs text-amber-100 mt-1">
+              <p className="text-xs text-[var(--color-text)] mt-1">
                 Your device must not be in silent mode to hear audio
               </p>
             </div>
@@ -452,7 +469,7 @@ export default function Home() {
                 setShowSilentModeHint(false);
                 localStorage.setItem('silent_mode_hint_dismissed', 'true');
               }}
-              className="text-white/80 hover:text-white transition-colors"
+              className="text-[var(--color-text)]/80 hover:text-[var(--color-text-bright)] transition-colors"
               aria-label="Dismiss"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -465,14 +482,14 @@ export default function Home() {
 
       {/* PWA Install Hint for iPhone */}
       {showPWAHint && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 pixel-panel !bg-[var(--color-ui-active)] p-4">
+        <div className="fixed bottom-4 left-4 right-4 z-50 pixel-panel p-4" style={{ backgroundColor: 'var(--color-ui-active)' }}>
           <div className="flex items-start gap-3">
             <span className="text-2xl">💡</span>
             <div className="flex-1">
-              <p className="text-sm text-white font-bold uppercase tracking-tighter">
+              <p className="text-sm text-[var(--color-text-bright)] font-bold uppercase tracking-tighter">
                 For the best experience
               </p>
-              <p className="text-xs text-indigo-100 mt-1">
+              <p className="text-xs text-[var(--color-text)] mt-1">
                 Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
               </p>
             </div>
@@ -481,7 +498,7 @@ export default function Home() {
                 setShowPWAHint(false);
                 localStorage.setItem('pwa_hint_dismissed', 'true');
               }}
-              className="text-white/80 hover:text-white transition-colors"
+              className="text-[var(--color-text)]/80 hover:text-[var(--color-text-bright)] transition-colors"
               aria-label="Dismiss"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
