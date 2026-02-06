@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
@@ -11,6 +12,8 @@ import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { ToastContainer, showToast } from "@/components/Toast";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -83,6 +86,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const waterfallContainerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const { theme } = useTheme();
+  const stableOnExit = useCallback(() => onExit(), [onExit]);
 
   // Auto-scale to fit screen width
   useEffect(() => {
@@ -114,6 +118,16 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, [waterfallHeight]);
 
   const audio = usePianoAudio(song, { lookAheadTime });
+
+  // Keyboard shortcuts: Space=play/pause, arrows=seek, Escape=back
+  useKeyboardShortcuts({
+    onTogglePlay: audio.togglePlay,
+    onSeek: audio.seek,
+    onExit: stableOnExit,
+    currentTime: audio.currentTime,
+    duration: audio.duration,
+    isPlaying: audio.isPlaying,
+  });
 
   const [splitHands, setSplitHands] = useState(true);
   const [leftColor, setLeftColor] = useState("var(--color-note-left)");
@@ -171,12 +185,14 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
       <button
         onClick={onExit}
-        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 p-2 pixel-btn-primary hover:scale-110 group"
+        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 px-3 py-2 pixel-btn-primary hover:scale-105 group flex items-center gap-2"
         aria-label="Return to Song List"
+        title="Back to songs (Esc)"
       >
-        <svg className="w-5 h-5 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
+        <span className="hidden md:inline text-xs font-bold uppercase tracking-tight landscape:hidden">Songs</span>
       </button>
 
       {/* Header / Title - Hidden in mobile landscape to save space */}
@@ -304,7 +320,7 @@ export default function Home() {
 
     const validation = validateMusicXMLFile(file);
     if (!validation.valid) {
-      alert(validation.error);
+      showToast(validation.error ?? "Invalid file", "error");
       return;
     }
 
@@ -335,7 +351,7 @@ export default function Home() {
 
     } catch (error) {
       console.error('Error converting MusicXML:', error);
-      alert(error instanceof Error ? error.message : 'Failed to convert file');
+      showToast(error instanceof Error ? error.message : 'Failed to convert file', "error");
     }
   };
 
@@ -361,160 +377,233 @@ export default function Home() {
   }, []);
 
 
-  if (hasStarted) {
-    return (
-      <PianoLesson
-        song={currentSong}
-        allSongs={allSongs}
-        onSongChange={setCurrentSong}
-        onExit={() => setHasStarted(false)}
-      />
-    );
-  }
-
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto crt-effect" data-theme={theme}>
-
-      <h1 className="pixel-title text-2xl md:text-4xl mb-4 z-10 text-[var(--color-accent-primary)]">Piano Lessons</h1>
-      <p className="pixel-text-muted mb-12 z-10 text-lg">Select a piece to begin practicing</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
-        {allSongs.map((song) => (
-          <button
-            key={song.id}
-            data-testid={`song-${song.id}`}
-            onClick={async () => {
-              // Start audio context on user interaction (iOS requirement)
-              try {
-                const Tone = await import('tone');
-                await Tone.start();
-                if (Tone.context.state === 'suspended') {
-                  await Tone.context.resume();
-                }
-              } catch (e) {
-                console.error('Failed to start audio context:', e);
-              }
-              setCurrentSong(song);
-              setHasStarted(true);
-            }}
-            className="group relative flex flex-col items-start p-6 pixel-btn hover:scale-[1.02] text-left"
+    <>
+      <ToastContainer />
+      <AnimatePresence mode="wait">
+        {hasStarted ? (
+          <motion.div
+            key="lesson"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="w-full h-full"
           >
-            <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">{song.title}</h3>
-            <p className="pixel-text-subtle font-medium">{song.artist}</p>
-
-            <div className="mt-6 flex items-center pixel-text-accent text-sm font-bold">
-              <span>Start Lesson</span>
-              <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </div>
-          </button>
-        ))}
-
-        {/* Upload New Song Card */}
-        <div className="group relative flex flex-col items-start p-6 pixel-panel border-dashed hover:pixel-inset transition-all hover:scale-[1.02] text-left">
-          <div className="flex w-full justify-between items-start">
-            <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">Add New Song</h3>
-            <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="pixel-text-muted hover:pixel-text-accent transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </button>
-          </div>
-          <p className="pixel-text-subtle font-medium">Import MusicXML files</p>
-
-          <label className="mt-6 flex items-center pixel-text-accent text-sm font-bold cursor-pointer hover:pixel-text-bright">
-            <span>Select .xml / .musicxml</span>
-            <input
-              type="file"
-              accept=".xml,.musicxml"
-              onChange={handleFileUpload}
-              className="hidden"
+            <PianoLesson
+              song={currentSong}
+              allSongs={allSongs}
+              onSongChange={setCurrentSong}
+              onExit={() => setHasStarted(false)}
             />
-            <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-          </label>
-        </div>
-      </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto crt-effect"
+            data-theme={theme}
+          >
 
-      {/* Theme Selector */}
-      <div className="z-10 mt-12 w-full max-w-4xl px-4">
-        <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-4 text-center">Theme</h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id as Theme)}
-              className={`flex flex-col items-center p-3 text-xs ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
+            <motion.h1
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="pixel-title text-2xl md:text-4xl mb-4 z-10 text-[var(--color-accent-primary)]"
             >
-              {/* Color swatches */}
-              <div className="theme-swatch">
-                {t.swatches.map((color, i) => (
-                  <div key={i} style={{ backgroundColor: color }} />
+              Piano Lessons
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="pixel-text-muted mb-12 z-10 text-lg"
+            >
+              Select a piece to begin practicing
+            </motion.p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
+              {allSongs.map((song, index) => (
+                <motion.button
+                  key={song.id}
+                  data-testid={`song-${song.id}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 + index * 0.08 }}
+                  onClick={async () => {
+                    try {
+                      const Tone = await import('tone');
+                      await Tone.start();
+                      if (Tone.context.state === 'suspended') {
+                        await Tone.context.resume();
+                      }
+                    } catch (e) {
+                      console.error('Failed to start audio context:', e);
+                    }
+                    setCurrentSong(song);
+                    setHasStarted(true);
+                  }}
+                  className="group relative flex flex-col items-start p-6 pixel-btn hover:scale-[1.02] text-left"
+                >
+                  <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">{song.title}</h3>
+                  <p className="pixel-text-subtle font-medium">{song.artist}</p>
+
+                  <div className="mt-6 flex items-center pixel-text-accent text-sm font-bold">
+                    <span>Start Lesson</span>
+                    <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </div>
+                </motion.button>
+              ))}
+
+              {/* Upload New Song Card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 + allSongs.length * 0.08 }}
+                className="group relative flex flex-col items-start p-6 pixel-panel border-dashed hover:pixel-inset transition-all hover:scale-[1.02] text-left"
+              >
+                <div className="flex w-full justify-between items-start">
+                  <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">Add New Song</h3>
+                  <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="pixel-text-muted hover:pixel-text-accent transition-colors">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </button>
+                </div>
+                <p className="pixel-text-subtle font-medium">Import MusicXML files</p>
+
+                <label className="mt-6 flex items-center pixel-text-accent text-sm font-bold cursor-pointer hover:pixel-text-bright">
+                  <span>Select .xml / .musicxml</span>
+                  <input
+                    type="file"
+                    accept=".xml,.musicxml"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                </label>
+              </motion.div>
+            </div>
+
+            {/* Theme Selector */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.5 }}
+              className="z-10 mt-12 w-full max-w-4xl px-4"
+            >
+              <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-4 text-center">Theme</h2>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                {THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTheme(t.id as Theme)}
+                    className={`flex flex-col items-center p-3 text-xs ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                  >
+                    <div className="theme-swatch">
+                      {t.swatches.map((color, i) => (
+                        <div key={i} style={{ backgroundColor: color }} />
+                      ))}
+                    </div>
+                    <span className="font-bold">{t.name}</span>
+                    <span className="text-[10px] opacity-70">{t.description}</span>
+                  </button>
                 ))}
               </div>
-              <span className="font-bold">{t.name}</span>
-              <span className="text-[10px] opacity-70">{t.description}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+            </motion.div>
 
-      {/* Silent Mode Warning for iOS */}
-      {showSilentModeHint && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 pixel-panel p-4" style={{ backgroundColor: 'var(--color-accent-tertiary)' }}>
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">📱</span>
-            <div className="flex-1">
-              <p className="text-sm text-[var(--color-text-bright)] font-bold uppercase tracking-tighter">
-                iOS Tip: Turn off silent mode
-              </p>
-              <p className="text-xs text-[var(--color-text)] mt-1">
-                Your device must not be in silent mode to hear audio
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setShowSilentModeHint(false);
-                localStorage.setItem('silent_mode_hint_dismissed', 'true');
-              }}
-              className="text-[var(--color-text)]/80 hover:text-[var(--color-text-bright)] transition-colors"
-              aria-label="Dismiss"
+            {/* Keyboard shortcuts hint */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.7 }}
+              className="z-10 mt-8 text-center"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+              <p className="text-[11px] pixel-text-muted">
+                <span className="hidden md:inline">Keyboard: <kbd className="pixel-kbd">Space</kbd> play/pause &middot; <kbd className="pixel-kbd">&larr;</kbd><kbd className="pixel-kbd">&rarr;</kbd> seek &middot; <kbd className="pixel-kbd">Esc</kbd> back</span>
+              </p>
+            </motion.div>
 
-      {/* PWA Install Hint for iPhone */}
-      {showPWAHint && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 pixel-panel p-4" style={{ backgroundColor: 'var(--color-ui-active)' }}>
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">💡</span>
-            <div className="flex-1">
-              <p className="text-sm text-[var(--color-text-bright)] font-bold uppercase tracking-tighter">
-                For the best experience
-              </p>
-              <p className="text-xs text-[var(--color-text)] mt-1">
-                Tap <strong>Share</strong> → <strong>Add to Home Screen</strong>
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setShowPWAHint(false);
-                localStorage.setItem('pwa_hint_dismissed', 'true');
-              }}
-              className="text-[var(--color-text)]/80 hover:text-[var(--color-text-bright)] transition-colors"
-              aria-label="Dismiss"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-    </div>
+            {/* Silent Mode Warning for iOS */}
+            <AnimatePresence>
+              {showSilentModeHint && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="fixed bottom-20 left-4 right-4 z-50 pixel-panel p-4"
+                  style={{ backgroundColor: 'var(--color-accent-tertiary)' }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">!!</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-[var(--color-text-bright)] font-bold uppercase tracking-tighter">
+                        iOS Tip: Turn off silent mode
+                      </p>
+                      <p className="text-xs text-[var(--color-text)] mt-1">
+                        Your device must not be in silent mode to hear audio
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowSilentModeHint(false);
+                        localStorage.setItem('silent_mode_hint_dismissed', 'true');
+                      }}
+                      className="text-[var(--color-text)]/80 hover:text-[var(--color-text-bright)] transition-colors"
+                      aria-label="Dismiss"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* PWA Install Hint for iPhone */}
+            <AnimatePresence>
+              {showPWAHint && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="fixed bottom-4 left-4 right-4 z-50 pixel-panel p-4"
+                  style={{ backgroundColor: 'var(--color-ui-active)' }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg font-bold pixel-text-accent">&gt;_</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-[var(--color-text-bright)] font-bold uppercase tracking-tighter">
+                        For the best experience
+                      </p>
+                      <p className="text-xs text-[var(--color-text)] mt-1">
+                        Tap <strong>Share</strong> &rarr; <strong>Add to Home Screen</strong>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowPWAHint(false);
+                        localStorage.setItem('pwa_hint_dismissed', 'true');
+                      }}
+                      className="text-[var(--color-text)]/80 hover:text-[var(--color-text-bright)] transition-colors"
+                      aria-label="Dismiss"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
