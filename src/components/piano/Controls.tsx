@@ -371,12 +371,12 @@ export const Controls = memo(function Controls({
                         {/* Theme Selector */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider">Theme</label>
-                            <div className="flex gap-1">
+                            <div className="grid grid-cols-3 gap-1">
                                 {THEMES.map((t) => (
                                     <button
                                         key={t.id}
                                         onClick={() => setTheme(t.id as Theme)}
-                                        className={`flex-1 text-xs py-2 ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                                        className={`text-[10px] py-2 px-1 ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
                                         title={t.description}
                                     >
                                         {t.name}
