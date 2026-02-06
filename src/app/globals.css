@@ -487,3 +487,80 @@ body {
   height: 12px;
   border: 1px solid rgba(0, 0, 0, 0.3);
 }
+
+/* ============================================
+   KEYBOARD SHORTCUT HINTS (kbd)
+   ============================================ */
+
+.pixel-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  font-family: "Pixelify Sans", monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-elevated),
+    1px 1px 0 0 var(--color-void);
+  margin: 0 1px;
+}
+
+/* ============================================
+   PIXEL ART TOGGLE SWITCH
+   ============================================ */
+
+.pixel-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--color-void);
+  border: 2px solid var(--color-border);
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-border),
+    inset -1px -1px 0 0 var(--color-elevated);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pixel-toggle-on {
+  background: var(--color-ui-active);
+  border-color: var(--color-accent-primary);
+}
+
+.pixel-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: var(--color-muted);
+  box-shadow:
+    inset 1px 1px 0 0 var(--color-text),
+    inset -1px -1px 0 0 var(--color-void);
+  transition: transform 0.1s;
+}
+
+.pixel-toggle-on .pixel-toggle-thumb {
+  transform: translateX(16px);
+  background: var(--color-text-bright);
+}
+
+/* ============================================
+   TOUCH DEVICE IMPROVEMENTS
+   ============================================ */
+
+@media (pointer: coarse) {
+  /* Larger range input track for touch */
+  input[type="range"] {
+    min-height: 24px;
+  }
+
+  /* Ensure buttons have adequate touch targets */
+  .pixel-btn,
+  .pixel-btn-primary {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
