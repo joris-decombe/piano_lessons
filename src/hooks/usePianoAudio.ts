@@ -382,7 +382,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
                 if (shouldRecalcPreview && state.midi) {
                     const baseLookAhead = lookAheadTime;
-                    const adjustedLookAhead = baseLookAhead * (1 / (playbackRate || 1));
+                    const adjustedLookAhead = Math.max(0, baseLookAhead * (1 / (playbackRate || 1)));
                     const lookAheadTicks = Tone.Time(adjustedLookAhead).toTicks();
                     const previewEndOfWindow = currentTick + lookAheadTicks;
 
@@ -491,7 +491,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
 
     const seek = (time: number) => {
-        Tone.Transport.seconds = time;
+        Tone.Transport.seconds = Math.max(0, time);
         // Use Tone's internal tick calculation which respects the tempo map
         const newTick = Tone.Transport.ticks;
         lastProcessedTickRef.current = newTick;
@@ -540,9 +540,9 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     };
 
     const setLoop = (start: number, end: number) => {
-        // UI sends Seconds. Convert to Ticks.
-        const startTick = Tone.Time(start).toTicks();
-        const endTick = Tone.Time(end).toTicks();
+        // UI sends Seconds. Convert to Ticks. Clamp to avoid floating point negatives.
+        const startTick = Tone.Time(Math.max(0, start)).toTicks();
+        const endTick = Tone.Time(Math.max(0, end)).toTicks();
         setState(prev => ({ ...prev, loopStartTick: startTick, loopEndTick: endTick }));
     };
 
@@ -558,7 +558,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     // Calculate current lookahead in ticks for UI visualization
     const currentLookAheadTicks = useMemo(() => {
         if (typeof window === 'undefined') return 0;
-        const adjusted = (lookAheadTime || 0) * (1 / (playbackRate || 1));
+        const adjusted = Math.max(0, (lookAheadTime || 0) * (1 / (playbackRate || 1)));
         return Tone.Time(adjusted).toTicks();
     }, [lookAheadTime, playbackRate]);
 
