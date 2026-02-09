@@ -14,6 +14,7 @@ import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ToastContainer, showToast } from "@/components/Toast";
+import { EffectsCanvas, EffectsNote } from "@/components/piano/EffectsCanvas";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -157,6 +158,15 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     });
   }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
+  // Effects canvas data: active notes with MIDI numbers for key positioning
+  const effectsNotes: EffectsNote[] = useMemo(() => {
+    return coloredKeys.map(ck => ({
+      note: ck.note,
+      midi: Tone.Frequency(ck.note).toMidi(),
+      color: ck.color,
+    }));
+  }, [coloredKeys]);
+
   // Memoize settings objects to prevent Controls re-renders
   const visualSettings = useMemo(() => ({
     splitHands, setSplitHands,
@@ -220,7 +230,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
             <div className="relative flex-1 flex flex-col min-h-0">
                 
                 {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
-                <div 
+                <div
                   ref={waterfallContainerRef}
                   data-testid="waterfall-container"
                   className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
@@ -237,11 +247,23 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                     />
                 </div>
 
+                {/* 1b. Effects Canvas Overlay - Particles, glow, trails */}
+                {/* Shares waterfall bounds so it never covers the keyboard */}
+                <div
+                  className="absolute top-0 left-0 right-0 z-[42] pointer-events-none"
+                  style={{ bottom: 'var(--spacing-key-h)' }}
+                >
+                    <EffectsCanvas
+                        activeNotes={effectsNotes}
+                        containerHeight={waterfallHeight}
+                    />
+                </div>
+
                 {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
                 <div className="flex-1" />
 
-                {/* 3. Keyboard Layer (No Z-Index wrapper to allow interleaving) */}
-                <div className="relative shrink-0">
+                {/* 3. Keyboard Layer - z-50 to render above waterfall and effects */}
+                <div className="relative shrink-0 z-50">
                     <Keyboard keys={coloredKeys} />
                 </div>
             </div>

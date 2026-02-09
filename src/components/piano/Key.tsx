@@ -22,10 +22,10 @@ interface KeyProps {
 export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
 
     // --- GEOMETRY & PHYSICS ---
-    // Physical dip (-1px North for white, +1px South for black)
-    const transform = isActive 
-        ? (isBlack ? "translateY(1px)" : "translateY(-1px)") 
-        : "translateY(0)";
+    // Physical dip + squash/stretch for impact feel
+    const transform = isActive
+        ? (isBlack ? "translateY(1px) scaleX(0.97) scaleY(1.02)" : "translateY(-1px) scaleX(1.02) scaleY(0.97)")
+        : "translateY(0) scale(1)";
 
     const blackTopHeight = isActive ? "calc(100% - 2px)" : "calc(100% - 10px)";
     
