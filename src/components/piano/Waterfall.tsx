@@ -82,7 +82,7 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
             renderStartIdx--;
         }
 
-        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; proximity: number; isActive: boolean; isLong: boolean; }[] = [];
+        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; proximity: number; isActive: boolean; }[] = [];
 
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
@@ -111,7 +111,6 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                     color: note.color,
                     proximity,
                     isActive: bottomPx <= 0,
-                    isLong: heightPx > 40,
                 });
             }
         }
@@ -149,7 +148,6 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                         className={twMerge(
                             "waterfall-note absolute",
                             note.isBlack ? "z-15 waterfall-note--black" : "z-10",
-                            note.isLong && "waterfall-note--long",
                         )}
                         data-proximity={note.proximity > 0.85 ? "near" : note.proximity > 0.6 ? "mid" : undefined}
                         data-active={note.isActive ? "" : undefined}
