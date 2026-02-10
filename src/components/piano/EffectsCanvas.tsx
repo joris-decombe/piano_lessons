@@ -14,17 +14,17 @@ interface EffectsCanvasProps {
     activeNotes: EffectsNote[];
     /** Height of the waterfall container in px */
     containerHeight: number;
+    /** Current theme id for theme-specific effects */
+    theme?: string;
 }
 
 /** Parse a CSS color string to extract RGB values for glow rendering. */
 function parseColor(color: string): { r: number; g: number; b: number } | null {
-    // Handle hex
     const hex = color.match(/^#([0-9a-f]{6})$/i);
     if (hex) {
         const v = parseInt(hex[1], 16);
         return { r: (v >> 16) & 0xff, g: (v >> 8) & 0xff, b: v & 0xff };
     }
-    // Handle rgb()/rgba()
     const rgb = color.match(/rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/);
     if (rgb) {
         return { r: parseInt(rgb[1]), g: parseInt(rgb[2]), b: parseInt(rgb[3]) };
@@ -32,27 +32,53 @@ function parseColor(color: string): { r: number; g: number; b: number } | null {
     return null;
 }
 
+/** Shift a color's hue by a small amount for color cycling. */
+function shiftHue(r: number, g: number, b: number, shift: number): { r: number; g: number; b: number } {
+    // Convert to simple HSL-like rotation via channel mixing
+    const cos = Math.cos(shift);
+    const sin = Math.sin(shift);
+    return {
+        r: Math.round(Math.min(255, Math.max(0, r * (0.667 + cos * 0.333) + g * (0.333 - cos * 0.333 + sin * 0.577) + b * (0.333 - cos * 0.333 - sin * 0.577)))),
+        g: Math.round(Math.min(255, Math.max(0, r * (0.333 - cos * 0.333 - sin * 0.577) + g * (0.667 + cos * 0.333) + b * (0.333 - cos * 0.333 + sin * 0.577)))),
+        b: Math.round(Math.min(255, Math.max(0, r * (0.333 - cos * 0.333 + sin * 0.577) + g * (0.333 - cos * 0.333 - sin * 0.577) + b * (0.667 + cos * 0.333)))),
+    };
+}
+
+interface PhosphorTrace {
+    midi: number;
+    color: string;
+    startTime: number;
+}
+
+const PHOSPHOR_DURATION = 500; // ms
+const PHOSPHOR_COLOR = { r: 34, g: 197, b: 94 }; // Green-500, matches mono accent
+
 export function EffectsCanvas({
     activeNotes,
     containerHeight,
+    theme = "cool",
 }: EffectsCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const bloomCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const particlesRef = useRef(new ParticleSystem());
     const prevNotesRef = useRef<Set<string>>(new Set());
+    const phosphorTracesRef = useRef<PhosphorTrace[]>([]);
     const lastTimeRef = useRef(0);
     const rafRef = useRef(0);
 
     const totalKeyboardWidth = getTotalKeyboardWidth();
-
-    // Impact line = bottom of canvas (top of keyboard)
     const impactY = containerHeight;
 
-    // Detect new note-on events and emit particles
+    const isMono = theme === "mono";
+    const isCool = theme === "cool";
+
+    // Detect new note-on events and emit particles; track note-offs for phosphor
     const emitForNewNotes = useCallback((notes: EffectsNote[]) => {
         const currentKeys = new Set(notes.map(n => `${n.midi}`));
         const prevKeys = prevNotesRef.current;
+        const now = performance.now();
 
+        // Emit particles for new note-ons
         for (const n of notes) {
             const key = `${n.midi}`;
             if (!prevKeys.has(key)) {
@@ -71,21 +97,41 @@ export function EffectsCanvas({
             }
         }
 
-        prevNotesRef.current = currentKeys;
-    }, [impactY]);
+        // Track note-offs for phosphor persistence (Mono theme)
+        if (isMono) {
+            for (const prevKey of prevKeys) {
+                if (!currentKeys.has(prevKey)) {
+                    phosphorTracesRef.current.push({
+                        midi: parseInt(prevKey),
+                        color: "#22c55e",
+                        startTime: now,
+                    });
+                }
+            }
+            // Prune expired traces
+            phosphorTracesRef.current = phosphorTracesRef.current.filter(
+                t => now - t.startTime < PHOSPHOR_DURATION
+            );
+        }
 
-    // Draw additive glow at the impact line for each active key
-    // Sustained notes pulse via a ~2Hz sine wave on intensity
+        prevNotesRef.current = currentKeys;
+    }, [impactY, isMono]);
+
+    // Draw additive glow with sustained note pulse
     const drawKeyGlow = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[], time: number) => {
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
 
-        // Pulse factor: oscillates 0.7..1.0 at ~2Hz
         const pulse = 0.85 + 0.15 * Math.sin(time * 0.002 * Math.PI * 4);
+        // Color cycling: slow hue rotation (~0.1 rad/s)
+        const hueShift = time * 0.0001;
 
         for (const n of notes) {
-            const parsed = parseColor(n.color);
+            let parsed = parseColor(n.color);
             if (!parsed) continue;
+
+            // Apply color cycling
+            parsed = shiftHue(parsed.r, parsed.g, parsed.b, hueShift);
 
             const { left, width } = getKeyPosition(n.midi);
             const centerX = left + width / 2;
@@ -111,7 +157,7 @@ export function EffectsCanvas({
         ctx.restore();
     }, [impactY]);
 
-    // Draw short gradient trails above the impact line for active notes
+    // Draw short gradient trails above the impact line
     const drawNoteTrails = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
         const trailHeight = 5;
 
@@ -130,7 +176,40 @@ export function EffectsCanvas({
         }
     }, [impactY]);
 
-    // Main render loop — independent of React re-renders
+    // Draw phosphor persistence afterglow (Mono theme only)
+    const drawPhosphor = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
+        const traces = phosphorTracesRef.current;
+        if (traces.length === 0) return;
+
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        for (const t of traces) {
+            const elapsed = now - t.startTime;
+            if (elapsed >= PHOSPHOR_DURATION) continue;
+
+            const alpha = 0.3 * (1 - elapsed / PHOSPHOR_DURATION);
+            const { left, width } = getKeyPosition(t.midi);
+            const centerX = left + width / 2;
+            const radius = 20;
+
+            const grad = ctx.createRadialGradient(centerX, impactY, 0, centerX, impactY, radius);
+            grad.addColorStop(0, `rgba(${PHOSPHOR_COLOR.r},${PHOSPHOR_COLOR.g},${PHOSPHOR_COLOR.b},${alpha})`);
+            grad.addColorStop(1, `rgba(${PHOSPHOR_COLOR.r},${PHOSPHOR_COLOR.g},${PHOSPHOR_COLOR.b},0)`);
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(
+                Math.round(centerX - radius),
+                Math.round(impactY - radius),
+                Math.round(radius * 2),
+                Math.round(radius * 2),
+            );
+        }
+
+        ctx.restore();
+    }, [impactY]);
+
+    // Main render loop
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -140,7 +219,6 @@ export function EffectsCanvas({
 
         ctx.imageSmoothingEnabled = false;
 
-        // Create offscreen bloom canvas at quarter resolution
         if (!bloomCanvasRef.current) {
             bloomCanvasRef.current = document.createElement("canvas");
         }
@@ -156,23 +234,36 @@ export function EffectsCanvas({
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Draw effects (particles, glow, trails)
+            // 1. Draw core effects
             particlesRef.current.update(dt);
             particlesRef.current.draw(ctx);
             drawKeyGlow(ctx, activeNotes, time);
             drawNoteTrails(ctx, activeNotes);
 
-            // 2. Bloom pass: downscale → natural blur → composite back
+            // 2. Phosphor persistence (Mono theme)
+            if (isMono) {
+                drawPhosphor(ctx, time);
+            }
+
+            // 3. Bloom pass
             if (bloomCtx && activeNotes.length > 0) {
                 bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
-                // Downscale: bilinear filtering acts as blur
                 bloomCtx.imageSmoothingEnabled = true;
                 bloomCtx.drawImage(canvas, 0, 0, bloomCanvas.width, bloomCanvas.height);
-                // Composite bloom back at full size with additive blending
+
                 ctx.save();
                 ctx.globalCompositeOperation = "lighter";
-                ctx.globalAlpha = 0.5;
                 ctx.imageSmoothingEnabled = true;
+
+                if (isCool) {
+                    // Chromatic aberration: offset RGB channels by 1px
+                    ctx.globalAlpha = 0.35;
+                    ctx.drawImage(bloomCanvas, -1, 0, canvas.width, canvas.height); // Red-shifted left
+                    ctx.drawImage(bloomCanvas, 1, 0, canvas.width, canvas.height);  // Blue-shifted right
+                }
+
+                // Normal bloom composite
+                ctx.globalAlpha = 0.5;
                 ctx.drawImage(bloomCanvas, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
             }
@@ -182,18 +273,19 @@ export function EffectsCanvas({
 
         rafRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafRef.current);
-    }, [activeNotes, drawKeyGlow, drawNoteTrails]);
+    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawPhosphor, isMono, isCool]);
 
     // Emit particles on note changes
     useEffect(() => {
         emitForNewNotes(activeNotes);
     }, [activeNotes, emitForNewNotes]);
 
-    // Reset particles when song changes
+    // Reset on song change
     useEffect(() => {
         if (containerHeight === 0) {
             particlesRef.current.clear();
             prevNotesRef.current = new Set();
+            phosphorTracesRef.current = [];
         }
     }, [containerHeight]);
 
