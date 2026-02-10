@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Canvas effects overlay with particle system, key glow, note trails, and bloom post-processing
 - Key press squash/stretch animation for physical impact feel
 - Sustained note glow pulse (2Hz sine wave on glow intensity)
+- Phosphor persistence afterglow for Mono/Terminal theme (green CRT decay)
+- Chromatic aberration bloom for Cool theme (RGB channel split)
+- Color cycling via hue rotation on all glow effects
 - Pixel art animation upgrade plan (`docs/waterfall-animation-plan.md`)
 - `CLAUDE.md` for Claude Code session guidance
 - Particle system unit tests (10 tests)
