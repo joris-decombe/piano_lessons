@@ -44,6 +44,13 @@ function shiftHue(r: number, g: number, b: number, shift: number): { r: number; 
     };
 }
 
+interface ImpactFlash {
+    midi: number;
+    startTime: number;
+    left: number;
+    width: number;
+}
+
 interface PhosphorTrace {
     midi: number;
     color: string;
@@ -63,6 +70,7 @@ export function EffectsCanvas({
     const particlesRef = useRef(new ParticleSystem());
     const prevNotesRef = useRef<Set<string>>(new Set());
     const phosphorTracesRef = useRef<PhosphorTrace[]>([]);
+    const impactFlashesRef = useRef<ImpactFlash[]>([]);
     const lastTimeRef = useRef(0);
     const rafRef = useRef(0);
 
@@ -78,7 +86,7 @@ export function EffectsCanvas({
         const prevKeys = prevNotesRef.current;
         const now = performance.now();
 
-        // Emit particles for new note-ons
+        // Emit particles + impact flash for new note-ons
         for (const n of notes) {
             const key = `${n.midi}`;
             if (!prevKeys.has(key)) {
@@ -89,13 +97,26 @@ export function EffectsCanvas({
                     x: centerX,
                     y: impactY,
                     color: n.color,
-                    count: 6,
-                    speed: 50,
+                    count: 8,
+                    speed: 60,
                     size: 2,
-                    lifetime: 0.4,
+                    lifetime: 0.5,
+                });
+
+                // Add impact flash
+                impactFlashesRef.current.push({
+                    midi: n.midi,
+                    startTime: now,
+                    left,
+                    width,
                 });
             }
         }
+
+        // Prune expired impact flashes (2 frames ≈ ~33ms)
+        impactFlashesRef.current = impactFlashesRef.current.filter(
+            f => now - f.startTime < 50
+        );
 
         // Track note-offs for phosphor persistence (Mono theme)
         if (isMono) {
@@ -176,6 +197,32 @@ export function EffectsCanvas({
         }
     }, [impactY]);
 
+    // Draw impact flash (bright rectangle at key position on note-on)
+    const drawImpactFlash = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
+        const flashes = impactFlashesRef.current;
+        if (flashes.length === 0) return;
+
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        for (const f of flashes) {
+            const elapsed = now - f.startTime;
+            if (elapsed >= 50) continue;
+
+            // Fade from 0.5 alpha to 0 over ~2 frames
+            const alpha = 0.5 * (1 - elapsed / 50);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.fillRect(
+                Math.round(f.left),
+                Math.round(impactY - 6),
+                f.width,
+                6,
+            );
+        }
+
+        ctx.restore();
+    }, [impactY]);
+
     // Draw phosphor persistence afterglow (Mono theme only)
     const drawPhosphor = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
         const traces = phosphorTracesRef.current;
@@ -240,6 +287,9 @@ export function EffectsCanvas({
             drawKeyGlow(ctx, activeNotes, time);
             drawNoteTrails(ctx, activeNotes);
 
+            // 1.5. Impact flash
+            drawImpactFlash(ctx, time);
+
             // 2. Phosphor persistence (Mono theme)
             if (isMono) {
                 drawPhosphor(ctx, time);
@@ -273,7 +323,7 @@ export function EffectsCanvas({
 
         rafRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafRef.current);
-    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawPhosphor, isMono, isCool]);
+    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, isMono, isCool]);
 
     // Emit particles on note changes
     useEffect(() => {
@@ -286,6 +336,7 @@ export function EffectsCanvas({
             particlesRef.current.clear();
             prevNotesRef.current = new Set();
             phosphorTracesRef.current = [];
+            impactFlashesRef.current = [];
         }
     }, [containerHeight]);
 

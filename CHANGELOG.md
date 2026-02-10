@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0]
 
 ### Added
+- Waterfall note visual overhaul matching pixel art game aesthetic
+  - Base note styling with enhanced bevel, top highlight, and leading edge glow
+  - Long note segmentation pattern (Tetris brick / piano roll grid) for notes >40px
+  - Proximity-based glow and brightness as notes approach the keyboard line
+  - Active state: impact brightness boost + horizontal squash on note-on
+  - Black key notes with darker depth treatment
+  - Per-theme note character (8-bit chunky segments, mono CRT scanlines, cool neon glow, warm sepia highlights, hi-bit saturation boost, 16-bit rich bevels)
+  - Enhanced impact particles (8 count, faster speed, longer lifetime) and impact flash
+  - CSS `contain` and selective `will-change` for performance
+  - Unit tests for proximity, isActive, and isLong computations
 - Main menu UX overhaul with 8 improvements
 - Difficulty badges on song cards (beginner/intermediate/advanced)
 - Progress tracking via localStorage with "Continue Playing" card for returning users

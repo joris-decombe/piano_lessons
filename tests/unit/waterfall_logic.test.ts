@@ -127,3 +127,113 @@ describe('Waterfall Logic Correctness', () => {
         expect(visible.length).toBeGreaterThan(0);
     });
 });
+
+// --- Note visual property computations (proximity, isActive, isLong) ---
+// Extracted from Waterfall.tsx for testability
+
+function computeNoteProperties(bottomPx: number, heightPx: number, containerHeight: number) {
+    const proximity = containerHeight > 0
+        ? Math.max(0, Math.min(1, 1 - bottomPx / containerHeight))
+        : 0;
+    return {
+        proximity,
+        isActive: bottomPx <= 0,
+        isLong: heightPx > 40,
+    };
+}
+
+function proximityToAttr(proximity: number): string | undefined {
+    if (proximity > 0.85) return "near";
+    if (proximity > 0.6) return "mid";
+    return undefined;
+}
+
+describe('Note Visual Properties', () => {
+    const containerHeight = 600;
+
+    describe('proximity', () => {
+        it('should be 1.0 when note is at keyboard line (bottomPx = 0)', () => {
+            const { proximity } = computeNoteProperties(0, 30, containerHeight);
+            expect(proximity).toBe(1);
+        });
+
+        it('should be 0.0 when note is at top of container (bottomPx = containerHeight)', () => {
+            const { proximity } = computeNoteProperties(containerHeight, 30, containerHeight);
+            expect(proximity).toBe(0);
+        });
+
+        it('should be 0.5 when note is at midpoint', () => {
+            const { proximity } = computeNoteProperties(containerHeight / 2, 30, containerHeight);
+            expect(proximity).toBe(0.5);
+        });
+
+        it('should clamp to 0 when note is above container', () => {
+            const { proximity } = computeNoteProperties(containerHeight + 100, 30, containerHeight);
+            expect(proximity).toBe(0);
+        });
+
+        it('should clamp to 1 when note is below keyboard line', () => {
+            const { proximity } = computeNoteProperties(-50, 30, containerHeight);
+            expect(proximity).toBe(1);
+        });
+
+        it('should be 0 when containerHeight is 0', () => {
+            const { proximity } = computeNoteProperties(100, 30, 0);
+            expect(proximity).toBe(0);
+        });
+    });
+
+    describe('proximityToAttr', () => {
+        it('should return "near" when proximity > 0.85', () => {
+            expect(proximityToAttr(0.9)).toBe("near");
+            expect(proximityToAttr(1.0)).toBe("near");
+            expect(proximityToAttr(0.86)).toBe("near");
+        });
+
+        it('should return "mid" when proximity > 0.6 but <= 0.85', () => {
+            expect(proximityToAttr(0.7)).toBe("mid");
+            expect(proximityToAttr(0.85)).toBe("mid");
+            expect(proximityToAttr(0.61)).toBe("mid");
+        });
+
+        it('should return undefined when proximity <= 0.6', () => {
+            expect(proximityToAttr(0.6)).toBeUndefined();
+            expect(proximityToAttr(0.3)).toBeUndefined();
+            expect(proximityToAttr(0)).toBeUndefined();
+        });
+    });
+
+    describe('isActive', () => {
+        it('should be true when bottomPx is 0 (note at keyboard line)', () => {
+            const { isActive } = computeNoteProperties(0, 30, containerHeight);
+            expect(isActive).toBe(true);
+        });
+
+        it('should be true when bottomPx is negative (note below keyboard)', () => {
+            const { isActive } = computeNoteProperties(-10, 30, containerHeight);
+            expect(isActive).toBe(true);
+        });
+
+        it('should be false when bottomPx is positive (note above keyboard)', () => {
+            const { isActive } = computeNoteProperties(1, 30, containerHeight);
+            expect(isActive).toBe(false);
+        });
+    });
+
+    describe('isLong', () => {
+        it('should be true when heightPx > 40', () => {
+            const { isLong } = computeNoteProperties(100, 41, containerHeight);
+            expect(isLong).toBe(true);
+        });
+
+        it('should be false when heightPx is exactly 40', () => {
+            const { isLong } = computeNoteProperties(100, 40, containerHeight);
+            expect(isLong).toBe(false);
+        });
+
+        it('should be false when heightPx < 40', () => {
+            const { isLong } = computeNoteProperties(100, 20, containerHeight);
+            expect(isLong).toBe(false);
+        });
+    });
+});
