@@ -213,7 +213,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     notes.push({
                         time: `${note.ticks}i`, // No space!
                         note: note.name,
-                        duration: note.duration,
+                        duration: Math.max(0, note.duration),
                         velocity: note.velocity,
                         rawTicks: note.ticks
                     });
@@ -230,8 +230,8 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     }
                     samplerRef.current?.triggerAttackRelease(
                         value.note,
-                        value.duration,
-                        time,
+                        Math.max(0.001, value.duration),
+                        Math.max(0, time),
                         value.velocity
                     );
                 } catch (e) {

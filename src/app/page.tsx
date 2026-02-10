@@ -15,6 +15,9 @@ import { getNoteColor } from "@/lib/note-colors";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { EffectsCanvas, EffectsNote } from "@/components/piano/EffectsCanvas";
+import { abcToMidiBuffer } from "@/lib/abc-loader";
+import { playHoverSound, playSelectSound } from "@/lib/menu-sounds";
+import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 
 const BASE_PATH = '/piano_lessons';
@@ -27,16 +30,48 @@ interface Song {
   url?: string;
   abc?: string;
   type: 'midi' | 'abc';
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+}
+
+const DIFFICULTY_COLORS: Record<string, string> = {
+  beginner: '#22c55e',
+  intermediate: '#f59e0b',
+  advanced: '#ef4444',
+};
+
+// Progress tracking
+interface ProgressData {
+  [songId: string]: { lastPlayedAt: number };
+}
+
+function getProgress(): ProgressData {
+  try {
+    const raw = localStorage.getItem('piano_lessons_progress');
+    return raw ? (JSON.parse(raw) as ProgressData) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setLastPlayed(songId: string) {
+  try {
+    const progress = getProgress();
+    progress[songId] = { lastPlayedAt: Date.now() };
+    localStorage.setItem('piano_lessons_progress', JSON.stringify(progress));
+  } catch (e) {
+    console.error('Failed to save progress', e);
+  }
 }
 
 const defaultSongs: Song[] = [
-  { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi' },
-  { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi' },
+  { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi', difficulty: 'advanced' },
+  { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi', difficulty: 'beginner' },
   {
     id: 'ode_abc',
     title: 'Ode to Joy (ABC)',
     artist: 'Beethoven (Live Generated)',
     type: 'abc',
+    difficulty: 'intermediate',
     abc: `T: Ode to Joy
 M: 4/4
 L: 1/4
@@ -305,6 +340,11 @@ export default function Home() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPWAHint, setShowPWAHint] = useState(false);
   const [showSilentModeHint, setShowSilentModeHint] = useState(false);
+  const [lastPlayedSongId, setLastPlayedSongId] = useState<string | null>(null);
+  const [isFirstTimer, setIsFirstTimer] = useState(true);
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [durations, setDurations] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState<'all' | 'beginner' | 'intermediate' | 'advanced' | 'uploads'>('all');
   const { theme, setTheme } = useTheme();
 
   // Load persistence
@@ -323,6 +363,47 @@ export default function Home() {
     } catch (e: unknown) {
       console.error("Failed to load persistence", e);
     }
+  }, []);
+
+  // Load progress tracking on mount
+  useEffect(() => {
+    const progress = getProgress();
+    const songIds = Object.keys(progress);
+    if (songIds.length > 0) {
+      setIsFirstTimer(false);
+      // Find most recently played song
+      const mostRecent = songIds.reduce((a, b) =>
+        progress[a].lastPlayedAt > progress[b].lastPlayedAt ? a : b
+      );
+      setLastPlayedSongId(mostRecent);
+    }
+  }, []);
+
+  // Compute song durations (non-blocking, cosmetic)
+  useEffect(() => {
+    let cancelled = false;
+    async function computeDurations() {
+      const results: Record<string, number> = {};
+      for (const song of defaultSongs) {
+        try {
+          if (song.type === 'midi' && song.url) {
+            const res = await fetch(song.url);
+            const buf = await res.arrayBuffer();
+            const midi = new Midi(buf);
+            results[song.id] = midi.duration;
+          } else if (song.type === 'abc' && song.abc) {
+            const midiBuffer = abcToMidiBuffer(song.abc);
+            const midi = new Midi(midiBuffer);
+            results[song.id] = midi.duration;
+          }
+        } catch (e) {
+          console.error(`Failed to compute duration for ${song.id}`, e);
+        }
+      }
+      if (!cancelled) setDurations(results);
+    }
+    computeDurations();
+    return () => { cancelled = true; };
   }, []);
 
   const saveToLocalStorage = (song: Song) => {
@@ -399,6 +480,35 @@ export default function Home() {
     }
   }, []);
 
+  const selectSong = useCallback(async (song: Song) => {
+    try {
+      const Tone = await import('tone');
+      await Tone.start();
+      if (Tone.context.state === 'suspended') {
+        await Tone.context.resume();
+      }
+    } catch (e) {
+      console.error('Failed to start audio context:', e);
+    }
+    setLastPlayed(song.id);
+    setLastPlayedSongId(song.id);
+    setIsFirstTimer(false);
+    setCurrentSong(song);
+    setHasStarted(true);
+  }, []);
+
+  const lastPlayedSong = useMemo(
+    () => lastPlayedSongId ? allSongs.find(s => s.id === lastPlayedSongId) : null,
+    [lastPlayedSongId, allSongs]
+  );
+
+  const showTabs = allSongs.length > 4;
+
+  const filteredSongs = useMemo(() => {
+    if (activeTab === 'all') return allSongs;
+    if (activeTab === 'uploads') return allSongs.filter(s => s.id.startsWith('upload-'));
+    return allSongs.filter(s => s.difficulty === activeTab);
+  }, [allSongs, activeTab]);
 
   return (
     <>
@@ -430,6 +540,50 @@ export default function Home() {
             className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto crt-effect"
             data-theme={theme}
           >
+            {/* Settings Gear - Theme Popover */}
+            <div className="absolute top-6 right-6 z-20">
+              <button
+                onClick={() => setIsThemeOpen(!isThemeOpen)}
+                className={`flex items-center justify-center w-10 h-10 ${isThemeOpen ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                aria-label="Theme settings"
+                title="Theme"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              </button>
+              <AnimatePresence>
+                {isThemeOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsThemeOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -5 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full right-0 mt-2 pixel-panel p-3 z-20 w-[260px]"
+                    >
+                      <label className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider mb-2 block">Theme</label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {THEMES.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => setTheme(t.id as Theme)}
+                            className={`flex flex-col items-center p-2 text-[10px] ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                            title={t.description}
+                          >
+                            <div className="flex gap-[2px] mb-1">
+                              {t.swatches.map((color, i) => (
+                                <div key={i} className="w-2 h-2" style={{ backgroundColor: color, border: '1px solid rgba(0,0,0,0.3)' }} />
+                              ))}
+                            </div>
+                            {t.name}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
 
             <motion.h1
               initial={{ opacity: 0, y: -20 }}
@@ -448,33 +602,92 @@ export default function Home() {
               Select a piece to begin practicing
             </motion.p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4">
-              {allSongs.map((song, index) => (
+            {/* Continue Playing card for returning users */}
+            {lastPlayedSong && !isFirstTimer && (
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                onClick={() => selectSong(lastPlayedSong)}
+                className="z-10 w-full max-w-4xl px-4 mb-6"
+              >
+                <div className="w-full flex items-center justify-between p-4 pixel-btn-primary hover:scale-[1.01] transition-transform text-left">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider opacity-70">Continue Playing</span>
+                    <h3 className="text-lg font-bold text-[var(--color-text-bright)] uppercase tracking-tighter">{lastPlayedSong.title}</h3>
+                  </div>
+                  <span className="text-lg font-bold">Continue →</span>
+                </div>
+              </motion.button>
+            )}
+
+            {/* Category Tabs - only when >4 songs */}
+            {showTabs && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.12 }}
+                className="z-10 w-full max-w-4xl px-4 mb-4 overflow-x-auto"
+              >
+                <div className="flex gap-1 min-w-max">
+                  {([
+                    { key: 'all', label: 'All' },
+                    { key: 'beginner', label: 'Beginner' },
+                    { key: 'intermediate', label: 'Intermediate' },
+                    { key: 'advanced', label: 'Advanced' },
+                    { key: 'uploads', label: 'My Uploads' },
+                  ] as const).map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-3 py-2 text-xs font-bold uppercase tracking-tight ${activeTab === tab.key ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4 pl-8">
+              {filteredSongs.length === 0 && (
+                <div className="col-span-full text-center py-8 pixel-text-muted">
+                  No songs match this filter
+                </div>
+              )}
+              {filteredSongs.map((song, index) => (
                 <motion.button
                   key={song.id}
                   data-testid={`song-${song.id}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.15 + index * 0.08 }}
-                  onClick={async () => {
-                    try {
-                      const Tone = await import('tone');
-                      await Tone.start();
-                      if (Tone.context.state === 'suspended') {
-                        await Tone.context.resume();
-                      }
-                    } catch (e) {
-                      console.error('Failed to start audio context:', e);
-                    }
-                    setCurrentSong(song);
-                    setHasStarted(true);
-                  }}
-                  className="group relative flex flex-col items-start p-6 pixel-btn hover:scale-[1.02] text-left"
+                  onMouseEnter={playHoverSound}
+                  onClick={() => { playSelectSound(); selectSong(song); }}
+                  className={`group relative flex flex-col items-start p-6 pl-8 hover:scale-[1.02] text-left ${isFirstTimer && song.id === 'twinkle' ? 'pixel-btn-primary pulse-border' : 'pixel-btn'}`}
                 >
-                  <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">{song.title}</h3>
+                  {/* RPG cursor */}
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pixel-text-accent text-sm cursor-bounce transition-opacity">▶</span>
+                  {isFirstTimer && song.id === 'twinkle' && (
+                    <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-tight px-2 py-1 bg-[var(--color-void)] text-[var(--color-accent-primary)]">
+                      [RECOMMENDED]
+                    </span>
+                  )}
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-2xl font-bold text-[var(--color-text-bright)] uppercase tracking-tighter">{song.title}</h3>
+                    {song.difficulty && (
+                      <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-tight" style={{ color: DIFFICULTY_COLORS[song.difficulty] }}>
+                        <span className="inline-block w-2 h-2" style={{ backgroundColor: DIFFICULTY_COLORS[song.difficulty] }} />
+                        {song.difficulty}
+                      </span>
+                    )}
+                  </div>
                   <p className="pixel-text-subtle font-medium">{song.artist}</p>
+                  {durations[song.id] != null && (
+                    <p className="pixel-text-muted text-xs mt-1">~{Math.ceil(durations[song.id] / 60)} min</p>
+                  )}
 
-                  <div className="mt-6 flex items-center pixel-text-accent text-sm font-bold">
+                  <div className="mt-auto pt-4 flex items-center pixel-text-accent text-sm font-bold">
                     <span>Start Lesson</span>
                     <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -510,33 +723,6 @@ export default function Home() {
                 </label>
               </motion.div>
             </div>
-
-            {/* Theme Selector */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.5 }}
-              className="z-10 mt-12 w-full max-w-4xl px-4"
-            >
-              <h2 className="text-sm font-bold text-[var(--color-muted)] uppercase tracking-wider mb-4 text-center">Theme</h2>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                {THEMES.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id as Theme)}
-                    className={`flex flex-col items-center p-3 text-xs ${theme === t.id ? 'pixel-btn-primary' : 'pixel-btn'}`}
-                  >
-                    <div className="theme-swatch">
-                      {t.swatches.map((color, i) => (
-                        <div key={i} style={{ backgroundColor: color }} />
-                      ))}
-                    </div>
-                    <span className="font-bold">{t.name}</span>
-                    <span className="text-[10px] opacity-70">{t.description}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
 
             {/* Keyboard shortcuts hint */}
             <motion.div
