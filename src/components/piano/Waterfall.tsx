@@ -82,7 +82,7 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
             renderStartIdx--;
         }
 
-        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; }[] = [];
+        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; proximity: number; isActive: boolean; isLong: boolean; }[] = [];
 
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
@@ -95,6 +95,12 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
 
                 const { left, width, isBlack } = getKeyPosition(note.midi);
 
+                // Proximity: 0 = far from keyboard, 1 = at keyboard line
+                // Based on how close the note's bottom edge is to y=0 (keyboard line)
+                const proximity = containerHeight > 0
+                    ? Math.max(0, Math.min(1, 1 - bottomPx / containerHeight))
+                    : 0;
+
                 active.push({
                     id: `${note.name}-${note.ticks}`,
                     left,
@@ -103,6 +109,9 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                     height: heightPx,
                     isBlack,
                     color: note.color,
+                    proximity,
+                    isActive: bottomPx <= 0,
+                    isLong: heightPx > 40,
                 });
             }
         }
@@ -135,22 +144,23 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
 
             <div className="relative w-full h-full">
                 {visibleNotes.map(note => (
-                    <div 
+                    <div
                         key={note.id}
                         className={twMerge(
-                            "absolute",
-                            note.isBlack ? "z-15" : "z-10"
+                            "waterfall-note absolute",
+                            note.isBlack ? "z-15 waterfall-note--black" : "z-10",
+                            note.isLong && "waterfall-note--long",
                         )}
+                        data-proximity={note.proximity > 0.85 ? "near" : note.proximity > 0.6 ? "mid" : undefined}
+                        data-active={note.isActive ? "" : undefined}
                         style={{
                             left: `${note.left}px`,
                             width: `${note.width}px`,
                             bottom: `${note.bottom}px`,
                             height: `${note.height}px`,
+                            '--note-color': note.color,
                             backgroundColor: note.color,
-                            border: '1px solid rgba(0,0,0,1)',
-                            boxShadow: 'var(--shadow-bevel-note)',
-                            imageRendering: 'pixelated'
-                        }}
+                        } as React.CSSProperties}
                     />
                 ))}
             </div>

@@ -588,3 +588,265 @@ body {
 .cursor-bounce {
   animation: cursor-bounce 0.6s ease-in-out infinite;
 }
+
+/* ============================================
+   WATERFALL NOTE STYLING
+   ============================================ */
+
+/* Base note block */
+.waterfall-note {
+  border: 1px solid rgba(0, 0, 0, 1);
+  box-shadow: var(--shadow-bevel-note);
+  image-rendering: pixelated;
+  contain: layout style paint;
+}
+
+/* Internal pixel art detail (top highlight) */
+.waterfall-note::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.5) 0px,
+    rgba(255, 255, 255, 0.2) 2px,
+    transparent 3px
+  );
+}
+
+/* Leading edge glow (bottom of note, hidden by default) */
+.waterfall-note::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.6), transparent);
+  opacity: 0;
+}
+
+/* Long note segmentation (Tetris brick / piano roll grid) */
+.waterfall-note--long::before {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.5) 0px,
+      rgba(255, 255, 255, 0.2) 2px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 14px,
+      rgba(0, 0, 0, 0.15) 14px,
+      rgba(0, 0, 0, 0.15) 15px,
+      rgba(255, 255, 255, 0.08) 15px,
+      rgba(255, 255, 255, 0.08) 16px
+    );
+}
+
+/* Black key notes — slightly darker for depth */
+.waterfall-note--black {
+  filter: brightness(0.85);
+}
+
+/* --- Proximity states --- */
+.waterfall-note[data-proximity="mid"]::after {
+  opacity: 0.4;
+}
+
+.waterfall-note[data-proximity="near"]::after {
+  opacity: 1;
+}
+
+.waterfall-note[data-proximity="near"] {
+  filter: brightness(1.08);
+}
+
+.waterfall-note--black[data-proximity="near"] {
+  filter: brightness(0.92);
+}
+
+/* --- Active state (note at/below keyboard line) --- */
+.waterfall-note[data-active] {
+  filter: brightness(1.25);
+  transform: scaleX(1.03);
+}
+
+.waterfall-note--black[data-active] {
+  filter: brightness(1.08);
+  transform: scaleX(1.03);
+}
+
+/* Selective GPU promotion only for animating notes */
+.waterfall-note[data-proximity="near"],
+.waterfall-note[data-active] {
+  will-change: transform, filter;
+}
+
+/* ============================================
+   THEME-SPECIFIC NOTE OVERRIDES
+   ============================================ */
+
+/* --- 8-BIT (NES): Harsh 1px bevel, chunky 8px segments --- */
+[data-theme="8bit"] .waterfall-note {
+  box-shadow:
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.9),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.9);
+}
+
+[data-theme="8bit"] .waterfall-note::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.6) 0px,
+    transparent 1px
+  );
+}
+
+[data-theme="8bit"] .waterfall-note--long::before {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.6) 0px,
+      transparent 1px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 7px,
+      rgba(0, 0, 0, 0.25) 7px,
+      rgba(0, 0, 0, 0.25) 8px
+    );
+}
+
+/* --- 16-BIT (SNES): Rich multi-layer bevel, vertical side gradients --- */
+[data-theme="16bit"] .waterfall-note {
+  box-shadow:
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.9),
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.3),
+    inset -1px -1px 0 0 rgba(0, 0, 0, 0.7),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="16bit"] .waterfall-note::before {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.5) 0px,
+      rgba(255, 255, 255, 0.15) 2px,
+      transparent 4px
+    ),
+    linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.12) 0px,
+      transparent 3px,
+      transparent calc(100% - 3px),
+      rgba(0, 0, 0, 0.12) 100%
+    );
+}
+
+[data-theme="16bit"] .waterfall-note[data-proximity="near"] {
+  filter: brightness(1.1) saturate(1.1);
+}
+
+[data-theme="16bit"] .waterfall-note--black[data-proximity="near"] {
+  filter: brightness(0.95) saturate(1.1);
+}
+
+/* --- MONO (Terminal): CRT scanlines inside note body, phosphor glow --- */
+[data-theme="mono"] .waterfall-note::before {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.4) 0px,
+      rgba(255, 255, 255, 0.15) 2px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 0, 0, 0.1) 1px,
+      rgba(0, 0, 0, 0.1) 2px
+    );
+}
+
+[data-theme="mono"] .waterfall-note[data-proximity="near"] {
+  box-shadow:
+    var(--shadow-bevel-note),
+    0 0 4px rgba(34, 197, 94, 0.4),
+    0 0 8px rgba(34, 197, 94, 0.2);
+}
+
+[data-theme="mono"] .waterfall-note[data-active] {
+  box-shadow:
+    var(--shadow-bevel-note),
+    0 0 6px rgba(34, 197, 94, 0.6),
+    0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+/* --- COOL (Cyber): Neon outer glow on proximity --- */
+[data-theme="cool"] .waterfall-note[data-proximity="near"] {
+  box-shadow:
+    var(--shadow-bevel-note),
+    0 0 4px rgba(99, 102, 241, 0.4),
+    0 0 8px rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="cool"] .waterfall-note[data-active] {
+  box-shadow:
+    var(--shadow-bevel-note),
+    0 0 6px rgba(99, 102, 241, 0.6),
+    0 0 12px rgba(99, 102, 241, 0.3);
+}
+
+/* --- WARM (Vintage): Sepia-tinted top highlight --- */
+[data-theme="warm"] .waterfall-note::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 240, 200, 0.5) 0px,
+    rgba(255, 240, 200, 0.2) 2px,
+    transparent 3px
+  );
+}
+
+[data-theme="warm"] .waterfall-note--long::before {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 240, 200, 0.5) 0px,
+      rgba(255, 240, 200, 0.2) 2px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 14px,
+      rgba(0, 0, 0, 0.12) 14px,
+      rgba(0, 0, 0, 0.12) 15px,
+      rgba(255, 240, 200, 0.06) 15px,
+      rgba(255, 240, 200, 0.06) 16px
+    );
+}
+
+/* --- HI-BIT (Celeste): Brightness + saturation boost on proximity --- */
+[data-theme="hibit"] .waterfall-note[data-proximity="near"] {
+  filter: brightness(1.12) saturate(1.15);
+}
+
+[data-theme="hibit"] .waterfall-note--black[data-proximity="near"] {
+  filter: brightness(0.95) saturate(1.15);
+}
+
+[data-theme="hibit"] .waterfall-note[data-active] {
+  filter: brightness(1.3) saturate(1.2);
+  transform: scaleX(1.03);
+}
+
+[data-theme="hibit"] .waterfall-note--black[data-active] {
+  filter: brightness(1.1) saturate(1.2);
+  transform: scaleX(1.03);
+}
