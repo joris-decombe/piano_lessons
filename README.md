@@ -4,7 +4,7 @@ A modern, interactive piano learning application built with Next.js and Web Audi
 
 [**Live Demo**](https://joris-decombe.github.io/piano_lessons/)
 
-![Active Lesson](.github/screenshots/03-player-active.png)
+![Active Lesson](.github/screenshots/player-active.png)
 
 ## Overview
 
@@ -39,17 +39,17 @@ The application features a modern, minimalist control bar for a seamless learnin
 ### Landing Page
 Choose your piece to begin practicing.
 
-![Landing Page](.github/screenshots/01-landing.png)
+![Landing Page](.github/screenshots/landing.png)
 
 ### Player View (Idle)
 The main interface features a virtual keyboard and a waterfall display area.
 
-![Player Idle](.github/screenshots/02-player-idle.png)
+![Player Idle](.github/screenshots/player-idle.png)
 
 ### Active Lesson
 Notes fall in sync with the audio. Active keys light up on the virtual keyboard.
 
-![Active Lesson](.github/screenshots/03-player-active.png)
+![Active Lesson](.github/screenshots/player-active.png)
 
 ## Getting Started
 

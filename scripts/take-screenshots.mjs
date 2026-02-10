@@ -55,9 +55,15 @@ async function takeScreenshots() {
     for (const theme of THEMES) {
       console.log(`  - ${theme} theme...`);
       await setTheme(page, theme);
-      await page.screenshot({
-        path: path.join(screenshotDir, `theme-${theme}.png`)
-      });
+      const screenshotPath = path.join(screenshotDir, `theme-${theme}.png`);
+      await page.screenshot({ path: screenshotPath });
+      
+      // Also save 'cool' theme as landing.png for README
+      if (theme === 'cool') {
+        await page.screenshot({
+          path: path.join(screenshotDir, 'landing.png')
+        });
+      }
     }
 
     // Player view with default theme (cool)
