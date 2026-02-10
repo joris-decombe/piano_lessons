@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0]
+
+### Added
+- Main menu UX overhaul with 8 improvements
+- Difficulty badges on song cards (beginner/intermediate/advanced)
+- Progress tracking via localStorage with "Continue Playing" card for returning users
+- First-timer highlight: Twinkle card gets pulse animation and [RECOMMENDED] badge
+- Duration estimates on song cards (parsed from MIDI/ABC files)
+- RPG-style cursor animation on card hover
+- Menu sound effects (hover blip + select sound via Tone.js square wave)
+- Category tabs (All/Beginner/Intermediate/Advanced/My Uploads) — shown when >4 songs
+- Settings gear popover for theme selection (replaces full-width theme grid)
+
+### Changed
+- Landing page layout: theme selector moved to compact gear popover (top-right)
+- Song cards now show difficulty, duration, and RPG cursor on hover
+
 ## [0.4.0]
 
 ### Added

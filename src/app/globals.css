@@ -564,3 +564,27 @@ body {
     min-height: 44px;
   }
 }
+
+/* ============================================
+   MENU ANIMATIONS
+   ============================================ */
+
+/* First-timer recommended card pulse */
+@keyframes pulse-border {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+.pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* RPG cursor bounce */
+@keyframes cursor-bounce {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+.cursor-bounce {
+  animation: cursor-bounce 0.6s ease-in-out infinite;
+}

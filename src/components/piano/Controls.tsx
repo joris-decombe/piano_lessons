@@ -30,6 +30,7 @@ interface Song {
     url?: string;
     abc?: string;
     type: 'midi' | 'abc';
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 interface SongSettings {
