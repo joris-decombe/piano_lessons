@@ -256,6 +256,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                     <EffectsCanvas
                         activeNotes={effectsNotes}
                         containerHeight={waterfallHeight}
+                        theme={theme}
                     />
                 </div>
 
