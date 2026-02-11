@@ -321,11 +321,18 @@ export function EffectsCanvas({
         const railHeight = 3;
         const y = impactY - 1; // Sit exactly on the line
 
-        // 1. Base Rail (Subtle, glassy line across the whole width)
-        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        // 1. Base Rail (Subtle, but visible glassy line across the whole width)
+        // Recessed groove effect
+        ctx.fillStyle = "rgba(255, 255, 255, 0.05)"; 
         ctx.fillRect(0, Math.round(y), totalKeyboardWidth, railHeight);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        
+        // Top highlight line (sharp 1px edge)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
         ctx.fillRect(0, Math.round(y), totalKeyboardWidth, 1);
+        
+        // Bottom subtle edge
+        ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+        ctx.fillRect(0, Math.round(y + railHeight - 1), totalKeyboardWidth, 1);
 
         // 2. Active Segments (Intense glow only under active notes)
         ctx.globalCompositeOperation = "lighter";
