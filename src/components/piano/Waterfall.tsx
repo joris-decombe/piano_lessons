@@ -118,8 +118,6 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
         return active;
     }, [midi, currentTick, allNotes, maxDuration, lookAheadTicks, containerHeight]);
 
-    const hasActiveNotes = visibleNotes.some(n => n.isActive);
-
     return (
         <div
             className="absolute inset-0 overflow-hidden pointer-events-none"
