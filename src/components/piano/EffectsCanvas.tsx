@@ -318,20 +318,20 @@ export function EffectsCanvas({
     // Draw a segmented impact rail (judgment line) that glows at active notes
     const drawImpactRail = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
         ctx.save();
-        const railHeight = 3;
-        const y = impactY - 1; // Sit exactly on the line
+        const railHeight = 4;
+        const y = impactY - 4; // Move it up so it's not hidden by keyboard z-index
 
-        // 1. Base Rail (Subtle, but visible glassy line across the whole width)
-        // Recessed groove effect
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)"; 
+        // 1. Base Rail (Glassy etched groove)
+        // Darker foundation for contrast
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)"; 
         ctx.fillRect(0, Math.round(y), totalKeyboardWidth, railHeight);
         
-        // Top highlight line (sharp 1px edge)
-        ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+        // Top highlight line (sharp luminous edge)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
         ctx.fillRect(0, Math.round(y), totalKeyboardWidth, 1);
         
-        // Bottom subtle edge
-        ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+        // Bottom highlight line (fainter edge)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
         ctx.fillRect(0, Math.round(y + railHeight - 1), totalKeyboardWidth, 1);
 
         // 2. Active Segments (Intense glow only under active notes)
@@ -342,24 +342,24 @@ export function EffectsCanvas({
 
             const { left, width } = getKeyPosition(n.midi);
             
-            // Core hot segment
+            // Core hot segment (thicker and brighter)
             const grad = ctx.createLinearGradient(0, y, 0, y + railHeight);
-            grad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.8)`);
-            grad.addColorStop(0.5, "rgba(255, 255, 255, 0.9)");
-            grad.addColorStop(1, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.8)`);
+            grad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.9)`);
+            grad.addColorStop(0.5, "rgba(255, 255, 255, 1)");
+            grad.addColorStop(1, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.9)`);
 
             ctx.fillStyle = grad;
             ctx.fillRect(Math.round(left), Math.round(y), width, railHeight);
 
-            // Subtle horizontal bloom bleed
+            // Subtle vertical bloom (spreads slightly above and below rail)
             const bloomGrad = ctx.createRadialGradient(
-                left + width / 2, y + 1, 0,
-                left + width / 2, y + 1, width
+                left + width / 2, y + railHeight / 2, 0,
+                left + width / 2, y + railHeight / 2, width
             );
-            bloomGrad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.3)`);
+            bloomGrad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.4)`);
             bloomGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
             ctx.fillStyle = bloomGrad;
-            ctx.fillRect(Math.round(left - width/2), Math.round(y - 4), width * 2, 10);
+            ctx.fillRect(Math.round(left - width/2), Math.round(y - 6), width * 2, 16);
         }
         ctx.restore();
     }, [impactY, totalKeyboardWidth]);
