@@ -61,6 +61,15 @@ interface PhosphorTrace {
 const PHOSPHOR_DURATION = 500; // ms
 const PHOSPHOR_COLOR = { r: 34, g: 197, b: 94 }; // Green-500, matches mono accent
 
+const THEME_ACCENTS: Record<string, string> = {
+    cool: "#38bdf8",
+    warm: "#f59e0b",
+    mono: "#22c55e",
+    "8bit": "#e52521",
+    "16bit": "#f08030",
+    hibit: "#ff6188",
+};
+
 export function EffectsCanvas({
     activeNotes,
     containerHeight,
@@ -319,15 +328,17 @@ export function EffectsCanvas({
     const drawImpactRail = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
         ctx.save();
         const railHeight = 2;
-        const y = impactY - railHeight; // Sit exactly on the bottom edge
+        const y = impactY - railHeight; // Flush with the bottom edge
 
-        // 1. Base Rail (Glassy etched groove)
-        // Brighter foundation for visibility on dark backgrounds
-        ctx.fillStyle = "rgba(255, 255, 255, 0.1)"; 
+        const themeColor = THEME_ACCENTS[theme] || THEME_ACCENTS.cool;
+        const parsedTheme = parseColor(themeColor)!;
+
+        // 1. Base Rail (Glassy etched groove following theme color)
+        ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.15)`; 
         ctx.fillRect(0, Math.round(y), totalKeyboardWidth, railHeight);
         
         // Top highlight line (sharp luminous edge)
-        ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.4)`;
         ctx.fillRect(0, Math.round(y), totalKeyboardWidth, 1);
 
         // 2. Active Segments (Intense glow only under active notes)
@@ -358,7 +369,7 @@ export function EffectsCanvas({
             ctx.fillRect(Math.round(left - width/2), Math.round(y - 10), width * 2, 20);
         }
         ctx.restore();
-    }, [impactY, totalKeyboardWidth]);
+    }, [impactY, totalKeyboardWidth, theme]);
 
     // Main render loop
     useEffect(() => {
