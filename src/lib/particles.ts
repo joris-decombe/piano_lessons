@@ -13,6 +13,7 @@ export interface Particle {
     color: string;
     size: number;
     active: boolean;
+    type: 'burst' | 'debris' | 'shockwave';
 }
 
 export interface EmitOptions {
@@ -25,10 +26,11 @@ export interface EmitOptions {
     size?: number;
     lifetime?: number;
     gravity?: number;
+    type?: 'burst' | 'debris' | 'shockwave';
 }
 
-const POOL_SIZE = 500;
-const DEFAULT_GRAVITY = 80; // pixels per second^2 (downward)
+const POOL_SIZE = 800;
+const DEFAULT_GRAVITY = 120; // pixels per second^2 (downward)
 
 export class ParticleSystem {
     particles: Particle[];
@@ -40,6 +42,7 @@ export class ParticleSystem {
             x: 0, y: 0, vx: 0, vy: 0,
             life: 0, maxLife: 0,
             color: '', size: 1, active: false,
+            type: 'burst'
         }));
     }
 
@@ -56,16 +59,17 @@ export class ParticleSystem {
             x, y, color,
             count = 6,
             speed = 60,
-            spread = Math.PI * 0.6,  // ~108 degrees upward cone
+            spread = Math.PI * 0.6,
             size = 2,
             lifetime = 0.35,
+            type = 'burst'
         } = opts;
 
-        const baseAngle = -Math.PI / 2; // straight up
+        const baseAngle = type === 'debris' ? Math.PI / 2 : -Math.PI / 2;
 
         for (let i = 0; i < count; i++) {
             const p = this.acquire();
-            if (!p) return; // pool exhausted
+            if (!p) return;
 
             const angle = baseAngle + (Math.random() - 0.5) * spread;
             const spd = speed * (0.5 + Math.random() * 0.5);
@@ -77,8 +81,9 @@ export class ParticleSystem {
             p.life = lifetime * (0.7 + Math.random() * 0.3);
             p.maxLife = p.life;
             p.color = color;
-            p.size = size;
+            p.size = type === 'shockwave' ? size * 4 : size;
             p.active = true;
+            p.type = type;
         }
     }
 
@@ -94,7 +99,13 @@ export class ParticleSystem {
                 continue;
             }
 
-            p.vy += this.gravity * dt;
+            if (p.type === 'burst' || p.type === 'debris') {
+                p.vy += this.gravity * dt;
+            } else if (p.type === 'shockwave') {
+                // Shockwaves expand but don't fall
+                p.size += 40 * dt;
+            }
+
             p.x += p.vx * dt;
             p.y += p.vy * dt;
         }
@@ -109,12 +120,19 @@ export class ParticleSystem {
             const alpha = Math.max(0, p.life / p.maxLife);
             ctx.globalAlpha = alpha;
             ctx.fillStyle = p.color;
-            ctx.fillRect(
-                Math.round(p.x),
-                Math.round(p.y),
-                p.size,
-                p.size,
-            );
+
+            if (p.type === 'shockwave') {
+                ctx.beginPath();
+                ctx.arc(Math.round(p.x), Math.round(p.y), p.size / 2, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                ctx.fillRect(
+                    Math.round(p.x),
+                    Math.round(p.y),
+                    p.size,
+                    p.size,
+                );
+            }
         }
         ctx.globalAlpha = 1;
     }

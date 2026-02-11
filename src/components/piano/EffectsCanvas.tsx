@@ -16,6 +16,7 @@ interface EffectsCanvasProps {
     containerHeight: number;
     /** Current theme id for theme-specific effects */
     theme?: string;
+    isPlaying?: boolean;
 }
 
 /** Parse a CSS color string to extract RGB values for glow rendering. */
@@ -64,6 +65,7 @@ export function EffectsCanvas({
     activeNotes,
     containerHeight,
     theme = "cool",
+    isPlaying = false,
 }: EffectsCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const bloomCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -79,6 +81,8 @@ export function EffectsCanvas({
 
     const isMono = theme === "mono";
     const isCool = theme === "cool";
+    const is8Bit = theme === "8bit";
+    const isHiBit = theme === "hibit";
 
     // Detect new note-on events and emit particles; track note-offs for phosphor
     const emitForNewNotes = useCallback((notes: EffectsNote[]) => {
@@ -93,14 +97,28 @@ export function EffectsCanvas({
                 const { left, width } = getKeyPosition(n.midi);
                 const centerX = left + width / 2;
 
+                // 1. Upward burst
                 particlesRef.current.emit({
                     x: centerX,
                     y: impactY,
                     color: n.color,
-                    count: 8,
-                    speed: 60,
+                    count: 10,
+                    speed: 80,
                     size: 2,
-                    lifetime: 0.5,
+                    lifetime: 0.6,
+                    type: 'burst'
+                });
+
+                // 2. Shockwave
+                particlesRef.current.emit({
+                    x: centerX,
+                    y: impactY,
+                    color: n.color,
+                    count: 1,
+                    speed: 0,
+                    size: 4,
+                    lifetime: 0.3,
+                    type: 'shockwave'
                 });
 
                 // Add impact flash
@@ -109,6 +127,25 @@ export function EffectsCanvas({
                     startTime: now,
                     left,
                     width,
+                });
+            }
+        }
+
+        // Emit subtle downward debris for sustained notes (randomly)
+        for (const n of notes) {
+            if (Math.random() > 0.8) {
+                const { left, width } = getKeyPosition(n.midi);
+                const centerX = left + width / 2;
+                particlesRef.current.emit({
+                    x: centerX + (Math.random() - 0.5) * width,
+                    y: impactY - 10,
+                    color: n.color,
+                    count: 1,
+                    speed: 30,
+                    spread: Math.PI / 4,
+                    size: 1,
+                    lifetime: 0.4,
+                    type: 'debris'
                 });
             }
         }
@@ -256,6 +293,28 @@ export function EffectsCanvas({
         ctx.restore();
     }, [impactY]);
 
+    // Draw upward light beams for active notes
+    const drawLightBeams = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        for (const n of notes) {
+            const parsed = parseColor(n.color);
+            if (!parsed) continue;
+
+            const { left, width } = getKeyPosition(n.midi);
+            const beamHeight = 120;
+
+            const grad = ctx.createLinearGradient(0, impactY - beamHeight, 0, impactY);
+            grad.addColorStop(0, "rgba(255, 255, 255, 0)");
+            grad.addColorStop(1, `rgba(${parsed.r},${parsed.g},${parsed.b},0.15)`);
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(Math.round(left + 1), Math.round(impactY - beamHeight), width - 2, beamHeight);
+        }
+        ctx.restore();
+    }, [impactY]);
+
     // Main render loop
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -281,11 +340,14 @@ export function EffectsCanvas({
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Draw core effects
-            particlesRef.current.update(dt);
+            // 1. Update and Draw core effects
+            if (isPlaying) {
+                particlesRef.current.update(dt);
+            }
             particlesRef.current.draw(ctx);
             drawKeyGlow(ctx, activeNotes, time);
             drawNoteTrails(ctx, activeNotes);
+            drawLightBeams(ctx, activeNotes);
 
             // 1.5. Impact flash
             drawImpactFlash(ctx, time);
@@ -295,8 +357,8 @@ export function EffectsCanvas({
                 drawPhosphor(ctx, time);
             }
 
-            // 3. Bloom pass
-            if (bloomCtx && activeNotes.length > 0) {
+            // 3. Bloom pass - Disabled for 8bit
+            if (!is8Bit && bloomCtx && activeNotes.length > 0) {
                 bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
                 bloomCtx.imageSmoothingEnabled = true;
                 bloomCtx.drawImage(canvas, 0, 0, bloomCanvas.width, bloomCanvas.height);
@@ -312,8 +374,8 @@ export function EffectsCanvas({
                     ctx.drawImage(bloomCanvas, 1, 0, canvas.width, canvas.height);  // Blue-shifted right
                 }
 
-                // Normal bloom composite
-                ctx.globalAlpha = 0.5;
+                // Normal bloom composite - HiBit gets stronger bloom
+                ctx.globalAlpha = isHiBit ? 0.7 : 0.5;
                 ctx.drawImage(bloomCanvas, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
             }
@@ -323,12 +385,14 @@ export function EffectsCanvas({
 
         rafRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafRef.current);
-    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, isMono, isCool]);
+    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, drawLightBeams, isMono, isCool, is8Bit, isHiBit, isPlaying]);
 
     // Emit particles on note changes
     useEffect(() => {
-        emitForNewNotes(activeNotes);
-    }, [activeNotes, emitForNewNotes]);
+        if (isPlaying) {
+            emitForNewNotes(activeNotes);
+        }
+    }, [activeNotes, emitForNewNotes, isPlaying]);
 
     // Reset on song change
     useEffect(() => {

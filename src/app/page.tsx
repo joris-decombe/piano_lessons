@@ -274,6 +274,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                     <Waterfall
                         midi={audio.midi}
                         currentTick={audio.currentTick}
+                        isPlaying={audio.isPlaying}
                         playbackRate={audio.playbackRate}
                         activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
                         lookAheadTicks={audio.lookAheadTicks}
@@ -292,6 +293,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                         activeNotes={effectsNotes}
                         containerHeight={waterfallHeight}
                         theme={theme}
+                        isPlaying={audio.isPlaying}
                     />
                 </div>
 
