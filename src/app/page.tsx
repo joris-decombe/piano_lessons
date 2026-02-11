@@ -269,7 +269,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   ref={waterfallContainerRef}
                   data-testid="waterfall-container"
                   className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
-                  style={{ bottom: 'var(--spacing-key-h)' }}
+                  style={{ bottom: 'var(--spacing-key-h)', '--playback-rate': audio.playbackRate } as React.CSSProperties}
                 >
                     <Waterfall
                         midi={audio.midi}

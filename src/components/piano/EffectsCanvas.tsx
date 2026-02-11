@@ -50,6 +50,7 @@ interface ImpactFlash {
     startTime: number;
     left: number;
     width: number;
+    color: string;
 }
 
 interface PhosphorTrace {
@@ -111,31 +112,44 @@ export function EffectsCanvas({
                     x: centerX,
                     y: impactY,
                     color: n.color,
-                    count: 10,
-                    speed: 80,
-                    size: 2,
-                    lifetime: 0.6,
+                    count: 14,
+                    speed: 100,
+                    size: 3,
+                    lifetime: 0.7,
                     type: 'burst'
                 });
 
-                // 2. Shockwave
+                // 2. Primary shockwave
                 particlesRef.current.emit({
                     x: centerX,
                     y: impactY,
                     color: n.color,
                     count: 1,
                     speed: 0,
-                    size: 4,
-                    lifetime: 0.3,
+                    size: 6,
+                    lifetime: 0.35,
                     type: 'shockwave'
                 });
 
-                // Add impact flash
+                // 3. Secondary shockwave (staggered, larger, slower)
+                particlesRef.current.emit({
+                    x: centerX,
+                    y: impactY,
+                    color: n.color,
+                    count: 1,
+                    speed: 0,
+                    size: 8,
+                    lifetime: 0.5,
+                    type: 'shockwave'
+                });
+
+                // Add impact flash with color
                 impactFlashesRef.current.push({
                     midi: n.midi,
                     startTime: now,
                     left,
                     width,
+                    color: n.color,
                 });
             }
         }
@@ -150,18 +164,18 @@ export function EffectsCanvas({
                     y: impactY - 10,
                     color: n.color,
                     count: 1,
-                    speed: 30,
+                    speed: 35,
                     spread: Math.PI / 4,
-                    size: 1,
-                    lifetime: 0.4,
+                    size: 2,
+                    lifetime: 0.5,
                     type: 'debris'
                 });
             }
         }
 
-        // Prune expired impact flashes (2 frames ≈ ~33ms)
+        // Prune expired impact flashes
         impactFlashesRef.current = impactFlashesRef.current.filter(
-            f => now - f.startTime < 50
+            f => now - f.startTime < 150
         );
 
         // Track note-offs for phosphor persistence (Mono theme)
@@ -253,11 +267,23 @@ export function EffectsCanvas({
 
         for (const f of flashes) {
             const elapsed = now - f.startTime;
-            if (elapsed >= 50) continue;
+            if (elapsed >= 150) continue;
 
-            // Fade from 0.5 alpha to 0 over ~2 frames
-            const alpha = 0.5 * (1 - elapsed / 50);
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            // Quadratic ease-out for natural decay
+            const progress = elapsed / 150;
+            const alpha = 0.6 * (1 - progress) * (1 - progress);
+
+            // Color-tinted flash: blend 50% white + 50% note color
+            const parsed = parseColor(f.color);
+            if (parsed) {
+                const r = Math.round((255 + parsed.r) / 2);
+                const g = Math.round((255 + parsed.g) / 2);
+                const b = Math.round((255 + parsed.b) / 2);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            } else {
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            }
+
             ctx.fillRect(
                 Math.round(f.left),
                 Math.round(impactY - 6),
@@ -324,51 +350,13 @@ export function EffectsCanvas({
         ctx.restore();
     }, [impactY]);
 
-    // Draw a segmented impact rail (judgment line) that glows at active notes
-    const drawImpactRail = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
-        ctx.save();
-        const railHeight = 2;
-        const y = impactY - railHeight; // Flush with the bottom edge
-
+    // Draw a subtle 1px position marker at the impact line
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const drawImpactRail = useCallback((ctx: CanvasRenderingContext2D, _notes: EffectsNote[]) => {
         const themeColor = THEME_ACCENTS[theme] || THEME_ACCENTS.cool;
         const parsedTheme = parseColor(themeColor)!;
-
-        // 1. Base Rail (Glassy etched groove following theme color)
-        ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.15)`; 
-        ctx.fillRect(0, Math.round(y), totalKeyboardWidth, railHeight);
-        
-        // Top highlight line (sharp luminous edge)
-        ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.4)`;
-        ctx.fillRect(0, Math.round(y), totalKeyboardWidth, 1);
-
-        // 2. Active Segments (Intense glow only under active notes)
-        ctx.globalCompositeOperation = "lighter";
-        for (const n of notes) {
-            const parsed = parseColor(n.color);
-            if (!parsed) continue;
-
-            const { left, width } = getKeyPosition(n.midi);
-            
-            // Core hot segment (thicker and brighter)
-            const grad = ctx.createLinearGradient(0, y, 0, y + railHeight);
-            grad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 1)`);
-            grad.addColorStop(0.5, "rgba(255, 255, 255, 1)");
-            grad.addColorStop(1, `rgba(${parsed.r},${parsed.g},${parsed.b}, 1)`);
-
-            ctx.fillStyle = grad;
-            ctx.fillRect(Math.round(left), Math.round(y), width, railHeight);
-
-            // Subtle vertical bloom (spreads slightly above rail)
-            const bloomGrad = ctx.createRadialGradient(
-                left + width / 2, y + railHeight / 2, 0,
-                left + width / 2, y + railHeight / 2, width
-            );
-            bloomGrad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.5)`);
-            bloomGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-            ctx.fillStyle = bloomGrad;
-            ctx.fillRect(Math.round(left - width/2), Math.round(y - 10), width * 2, 20);
-        }
-        ctx.restore();
+        ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.25)`;
+        ctx.fillRect(0, Math.round(impactY - 1), totalKeyboardWidth, 1);
     }, [impactY, totalKeyboardWidth, theme]);
 
     // Main render loop

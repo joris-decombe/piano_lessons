@@ -113,28 +113,43 @@ export class ParticleSystem {
 
     /** Draw all active particles to a canvas context. */
     draw(ctx: CanvasRenderingContext2D): void {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             if (!p.active) continue;
 
             const alpha = Math.max(0, p.life / p.maxLife);
-            ctx.globalAlpha = alpha;
             ctx.fillStyle = p.color;
 
             if (p.type === 'shockwave') {
+                // Filled ring (annulus) — thickness thins as it expands
+                const outerR = p.size / 2;
+                const thickness = 4 * (p.life / p.maxLife);
+                const innerR = Math.max(0, outerR - thickness);
+                const x = Math.round(p.x);
+                const y = Math.round(p.y);
+                ctx.globalAlpha = alpha * 0.8;
                 ctx.beginPath();
-                ctx.arc(Math.round(p.x), Math.round(p.y), p.size / 2, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.arc(x, y, outerR, 0, Math.PI * 2);
+                ctx.arc(x, y, innerR, 0, Math.PI * 2, true);
+                ctx.fill();
             } else {
-                ctx.fillRect(
-                    Math.round(p.x),
-                    Math.round(p.y),
-                    p.size,
-                    p.size,
-                );
+                const x = Math.round(p.x);
+                const y = Math.round(p.y);
+
+                // Soft glow halo behind the particle
+                ctx.globalAlpha = alpha * 0.3;
+                ctx.fillRect(x - 1, y - 1, p.size + 2, p.size + 2);
+
+                // Core particle
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(x, y, p.size, p.size);
             }
         }
-        ctx.globalAlpha = 1;
+
+        ctx.restore();
     }
 
     /** Number of currently active particles. */
