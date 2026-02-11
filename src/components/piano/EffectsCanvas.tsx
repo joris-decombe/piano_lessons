@@ -315,6 +315,48 @@ export function EffectsCanvas({
         ctx.restore();
     }, [impactY]);
 
+    // Draw a segmented impact rail (judgment line) that glows at active notes
+    const drawImpactRail = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
+        ctx.save();
+        const railHeight = 3;
+        const y = impactY - 1; // Sit exactly on the line
+
+        // 1. Base Rail (Subtle, glassy line across the whole width)
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillRect(0, Math.round(y), totalKeyboardWidth, railHeight);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.fillRect(0, Math.round(y), totalKeyboardWidth, 1);
+
+        // 2. Active Segments (Intense glow only under active notes)
+        ctx.globalCompositeOperation = "lighter";
+        for (const n of notes) {
+            const parsed = parseColor(n.color);
+            if (!parsed) continue;
+
+            const { left, width } = getKeyPosition(n.midi);
+            
+            // Core hot segment
+            const grad = ctx.createLinearGradient(0, y, 0, y + railHeight);
+            grad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.8)`);
+            grad.addColorStop(0.5, "rgba(255, 255, 255, 0.9)");
+            grad.addColorStop(1, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.8)`);
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(Math.round(left), Math.round(y), width, railHeight);
+
+            // Subtle horizontal bloom bleed
+            const bloomGrad = ctx.createRadialGradient(
+                left + width / 2, y + 1, 0,
+                left + width / 2, y + 1, width
+            );
+            bloomGrad.addColorStop(0, `rgba(${parsed.r},${parsed.g},${parsed.b}, 0.3)`);
+            bloomGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+            ctx.fillStyle = bloomGrad;
+            ctx.fillRect(Math.round(left - width/2), Math.round(y - 4), width * 2, 10);
+        }
+        ctx.restore();
+    }, [impactY, totalKeyboardWidth]);
+
     // Main render loop
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -348,6 +390,7 @@ export function EffectsCanvas({
             drawKeyGlow(ctx, activeNotes, time);
             drawNoteTrails(ctx, activeNotes);
             drawLightBeams(ctx, activeNotes);
+            drawImpactRail(ctx, activeNotes);
 
             // 1.5. Impact flash
             drawImpactFlash(ctx, time);
@@ -385,7 +428,7 @@ export function EffectsCanvas({
 
         rafRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafRef.current);
-    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, drawLightBeams, isMono, isCool, is8Bit, isHiBit, isPlaying]);
+    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, drawLightBeams, drawImpactRail, isMono, isCool, is8Bit, isHiBit, isPlaying]);
 
     // Emit particles on note changes
     useEffect(() => {
