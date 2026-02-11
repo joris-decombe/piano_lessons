@@ -597,11 +597,9 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: 
-    linear-gradient(to right, var(--color-border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-image: linear-gradient(to right, var(--color-border) 1px, transparent 1px);
   background-size: 32px 32px;
-  opacity: 0.15;
+  opacity: 0.1;
   mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
 }
 
@@ -616,25 +614,6 @@ body {
 @keyframes scroll-grid {
   from { background-position: 0 0; }
   to { background-position: 0 32px; }
-}
-
-/* Impact Rail (the line where notes hit keys) */
-.waterfall-rail {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--color-accent-primary);
-  box-shadow: 0 0 8px var(--color-accent-primary);
-  opacity: 0.3;
-  z-index: 45;
-}
-
-.waterfall-rail[data-active="true"] {
-  opacity: 0.8;
-  height: 3px;
-  filter: brightness(1.2);
 }
 
 /* ============================================

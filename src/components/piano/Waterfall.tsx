@@ -173,12 +173,6 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                     </div>
                 ))}
             </div>
-
-            {/* Impact Rail Layer */}
-            <div 
-                className="waterfall-rail" 
-                data-active={hasActiveNotes}
-            />
         </div>
     );
 }
