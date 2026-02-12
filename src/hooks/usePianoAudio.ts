@@ -12,6 +12,10 @@ export interface ActiveNote {
     note: string;
     track: number;
     velocity: number;
+    /** 
+     * Timestamp (in ticks) when this note started. 
+     * Used by EffectsEngine to distinguish separate attacks of the same pitch. 
+     */
     startTick: number;
 }
 

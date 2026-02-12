@@ -239,7 +239,10 @@ export class EffectsEngine {
      * The React wrapper should call this whenever activeNotes change.
      */
     emitForNewNotes(notes: EffectsNote[]): void {
-        // Use composite key to allow re-triggering of same note at different time
+        // Use composite key (`${midi}-${startTick}`) instead of just `${midi}`.
+        // This is critical for detecting consecutive or rapid repetitions of the same note.
+        // Without `startTick`, the engine incorrectly sees the note as "already active" 
+        // and skips the particle burst/shockwave trigger.
         const currentKeys = new Set(notes.map((n) => `${n.midi}-${n.startTick}`));
         const prevKeys = this.prevNotes;
         const now = performance.now();
