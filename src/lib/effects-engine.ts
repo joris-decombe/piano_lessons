@@ -385,10 +385,10 @@ export class EffectsEngine {
 
         // 1. Atmosphere & Background Effects
         this.drawGodRays(ctx, time);
-        this.emitAmbientSpores();
 
         // 2. Update and draw core effects
         if (this.isPlaying) {
+            this.emitAmbientSpores();
             this.particles.update(dt);
         }
         this.particles.draw(ctx);
@@ -505,7 +505,7 @@ export class EffectsEngine {
 
     /** Emit ambient spores (Suspended Particulate Matter). */
     private emitAmbientSpores(): void {
-        if (Math.random() > 0.95) { // Chance per frame to emit ambient spores
+        if (Math.random() > 0.90) { // Increased chance per frame to emit ambient spores
             const atmosphereColor = THEME_ATMOSPHERE[this.theme] || THEME_ATMOSPHERE.cool;
             const x = Math.random() * this.totalKeyboardWidth;
             const y = Math.random() * this.containerHeight;
