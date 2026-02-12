@@ -9,17 +9,17 @@
 
 :root {
   /* Default to cool theme */
-  --background: #0a0a0f;
+  --background: #060810;
   --foreground: #E2E4E9;
 }
 
 /* --- COOL THEME (Cyber/Neon) --- */
 :root, [data-theme="cool"] {
   /* Voids & Darks */
-  --color-void: #0a0a0f;
-  --color-bg: #12121a;
-  --color-surface: #1a1a24;
-  --color-elevated: #22222e;
+  --color-void: #060810;
+  --color-bg: #0c1020;
+  --color-surface: #141830;
+  --color-elevated: #1e2240;
 
   /* Neutrals */
   --color-border: #3a3a4a;
@@ -46,15 +46,18 @@
   --color-note-left: #fb7185;
   --color-note-right: #38bdf8;
   --color-note-unified: #a78bfa;
+
+  /* Grid */
+  --color-grid-line: rgba(99, 102, 241, 0.5);
 }
 
 /* --- WARM THEME (Vintage/Sepia) --- */
 [data-theme="warm"] {
   /* Voids & Darks */
-  --color-void: #0f0a06;
-  --color-bg: #1a140e;
-  --color-surface: #2a2018;
-  --color-elevated: #3a2e22;
+  --color-void: #100804;
+  --color-bg: #1e1208;
+  --color-surface: #2e1e10;
+  --color-elevated: #3e2c1a;
 
   /* Neutrals */
   --color-border: #5a4a3a;
@@ -81,15 +84,18 @@
   --color-note-left: #ef4444;
   --color-note-right: #f59e0b;
   --color-note-unified: #fbbf24;
+
+  /* Grid */
+  --color-grid-line: rgba(180, 83, 9, 0.5);
 }
 
 /* --- MONO THEME (Terminal/Minimal) --- */
 [data-theme="mono"] {
-  /* Voids & Darks - Pure blacks */
+  /* Voids & Darks - CRT phosphor tint */
   --color-void: #000000;
-  --color-bg: #0a0a0a;
-  --color-surface: #141414;
-  --color-elevated: #1e1e1e;
+  --color-bg: #060806;
+  --color-surface: #0d120d;
+  --color-elevated: #141e14;
 
   /* Neutrals - Grayscale */
   --color-border: #333333;
@@ -116,15 +122,18 @@
   --color-note-left: #4ade80;
   --color-note-right: #22c55e;
   --color-note-unified: #22c55e;
+
+  /* Grid */
+  --color-grid-line: rgba(34, 197, 94, 0.4);
 }
 
 /* --- 8-BIT THEME (NES/Mario Bros Era) --- */
 [data-theme="8bit"] {
   /* Voids & Darks - NES deep blue-black */
-  --color-void: #000000;
-  --color-bg: #0c0c28;
-  --color-surface: #181850;
-  --color-elevated: #282878;
+  --color-void: #02021a;
+  --color-bg: #080828;
+  --color-surface: #101850;
+  --color-elevated: #202878;
 
   /* Neutrals - Limited NES palette feel */
   --color-border: #5050a0;
@@ -151,15 +160,18 @@
   --color-note-left: #e52521;         /* Red */
   --color-note-right: #049cd8;        /* Blue */
   --color-note-unified: #fbd000;      /* Gold */
+
+  /* Grid */
+  --color-grid-line: rgba(80, 80, 160, 0.5);
 }
 
 /* --- 16-BIT THEME (SNES/Street Fighter Era) --- */
 [data-theme="16bit"] {
   /* Voids & Darks - SF2 character select deep blue */
-  --color-void: #0a0818;
-  --color-bg: #101028;
-  --color-surface: #181840;
-  --color-elevated: #282860;
+  --color-void: #060414;
+  --color-bg: #0c0a24;
+  --color-surface: #141438;
+  --color-elevated: #202050;
 
   /* Neutrals - Richer 16-bit tones */
   --color-border: #4848a0;
@@ -186,15 +198,18 @@
   --color-note-left: #e03020;         /* Fireball red */
   --color-note-right: #30a0f0;        /* Hadouken blue */
   --color-note-unified: #f08030;      /* Energy orange */
+
+  /* Grid */
+  --color-grid-line: rgba(72, 72, 160, 0.5);
 }
 
 /* --- HI-BIT THEME (Modern Indie Pixel Art) --- */
 [data-theme="hibit"] {
   /* Voids & Darks - Celeste/HLD inspired deep purple */
-  --color-void: #0d0b1a;
-  --color-bg: #16132d;
-  --color-surface: #1f1b3d;
-  --color-elevated: #2a2550;
+  --color-void: #080614;
+  --color-bg: #120e28;
+  --color-surface: #1a1838;
+  --color-elevated: #24204a;
 
   /* Neutrals - Soft lavender tones */
   --color-border: #4a4270;
@@ -221,6 +236,9 @@
   --color-note-left: #ff6188;         /* Pink */
   --color-note-right: #78dce8;        /* Cyan */
   --color-note-unified: #ab9df2;      /* Lavender */
+
+  /* Grid */
+  --color-grid-line: rgba(120, 220, 232, 0.4);
 }
 
 /* stylelint-disable-next-line at-rule-no-unknown */
@@ -467,16 +485,22 @@ body {
     0 0 12px var(--color-accent-primary);
 }
 
-/* Subtle noise texture for hi-bit theme */
-[data-theme="hibit"] .noise-texture::before {
+/* Noise/grain texture for atmospheric depth */
+.noise-texture::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.015;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   z-index: 9998;
+  opacity: 0;
 }
+[data-theme="cool"] .noise-texture::before   { opacity: 0.018; }
+[data-theme="warm"] .noise-texture::before   { opacity: 0.025; }
+[data-theme="mono"] .noise-texture::before   { opacity: 0.04; }
+[data-theme="8bit"] .noise-texture::before   { opacity: 0.01; }
+[data-theme="16bit"] .noise-texture::before  { opacity: 0.015; }
+[data-theme="hibit"] .noise-texture::before  { opacity: 0.015; }
 
 /* ============================================
    THEME COLOR SWATCHES
@@ -606,12 +630,14 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: 
-    linear-gradient(to right, var(--color-border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-image:
+    linear-gradient(to right, var(--color-grid-line, var(--color-border)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid-line, var(--color-border)) 1px, transparent 1px);
   background-size: 32px 32px;
-  opacity: 0.15;
-  mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%);
+  opacity: 0.12;
+  mask-image: linear-gradient(to top,
+    rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 30%,
+    rgba(0,0,0,0.3) 65%, rgba(0,0,0,0) 100%);
 }
 
 .waterfall-grid-bg.animate-scroll {
@@ -628,23 +654,72 @@ body {
 }
 
 /* ============================================
+   WATERFALL ATMOSPHERE
+   ============================================ */
+
+.waterfall-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+[data-theme="cool"] .waterfall-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, transparent 40%, rgba(6,8,16,0.6) 100%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(99,102,241,0.08) 0%, transparent 100%),
+    radial-gradient(ellipse 100% 50% at 30% 0%, rgba(56,189,248,0.04) 0%, transparent 100%);
+}
+
+[data-theme="warm"] .waterfall-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, transparent 40%, rgba(16,8,4,0.6) 100%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(245,158,11,0.10) 0%, transparent 100%);
+}
+
+[data-theme="mono"] .waterfall-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, transparent 40%, rgba(0,0,0,0.6) 100%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(34,197,94,0.08) 0%, transparent 100%);
+}
+
+[data-theme="8bit"] .waterfall-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, transparent 40%, rgba(2,2,26,0.6) 100%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(229,37,33,0.08) 0%, transparent 100%);
+}
+
+[data-theme="16bit"] .waterfall-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, transparent 40%, rgba(6,4,20,0.6) 100%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(240,128,48,0.08) 0%, transparent 100%),
+    radial-gradient(ellipse 100% 50% at 30% 0%, rgba(48,160,240,0.04) 0%, transparent 100%);
+}
+
+[data-theme="hibit"] .waterfall-atmosphere {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, transparent 40%, rgba(8,6,20,0.6) 100%),
+    radial-gradient(ellipse 80% 30% at 50% 100%, rgba(255,97,136,0.08) 0%, transparent 100%),
+    radial-gradient(ellipse 100% 50% at 30% 0%, rgba(120,220,232,0.04) 0%, transparent 100%);
+}
+
+/* ============================================
    WATERFALL NOTE STYLING
    ============================================ */
 
-/* Base note block — Dead Cells style (soft lit bevel + atmospheric glow) */
+/* Base note block — Dead Cells style (soft lit depth + atmospheric glow) */
 .waterfall-note {
-  border: 1px solid rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 3px;
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.3),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.15),
     0 0 6px rgba(255, 255, 255, 0.1);
   image-rendering: pixelated;
   contain: layout style;
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Note body texture (horizontal scanlines + top/bottom edge lighting) */
+/* Note body texture — subtle glass highlight */
 .waterfall-note::before {
   content: "";
   position: absolute;
@@ -654,34 +729,16 @@ body {
   background:
     linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0.05) 15%,
-      transparent 30%,
-      transparent 75%,
-      rgba(0, 0, 0, 0.12) 100%
+      rgba(255, 255, 255, 0.12) 0%,
+      transparent 25%,
+      transparent 100%
     );
   z-index: 1;
 }
 
-/* Note end-caps (structural top/bottom detail) */
+/* Note end-caps — hidden for clean organic look */
 .waterfall-note-cap {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  z-index: 2;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.waterfall-note-cap--top {
-  top: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.waterfall-note-cap--bottom {
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.18);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: none;
 }
 
 /* Black key notes — slightly darker for depth */
@@ -691,20 +748,18 @@ body {
 
 /* --- Proximity-based glow intensification --- */
 
-/* Mid proximity — lit up + faint outer glow */
+/* Mid proximity — brightens + faint outer glow */
 .waterfall-note[data-proximity="mid"] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.35),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 4px rgba(255, 255, 255, 0.2),
     0 0 8px rgba(255, 255, 255, 0.15);
   filter: brightness(1.08);
 }
 
-/* Near proximity — strong lit + outer glow */
+/* Near proximity — strong outer glow */
 .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 4px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 5px rgba(255, 255, 255, 0.25),
     0 0 10px rgba(255, 255, 255, 0.25),
     0 0 20px rgba(255, 255, 255, 0.1);
   filter: brightness(1.15) saturate(1.15);
@@ -721,8 +776,7 @@ body {
 
 .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 4px rgba(255, 255, 255, 0.3),
     0 0 12px rgba(255, 255, 255, 0.35),
     0 0 24px rgba(255, 255, 255, 0.12);
   filter: brightness(1.35) saturate(1.25);
@@ -744,26 +798,24 @@ body {
    THEME-SPECIFIC NOTE OVERRIDES
    ============================================ */
 
-/* --- 8-BIT (NES): Hard bevel + red glow --- */
+/* --- 8-BIT (NES): Hard highlight + red glow --- */
 [data-theme="8bit"] .waterfall-note {
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.8),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
     0 0 6px rgba(255, 50, 50, 0.15);
 }
 
 [data-theme="8bit"] .waterfall-note::before {
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.6) 0px,
+    rgba(255, 255, 255, 0.4) 0px,
     transparent 1px
   );
 }
 
 [data-theme="8bit"] .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.85),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.85),
+    inset 0 1px 2px rgba(255, 255, 255, 0.7),
     0 0 8px rgba(255, 50, 50, 0.5),
     0 0 16px rgba(255, 50, 50, 0.2);
   filter: brightness(1.15);
@@ -771,41 +823,30 @@ body {
 
 [data-theme="8bit"] .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.85),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.85),
+    inset 0 1px 2px rgba(255, 255, 255, 0.7),
     0 0 12px rgba(255, 50, 50, 0.6),
     0 0 24px rgba(255, 50, 50, 0.25);
 }
 
-/* --- 16-BIT (SNES): Bevel + warm orange glow --- */
+/* --- 16-BIT (SNES): Warm orange glow --- */
 [data-theme="16bit"] .waterfall-note {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.2),
     0 0 6px rgba(240, 128, 48, 0.15);
 }
 
 [data-theme="16bit"] .waterfall-note::before {
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.35) 0px,
-      rgba(255, 255, 255, 0.1) 2px,
-      transparent 4px
-    ),
-    linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.08) 0px,
-      transparent 3px,
-      transparent calc(100% - 3px),
-      rgba(0, 0, 0, 0.08) 100%
-    );
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.15) 0%,
+    transparent 25%,
+    transparent 100%
+  );
 }
 
 [data-theme="16bit"] .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.55),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 4px rgba(255, 255, 255, 0.25),
     0 0 8px rgba(240, 128, 48, 0.45),
     0 0 16px rgba(240, 128, 48, 0.2);
   filter: brightness(1.15) saturate(1.15);
@@ -813,17 +854,15 @@ body {
 
 [data-theme="16bit"] .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.55),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 4px rgba(255, 255, 255, 0.3),
     0 0 12px rgba(240, 128, 48, 0.6),
     0 0 24px rgba(240, 128, 48, 0.25);
 }
 
-/* --- MONO (Terminal): Bevel + green phosphor glow --- */
+/* --- MONO (Terminal): Green phosphor glow --- */
 [data-theme="mono"] .waterfall-note {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.15),
     inset 0 0 3px rgba(34, 197, 94, 0.15),
     0 0 6px rgba(34, 197, 94, 0.15);
 }
@@ -832,9 +871,9 @@ body {
   background:
     linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0.4) 0px,
-      rgba(255, 255, 255, 0.15) 2px,
-      transparent 3px
+      rgba(255, 255, 255, 0.12) 0%,
+      transparent 20%,
+      transparent 100%
     ),
     repeating-linear-gradient(
       to bottom,
@@ -847,8 +886,7 @@ body {
 
 [data-theme="mono"] .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.45),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 4px rgba(255, 255, 255, 0.2),
     0 0 8px rgba(34, 197, 94, 0.5),
     0 0 16px rgba(34, 197, 94, 0.25);
   filter: brightness(1.15);
@@ -856,57 +894,51 @@ body {
 
 [data-theme="mono"] .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.45),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 4px rgba(255, 255, 255, 0.25),
     0 0 12px rgba(34, 197, 94, 0.7),
     0 0 24px rgba(34, 197, 94, 0.35);
 }
 
-/* --- COOL (Cyber): Bevel + indigo glow --- */
+/* --- COOL (Cyber): Indigo glow --- */
 [data-theme="cool"] .waterfall-note {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.15),
     0 0 6px rgba(99, 102, 241, 0.15);
 }
 
 [data-theme="cool"] .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.45),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 4px rgba(255, 255, 255, 0.2),
     0 0 8px rgba(99, 102, 241, 0.5),
     0 0 16px rgba(99, 102, 241, 0.25);
 }
 
 [data-theme="cool"] .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 4px rgba(255, 255, 255, 0.3),
     0 0 12px rgba(99, 102, 241, 0.7),
     0 0 24px rgba(99, 102, 241, 0.35);
 }
 
-/* --- WARM (Vintage): Bevel + amber glow --- */
+/* --- WARM (Vintage): Amber glow --- */
 [data-theme="warm"] .waterfall-note {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.15),
     0 0 6px rgba(245, 158, 11, 0.15);
 }
 
 [data-theme="warm"] .waterfall-note::before {
   background: linear-gradient(
     to bottom,
-    rgba(255, 240, 200, 0.5) 0px,
-    rgba(255, 240, 200, 0.2) 2px,
-    transparent 3px
+    rgba(255, 240, 200, 0.2) 0%,
+    transparent 25%,
+    transparent 100%
   );
 }
 
 [data-theme="warm"] .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.45),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 4px rgba(255, 255, 255, 0.2),
     0 0 8px rgba(245, 158, 11, 0.45),
     0 0 16px rgba(245, 158, 11, 0.2);
   filter: brightness(1.15);
@@ -914,24 +946,21 @@ body {
 
 [data-theme="warm"] .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 4px rgba(255, 255, 255, 0.3),
     0 0 12px rgba(245, 158, 11, 0.6),
     0 0 24px rgba(245, 158, 11, 0.25);
 }
 
-/* --- HI-BIT (Celeste): Bevel + pink/magenta glow --- */
+/* --- HI-BIT (Celeste): Pink/magenta glow --- */
 [data-theme="hibit"] .waterfall-note {
   box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.4),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 3px rgba(255, 255, 255, 0.15),
     0 0 6px rgba(255, 97, 136, 0.15);
 }
 
 [data-theme="hibit"] .waterfall-note[data-proximity="near"] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.45),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 4px rgba(255, 255, 255, 0.2),
     0 0 8px rgba(255, 97, 136, 0.5),
     0 0 16px rgba(255, 97, 136, 0.2);
   filter: brightness(1.15) saturate(1.2);
@@ -939,8 +968,7 @@ body {
 
 [data-theme="hibit"] .waterfall-note[data-active] {
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.5),
-    inset 0 -1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 4px rgba(255, 255, 255, 0.3),
     0 0 12px rgba(255, 97, 136, 0.6),
     0 0 24px rgba(255, 97, 136, 0.25);
   filter: brightness(1.35) saturate(1.25);

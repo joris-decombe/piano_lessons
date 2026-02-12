@@ -42,6 +42,15 @@ The entire app follows the Dead Cells aesthetic: pixel art with rich textures, b
 - **Solid borders:** 2px theme-colored borders
 - **Hover:** Translate pop (-1px, -1px) with deeper drop shadow
 
+### Atmospheric Backgrounds (CSS)
+- **Saturated void colors:** Every theme's void/bg/surface/elevated has distinct hue (navy, sienna, green phosphor, cobalt, violet) — no flat grays
+- **Vignette:** `radial-gradient` darkening edges, clear center — per theme
+- **Keyboard warmth glow:** Accent-colored radial gradient rising from bottom (keyboard = light source)
+- **Upper haze:** Cool/16bit/HiBit get a distant secondary-colored haze at top
+- **Theme-tinted grid:** `--color-grid-line` CSS variable per theme; grid uses saturated theme color instead of neutral border
+- **Noise/grain:** SVG feTurbulence texture extended to all themes with per-theme opacity (mono strongest at 0.04, 8bit lightest at 0.01)
+- **Grid mask:** Aggressive fade toward top (`0% → 30% → 65% → 100%` opacity curve) for atmospheric depth
+
 ### Canvas Effects
 - **Impact particles:** 14-particle upward burst (3px, additive blending) + glow halo per particle
 - **Dual shockwave rings:** Primary (size 6, 0.35s) and secondary (size 8, 0.5s)
@@ -136,8 +145,9 @@ Each theme layers its accent color as outer glow on top of the base bevel:
 - `tests/unit/particles.test.ts` — Unit tests for particle lifecycle
 
 ### Modified (across PRs)
-- `src/app/page.tsx` — Mounts `<EffectsCanvas>` in waterfall container
-- `src/app/globals.css` — Dead Cells note styling, rounded UI components, proximity glow, theme-specific overrides, scrolling grid
+- `src/app/page.tsx` — Mounts `<EffectsCanvas>` and `<div class="waterfall-atmosphere">` in waterfall container
+- `src/app/globals.css` — Dead Cells note styling, rounded UI components, proximity glow, theme-specific overrides, scrolling grid, atmospheric backgrounds (vignette, keyboard warmth glow, upper haze), theme-tinted grid lines, noise/grain texture for all themes
+- `src/components/piano/Waterfall.tsx` — Theme-tinted octave guidelines via `--color-grid-line`
 - `CLAUDE.md` — Added `contain: paint` warning
 
 ### Future (Note Styles feature)

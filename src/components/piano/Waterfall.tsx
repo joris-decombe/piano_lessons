@@ -138,9 +138,9 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                         className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-0"
                         style={{ 
                             left: `${left}px`,
-                            backgroundImage: 'linear-gradient(to bottom, var(--color-border) 50%, transparent 50%)',
+                            backgroundImage: 'linear-gradient(to bottom, var(--color-grid-line, var(--color-border)) 50%, transparent 50%)',
                             backgroundSize: '1px 8px',
-                            opacity: 0.2
+                            opacity: 0.25
                         }}
                     />
                 );

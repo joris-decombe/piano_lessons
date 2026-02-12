@@ -271,6 +271,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
                   style={{ bottom: 'var(--spacing-key-h)', '--playback-rate': audio.playbackRate } as React.CSSProperties}
                 >
+                    <div className="waterfall-atmosphere" aria-hidden="true" />
                     <Waterfall
                         midi={audio.midi}
                         currentTick={audio.currentTick}
