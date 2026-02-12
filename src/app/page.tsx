@@ -161,6 +161,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [waterfallHeight, setWaterfallHeight] = useState(0);
   const waterfallContainerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [containerPxHeight, setContainerPxHeight] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
@@ -169,14 +171,15 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [savedTick] = useState(() => getSavedSongPosition(song.id));
   const currentTickRef = useRef(0);
 
-  // Auto-scale to fit screen width
+  // Track unified container size: width → scale, height → pixel-based compensation (avoids % quirks on iOS Safari)
   useEffect(() => {
-    const updateScale = () => {
-      setScale(calculateKeyboardScale(window.innerWidth));
-    };
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      setScale(calculateKeyboardScale(entries[0].contentRect.width));
+      setContainerPxHeight(entries[0].contentRect.height);
+    });
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
   }, []);
 
   // Track height for constant-speed waterfall
@@ -282,7 +285,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }), [allSongs, song, onSongChange]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[env(safe-area-inset-left,0px)] py-6 md:px-8 landscape:pt-1 landscape:pb-[env(safe-area-inset-bottom)] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
       {/* Portrait Warning */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
         <div className="text-4xl mb-4">↻</div>
@@ -312,63 +315,71 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--color-void)]">
 
         {/* Unified Container */}
-        <div className="flex-1 w-full overflow-hidden overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div ref={containerRef} className="flex-1 w-full overflow-hidden relative" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Centered Content Wrapper — height compensated so keyboard reaches bottom */}
+          {/* Centered Content Wrapper — 1296px Base Width for symmetric scaling */}
           <div
-            className="mx-auto flex flex-col relative transition-transform duration-300 ease-out origin-top"
+            className="mx-auto flex flex-col items-center relative transition-transform duration-300 ease-out origin-top-left"
             style={{
-              minWidth: 'fit-content',
-              height: scale < 1 ? `${100 / scale}%` : '100%',
+              width: '1296px', // Match BASE_PIANO_WIDTH scaling logic
+              height: scale < 1 && containerPxHeight > 0 ? `${containerPxHeight / scale}px` : '100%',
               transform: `scale(${scale})`,
             }}
           >
-            
+
             {/* Action Area: Waterfall flows BEHIND Keyboard */}
-            <div className="relative flex-1 flex flex-col min-h-0">
-                
-                {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
-                <div
-                  ref={waterfallContainerRef}
-                  data-testid="waterfall-container"
-                  className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
-                  style={{ bottom: 'var(--spacing-key-h)', '--playback-rate': audio.playbackRate } as React.CSSProperties}
-                >
-                    <div className="waterfall-atmosphere" aria-hidden="true" />
-                    <Waterfall
-                        midi={audio.midi}
-                        currentTick={audio.currentTick}
-                        isPlaying={audio.isPlaying}
-                        playbackRate={audio.playbackRate}
-                        activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
-                        lookAheadTicks={audio.lookAheadTicks}
-                        showGrid={showGrid}
-                        containerHeight={waterfallHeight}
-                    />
-                </div>
+            {/* Use Flexbox to center the 1248px content within the 1296px container */}
+            <div className="relative flex-1 flex flex-col min-h-0 items-center w-full">
 
-                {/* 1b. Effects Canvas Overlay - Particles, glow, trails */}
-                {/* Shares waterfall bounds so it never covers the keyboard */}
-                <div
-                  className="absolute top-0 left-0 right-0 z-[42] pointer-events-none"
-                  style={{ bottom: 'var(--spacing-key-h)' }}
-                >
-                    <EffectsCanvas
-                        activeNotes={effectsNotes}
-                        containerHeight={waterfallHeight}
-                        theme={theme}
-                        isPlaying={audio.isPlaying}
-                        hitstopRef={audio.hitstopRef}
-                    />
-                </div>
+              {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
+              <div
+                ref={waterfallContainerRef}
+                data-testid="waterfall-container"
+                className="absolute top-0 z-40 pointer-events-none"
+                style={{
+                  width: '1248px', // Exact content width
+                  bottom: 'var(--spacing-key-h)',
+                  '--playback-rate': audio.playbackRate
+                } as React.CSSProperties}
+              >
+                <div className="waterfall-atmosphere" aria-hidden="true" />
+                <Waterfall
+                  midi={audio.midi}
+                  currentTick={audio.currentTick}
+                  isPlaying={audio.isPlaying}
+                  playbackRate={audio.playbackRate}
+                  activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                  lookAheadTicks={audio.lookAheadTicks}
+                  showGrid={showGrid}
+                  containerHeight={waterfallHeight}
+                />
+              </div>
 
-                {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
-                <div className="flex-1" />
+              {/* 1b. Effects Canvas Overlay - Particles, glow, trails */}
+              {/* Shares waterfall bounds so it never covers the keyboard */}
+              <div
+                className="absolute top-0 z-[42] pointer-events-none"
+                style={{
+                  width: '1248px',
+                  bottom: 'var(--spacing-key-h)'
+                }}
+              >
+                <EffectsCanvas
+                  activeNotes={effectsNotes}
+                  containerHeight={waterfallHeight}
+                  theme={theme}
+                  isPlaying={audio.isPlaying}
+                  hitstopRef={audio.hitstopRef}
+                />
+              </div>
 
-                {/* 3. Keyboard Layer - z-50 to render above waterfall and effects */}
-                <div className="relative shrink-0 z-50">
-                    <Keyboard keys={coloredKeys} />
-                </div>
+              {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
+              <div className="flex-1" />
+
+              {/* 3. Keyboard Layer - z-50 to render above waterfall and effects */}
+              <div className="relative shrink-0 z-50" style={{ width: '1248px' }}>
+                <Keyboard keys={coloredKeys} />
+              </div>
             </div>
 
           </div>
@@ -376,7 +387,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       </main>
 
       {/* Controls Area */}
-      <footer className="mt-6 landscape:mt-1 w-full max-w-2xl mx-auto z-[60]">
+      <footer className="mt-6 landscape:mt-8 w-full max-w-2xl mx-auto z-[60]">
         <Controls
           isPlaying={audio.isPlaying}
           onTogglePlay={audio.togglePlay}

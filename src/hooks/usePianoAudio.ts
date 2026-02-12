@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
 import { validatePlaybackRate } from "@/lib/audio-logic";
-import { 
-    HITSTOP_DURATION, 
-    HITSTOP_COOLDOWN, 
-    HITSTOP_VELOCITY_THRESHOLD 
+import {
+    HITSTOP_DURATION,
+    HITSTOP_COOLDOWN,
+    HITSTOP_VELOCITY_THRESHOLD
 } from "@/lib/vfx-constants";
 
 export interface ActiveNote {
@@ -78,10 +78,10 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const playbackRateRef = useRef(initialPlaybackRate ?? 1);
     const initialTickRef = useRef(initialTick ?? 0);
     const baseBpmRef = useRef<number>(120);
-    
+
     // --- VFX State (Mutable refs, safe for React Compiler outside of render) ---
     const hitstopRemainingRef = useRef<number>(0);
-    const lastTimeRef = useRef<number>( performance.now() );
+    const lastTimeRef = useRef<number>(performance.now());
     const lastHitstopTimeRef = useRef<number>(0);
 
     // Keep ref in sync
@@ -343,7 +343,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                 const currentTick = Math.floor(Tone.Transport.ticks);
                 const lastProcessedTick = lastProcessedTickRef.current;
                 let notesChanged = false;
-                
+
                 // Track hitstop triggers surgically
                 let triggerHitstop = false;
                 let maxV = 0;
