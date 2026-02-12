@@ -10,6 +10,7 @@ interface WaterfallProps {
     midi: Midi | null;
     currentTick: number;
     playbackRate?: number;
+    isPlaying?: boolean;
     activeColors?: {
         split: boolean;
         left: string;
@@ -21,7 +22,7 @@ interface WaterfallProps {
     containerHeight: number; // New: Pixel height of the container
 }
 
-export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0, showGrid = true, containerHeight }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, lookAheadTicks = 0, showGrid = true, containerHeight }: WaterfallProps) {
 
     const totalWidth = getTotalKeyboardWidth();
 
@@ -121,7 +122,11 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
         <div
             className="absolute inset-0 overflow-hidden pointer-events-none"
             style={{ width: `${totalWidth}px` }}
+            data-playing={isPlaying}
         >
+            {/* 0. Background Grid & Patterns */}
+            <div className="waterfall-grid-bg animate-scroll" />
+
             {/* Octave Guidelines */}
             {showGrid && Array.from({ length: 9 }).map((_, i) => {
                 const midiC = 24 + (i * 12);
@@ -133,9 +138,9 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                         className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-0"
                         style={{ 
                             left: `${left}px`,
-                            backgroundImage: 'linear-gradient(to bottom, var(--color-border) 50%, transparent 50%)',
-                            backgroundSize: '1px 4px',
-                            opacity: 0.4
+                            backgroundImage: 'linear-gradient(to bottom, var(--color-grid-line, var(--color-border)) 50%, transparent 50%)',
+                            backgroundSize: '1px 8px',
+                            opacity: 0.25
                         }}
                     />
                 );
@@ -159,7 +164,11 @@ export function Waterfall({ midi, currentTick, activeColors, lookAheadTicks = 0,
                             '--note-color': note.color,
                             backgroundColor: note.color,
                         } as React.CSSProperties}
-                    />
+                    >
+                        {/* Note Capitals for pixel art block feel */}
+                        <div className="waterfall-note-cap waterfall-note-cap--top" />
+                        <div className="waterfall-note-cap waterfall-note-cap--bottom" />
+                    </div>
                 ))}
             </div>
         </div>

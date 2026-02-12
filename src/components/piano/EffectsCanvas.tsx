@@ -16,6 +16,7 @@ interface EffectsCanvasProps {
     containerHeight: number;
     /** Current theme id for theme-specific effects */
     theme?: string;
+    isPlaying?: boolean;
 }
 
 /** Parse a CSS color string to extract RGB values for glow rendering. */
@@ -49,6 +50,7 @@ interface ImpactFlash {
     startTime: number;
     left: number;
     width: number;
+    color: string;
 }
 
 interface PhosphorTrace {
@@ -60,10 +62,20 @@ interface PhosphorTrace {
 const PHOSPHOR_DURATION = 500; // ms
 const PHOSPHOR_COLOR = { r: 34, g: 197, b: 94 }; // Green-500, matches mono accent
 
+const THEME_ACCENTS: Record<string, string> = {
+    cool: "#38bdf8",
+    warm: "#f59e0b",
+    mono: "#22c55e",
+    "8bit": "#e52521",
+    "16bit": "#f08030",
+    hibit: "#ff6188",
+};
+
 export function EffectsCanvas({
     activeNotes,
     containerHeight,
     theme = "cool",
+    isPlaying = false,
 }: EffectsCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const bloomCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -79,6 +91,8 @@ export function EffectsCanvas({
 
     const isMono = theme === "mono";
     const isCool = theme === "cool";
+    const is8Bit = theme === "8bit";
+    const isHiBit = theme === "hibit";
 
     // Detect new note-on events and emit particles; track note-offs for phosphor
     const emitForNewNotes = useCallback((notes: EffectsNote[]) => {
@@ -93,29 +107,75 @@ export function EffectsCanvas({
                 const { left, width } = getKeyPosition(n.midi);
                 const centerX = left + width / 2;
 
+                // 1. Upward burst
                 particlesRef.current.emit({
                     x: centerX,
                     y: impactY,
                     color: n.color,
-                    count: 8,
-                    speed: 60,
-                    size: 2,
-                    lifetime: 0.5,
+                    count: 14,
+                    speed: 100,
+                    size: 3,
+                    lifetime: 0.7,
+                    type: 'burst'
                 });
 
-                // Add impact flash
+                // 2. Primary shockwave
+                particlesRef.current.emit({
+                    x: centerX,
+                    y: impactY,
+                    color: n.color,
+                    count: 1,
+                    speed: 0,
+                    size: 6,
+                    lifetime: 0.35,
+                    type: 'shockwave'
+                });
+
+                // 3. Secondary shockwave (staggered, larger, slower)
+                particlesRef.current.emit({
+                    x: centerX,
+                    y: impactY,
+                    color: n.color,
+                    count: 1,
+                    speed: 0,
+                    size: 8,
+                    lifetime: 0.5,
+                    type: 'shockwave'
+                });
+
+                // Add impact flash with color
                 impactFlashesRef.current.push({
                     midi: n.midi,
                     startTime: now,
                     left,
                     width,
+                    color: n.color,
                 });
             }
         }
 
-        // Prune expired impact flashes (2 frames ≈ ~33ms)
+        // Emit subtle downward debris for sustained notes (randomly)
+        for (const n of notes) {
+            if (Math.random() > 0.8) {
+                const { left, width } = getKeyPosition(n.midi);
+                const centerX = left + width / 2;
+                particlesRef.current.emit({
+                    x: centerX + (Math.random() - 0.5) * width,
+                    y: impactY - 10,
+                    color: n.color,
+                    count: 1,
+                    speed: 35,
+                    spread: Math.PI / 4,
+                    size: 2,
+                    lifetime: 0.5,
+                    type: 'debris'
+                });
+            }
+        }
+
+        // Prune expired impact flashes
         impactFlashesRef.current = impactFlashesRef.current.filter(
-            f => now - f.startTime < 50
+            f => now - f.startTime < 150
         );
 
         // Track note-offs for phosphor persistence (Mono theme)
@@ -207,11 +267,23 @@ export function EffectsCanvas({
 
         for (const f of flashes) {
             const elapsed = now - f.startTime;
-            if (elapsed >= 50) continue;
+            if (elapsed >= 150) continue;
 
-            // Fade from 0.5 alpha to 0 over ~2 frames
-            const alpha = 0.5 * (1 - elapsed / 50);
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            // Quadratic ease-out for natural decay
+            const progress = elapsed / 150;
+            const alpha = 0.6 * (1 - progress) * (1 - progress);
+
+            // Color-tinted flash: blend 50% white + 50% note color
+            const parsed = parseColor(f.color);
+            if (parsed) {
+                const r = Math.round((255 + parsed.r) / 2);
+                const g = Math.round((255 + parsed.g) / 2);
+                const b = Math.round((255 + parsed.b) / 2);
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            } else {
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            }
+
             ctx.fillRect(
                 Math.round(f.left),
                 Math.round(impactY - 6),
@@ -256,6 +328,37 @@ export function EffectsCanvas({
         ctx.restore();
     }, [impactY]);
 
+    // Draw upward light beams for active notes
+    const drawLightBeams = useCallback((ctx: CanvasRenderingContext2D, notes: EffectsNote[]) => {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        for (const n of notes) {
+            const parsed = parseColor(n.color);
+            if (!parsed) continue;
+
+            const { left, width } = getKeyPosition(n.midi);
+            const beamHeight = 120;
+
+            const grad = ctx.createLinearGradient(0, impactY - beamHeight, 0, impactY);
+            grad.addColorStop(0, "rgba(255, 255, 255, 0)");
+            grad.addColorStop(1, `rgba(${parsed.r},${parsed.g},${parsed.b},0.15)`);
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(Math.round(left + 1), Math.round(impactY - beamHeight), width - 2, beamHeight);
+        }
+        ctx.restore();
+    }, [impactY]);
+
+    // Draw a subtle 1px position marker at the impact line
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const drawImpactRail = useCallback((ctx: CanvasRenderingContext2D, _notes: EffectsNote[]) => {
+        const themeColor = THEME_ACCENTS[theme] || THEME_ACCENTS.cool;
+        const parsedTheme = parseColor(themeColor)!;
+        ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.25)`;
+        ctx.fillRect(0, Math.round(impactY - 1), totalKeyboardWidth, 1);
+    }, [impactY, totalKeyboardWidth, theme]);
+
     // Main render loop
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -281,11 +384,15 @@ export function EffectsCanvas({
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Draw core effects
-            particlesRef.current.update(dt);
+            // 1. Update and Draw core effects
+            if (isPlaying) {
+                particlesRef.current.update(dt);
+            }
             particlesRef.current.draw(ctx);
             drawKeyGlow(ctx, activeNotes, time);
             drawNoteTrails(ctx, activeNotes);
+            drawLightBeams(ctx, activeNotes);
+            drawImpactRail(ctx, activeNotes);
 
             // 1.5. Impact flash
             drawImpactFlash(ctx, time);
@@ -295,8 +402,8 @@ export function EffectsCanvas({
                 drawPhosphor(ctx, time);
             }
 
-            // 3. Bloom pass
-            if (bloomCtx && activeNotes.length > 0) {
+            // 3. Bloom pass - Disabled for 8bit
+            if (!is8Bit && bloomCtx && activeNotes.length > 0) {
                 bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
                 bloomCtx.imageSmoothingEnabled = true;
                 bloomCtx.drawImage(canvas, 0, 0, bloomCanvas.width, bloomCanvas.height);
@@ -312,8 +419,8 @@ export function EffectsCanvas({
                     ctx.drawImage(bloomCanvas, 1, 0, canvas.width, canvas.height);  // Blue-shifted right
                 }
 
-                // Normal bloom composite
-                ctx.globalAlpha = 0.5;
+                // Normal bloom composite - HiBit gets stronger bloom
+                ctx.globalAlpha = isHiBit ? 0.7 : 0.5;
                 ctx.drawImage(bloomCanvas, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
             }
@@ -323,12 +430,14 @@ export function EffectsCanvas({
 
         rafRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(rafRef.current);
-    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, isMono, isCool]);
+    }, [activeNotes, drawKeyGlow, drawNoteTrails, drawImpactFlash, drawPhosphor, drawLightBeams, drawImpactRail, isMono, isCool, is8Bit, isHiBit, isPlaying]);
 
     // Emit particles on note changes
     useEffect(() => {
-        emitForNewNotes(activeNotes);
-    }, [activeNotes, emitForNewNotes]);
+        if (isPlaying) {
+            emitForNewNotes(activeNotes);
+        }
+    }, [activeNotes, emitForNewNotes, isPlaying]);
 
     // Reset on song change
     useEffect(() => {

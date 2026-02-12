@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh issue create:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm test:*)",
+      "WebSearch",
+      "Bash(npx next lint)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

@@ -269,11 +269,13 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   ref={waterfallContainerRef}
                   data-testid="waterfall-container"
                   className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
-                  style={{ bottom: 'var(--spacing-key-h)' }}
+                  style={{ bottom: 'var(--spacing-key-h)', '--playback-rate': audio.playbackRate } as React.CSSProperties}
                 >
+                    <div className="waterfall-atmosphere" aria-hidden="true" />
                     <Waterfall
                         midi={audio.midi}
                         currentTick={audio.currentTick}
+                        isPlaying={audio.isPlaying}
                         playbackRate={audio.playbackRate}
                         activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
                         lookAheadTicks={audio.lookAheadTicks}
@@ -292,6 +294,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                         activeNotes={effectsNotes}
                         containerHeight={waterfallHeight}
                         theme={theme}
+                        isPlaying={audio.isPlaying}
                     />
                 </div>
 
