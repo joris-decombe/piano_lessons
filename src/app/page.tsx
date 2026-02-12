@@ -63,6 +63,46 @@ function setLastPlayed(songId: string) {
   }
 }
 
+// Playback rate persistence
+function getSavedPlaybackRate(): number {
+  try {
+    const raw = localStorage.getItem('piano_lessons_playback_rate');
+    if (raw) {
+      const rate = parseFloat(raw);
+      if (isFinite(rate) && rate >= 0.1 && rate <= 2.0) return rate;
+    }
+  } catch { /* ignore */ }
+  return 1;
+}
+
+function savePlaybackRate(rate: number) {
+  try {
+    localStorage.setItem('piano_lessons_playback_rate', String(rate));
+  } catch { /* ignore */ }
+}
+
+// Per-song position persistence
+function getSavedSongPosition(songId: string): number {
+  try {
+    const raw = localStorage.getItem('piano_lessons_song_position');
+    if (raw) {
+      const positions = JSON.parse(raw) as Record<string, number>;
+      const tick = positions[songId];
+      if (typeof tick === 'number' && tick >= 0) return tick;
+    }
+  } catch { /* ignore */ }
+  return 0;
+}
+
+function saveSongPosition(songId: string, tick: number) {
+  try {
+    const raw = localStorage.getItem('piano_lessons_song_position');
+    const positions: Record<string, number> = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    positions[songId] = tick;
+    localStorage.setItem('piano_lessons_song_position', JSON.stringify(positions));
+  } catch { /* ignore */ }
+}
+
 const defaultSongs: Song[] = [
   { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi', difficulty: 'advanced' },
   { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi', difficulty: 'beginner' },
@@ -124,6 +164,11 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const { theme } = useTheme();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
+  // Restore persisted playback rate and song position
+  const [savedRate] = useState(() => getSavedPlaybackRate());
+  const [savedTick] = useState(() => getSavedSongPosition(song.id));
+  const currentTickRef = useRef(0);
+
   // Auto-scale to fit screen width
   useEffect(() => {
     const updateScale = () => {
@@ -133,7 +178,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
   }, []);
-  
+
   // Track height for constant-speed waterfall
   useEffect(() => {
     if (!waterfallContainerRef.current) return;
@@ -145,7 +190,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, []);
 
   // Dynamic LookAhead calculation based on Height (Constant Speed)
-  // Target: 180px per second. 
+  // Target: 180px per second.
   const lookAheadTime = useMemo(() => {
     if (waterfallHeight > 0) {
       return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));
@@ -153,7 +198,24 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     return 1.5;
   }, [waterfallHeight]);
 
-  const audio = usePianoAudio(song, { lookAheadTime });
+  const audio = usePianoAudio(song, { lookAheadTime, initialPlaybackRate: savedRate, initialTick: savedTick });
+
+  // Persist playback rate on change
+  useEffect(() => {
+    savePlaybackRate(audio.playbackRate);
+  }, [audio.playbackRate]);
+
+  // Track currentTick in ref and persist on unmount
+  useEffect(() => {
+    currentTickRef.current = audio.currentTick;
+  }, [audio.currentTick]);
+
+  useEffect(() => {
+    const songId = song.id;
+    return () => {
+      saveSongPosition(songId, currentTickRef.current);
+    };
+  }, [song.id]);
 
   // Keyboard shortcuts: Space=play/pause, arrows=seek, Escape=back
   useKeyboardShortcuts({
@@ -249,14 +311,15 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       {/* Main Visual Area */}
       <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--color-void)]">
 
-        {/* Unified Scroll Container */}
-        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {/* Unified Container */}
+        <div className="flex-1 w-full overflow-hidden overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
-          {/* Centered Content Wrapper */}
+          {/* Centered Content Wrapper — height compensated so keyboard reaches bottom */}
           <div
-            className="mx-auto h-full flex flex-col relative transition-transform duration-300 ease-out origin-top"
+            className="mx-auto flex flex-col relative transition-transform duration-300 ease-out origin-top"
             style={{
               minWidth: 'fit-content',
+              height: scale < 1 ? `${100 / scale}%` : '100%',
               transform: `scale(${scale})`,
             }}
           >

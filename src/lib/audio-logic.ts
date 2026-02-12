@@ -1,11 +1,12 @@
+export const BASE_PIANO_WIDTH = 1248 + 48; // 1296
 
 /**
  * Logic for calculating the scale factor of the piano keyboard
  * to fit within the available screen width.
  */
-export function calculateKeyboardScale(windowWidth: number, basePianoWidth: number = 1248 + 48): number {
+export function calculateKeyboardScale(windowWidth: number, basePianoWidth: number = BASE_PIANO_WIDTH): number {
   if (windowWidth < basePianoWidth) {
-    return Math.max(0.5, windowWidth / basePianoWidth);
+    return windowWidth / basePianoWidth;
   }
   return 1;
 }
