@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, type RefObject } from "react";
 import { EffectsEngine, type EffectsNote } from "@/lib/effects-engine";
 export type { EffectsNote } from "@/lib/effects-engine";
 import { getTotalKeyboardWidth } from "./geometry";
@@ -12,6 +12,8 @@ interface EffectsCanvasProps {
     /** Current theme id for theme-specific effects */
     theme?: string;
     isPlaying?: boolean;
+    /** Optional ref to hitstop remaining (seconds). Engine reads each frame. */
+    hitstopRef?: RefObject<number>;
 }
 
 export function EffectsCanvas({
@@ -19,6 +21,7 @@ export function EffectsCanvas({
     containerHeight,
     theme = "cool",
     isPlaying = false,
+    hitstopRef,
 }: EffectsCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<EffectsEngine | null>(null);
@@ -37,6 +40,7 @@ export function EffectsCanvas({
         engine.theme = theme;
         engine.isPlaying = isPlaying;
         engine.activeNotes = activeNotes;
+        if (hitstopRef) engine.hitstopRef = hitstopRef;
 
         engine.start();
 

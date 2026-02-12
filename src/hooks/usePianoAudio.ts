@@ -626,6 +626,8 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         setLoop,
         loopStart: typeof window !== 'undefined' ? Tone.Time(state.loopStartTick, "i").toSeconds() : 0,
         loopEnd: typeof window !== 'undefined' ? Tone.Time(state.loopEndTick, "i").toSeconds() : 0,
-        lookAheadTicks: currentLookAheadTicks
+        lookAheadTicks: currentLookAheadTicks,
+        /** Ref for EffectsEngine to read hitstop state each frame without re-renders. */
+        hitstopRef: hitstopRemainingRef,
     };
 }

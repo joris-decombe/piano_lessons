@@ -150,6 +150,8 @@ export class EffectsEngine {
     theme = "cool";
     isPlaying = false;
     activeNotes: EffectsNote[] = [];
+    /** Optional ref from usePianoAudio — when > 0, particles and spores freeze. */
+    hitstopRef: { current: number } | null = null;
 
     // --- Internal state ---
     private canvas: HTMLCanvasElement;
@@ -387,7 +389,9 @@ export class EffectsEngine {
         this.drawGodRays(ctx, time);
 
         // 2. Update and draw core effects
-        if (this.isPlaying) {
+        // During hitstop, freeze particles and spore emission to match the visual freeze
+        const inHitstop = this.hitstopRef !== null && this.hitstopRef.current > 0;
+        if (this.isPlaying && !inHitstop) {
             this.emitAmbientSpores();
             this.particles.update(dt);
         }
