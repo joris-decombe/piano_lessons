@@ -52,20 +52,24 @@ Directly tie visuals to tactile feedback and power.
 ## Implementation Roadmap
 
 ### Phase 1: Atmosphere & Parallax — ✅ COMPLETED
-- [x] 60fps Fluid Interpolation (Surgically integrated in `usePianoAudio.ts`).
-- [x] Volumetric God Rays and Layered Fog Sheets (Additive gradients in `EffectsEngine.ts`).
+- [x] Volumetric God Rays and Layered Fog Sheets (Additive gradients in `EffectsEngine`).
 - [x] Suspended Particulate Matter (Multi-depth physics-based spores in `particles.ts`).
 - [x] 6-Plane Parallax Composition with Foreground Occlusion (`Waterfall.tsx`).
-- [x] Procedural Hitstop (35ms freeze on high-velocity impacts).
+- [x] Procedural Hitstop (35ms freeze on high-velocity impacts in `usePianoAudio.ts`).
+- [x] `EffectsCanvas` → `EffectsEngine` migration (~70-line thin React wrapper delegates to imperative class).
+- [x] Unified `animate-scroll` CSS mechanism with `--scroll-size`/`--scroll-duration` custom properties for all parallax layers.
 
-### Phase 2: Lighting & Texture — ⏳ NEXT
+### Phase 2: Lighting, Texture & Color Identity — ⏳ NEXT
 - [ ] Dynamic Real-Time Lighting (Normal-style interaction on keys).
 - [ ] Specular Highlights and Pixel Dithering (Furniture textures).
 - [ ] Biome-specific Color Grading and LUTs.
+- [ ] Color Theory refinement: complementary contrast (saturated foreground vs. desaturated background), gameplay saturation for interactables. (The existing 6-theme system partially covers "Alchemic Palette" via `THEME_ATMOSPHERE` and `THEME_ACCENTS`.)
 
 ### Phase 3: Post-Processing & Juice — ⏳ PLANNED
-- [ ] Bloom (Enhanced), Chromatic Aberration, and Vignetting.
-- [ ] Physics-Driven Particles (Bounce/Geometric interaction).
+- [ ] Enhanced Bloom (existing bloom pass + stronger bleed, per-theme tuning).
+- [ ] Enhanced Chromatic Aberration (existing cool-theme RGB offset → extend to all themes, edge-focused).
+- [ ] Enhanced Vignetting (existing fog/atmosphere gradients → dedicated configurable vignette pass).
+- [ ] Physics-Driven Particles (Bounce/Geometric interaction with keyboard boundary).
 - [ ] Screen Shake and Frame Distortion.
 
 ---
@@ -74,16 +78,20 @@ Directly tie visuals to tactile feedback and power.
 
 ### 1. Audio-Visual Desynchronization (Hitstop)
 - **Challenge:** Momentary visual freezes causing cumulative lag behind the audio track.
-- **Mitigation:** Refined Hitstop to trigger only on high-velocity notes (>0.8) or chords, with a 200ms cooldown and a reduced 35ms duration. This preserves the "tactile snap" without compromising musical synchronization.
+- **Mitigation:** Refined Hitstop to trigger only on high-velocity notes (>0.8) or chords, with a 200ms cooldown and a reduced 35ms duration. This preserves the "tactile snap" without compromising musical synchronization. Worst-case cumulative drift is bounded: 35ms per 200ms cooldown = 17.5% time dilation ceiling, but in practice dense passages rarely sustain continuous high-velocity triggers.
 
 ### 2. React Compiler Safety
 - **Challenge:** Adding logic to `EffectsCanvas.tsx` caused "dependency array size" runtime crashes due to automatic memoization.
-- **Mitigation:** Migrated all complex rendering and state management to the imperative `EffectsEngine` class. This bypasses the compiler's dependency tracking for the render loop entirely.
+- **Mitigation:** Migrated all complex rendering and state management to the imperative `EffectsEngine` class. `EffectsCanvas.tsx` is now a ~70-line thin wrapper that syncs React props to the engine and delegates all canvas work. This bypasses the compiler's dependency tracking for the render loop entirely.
 
 ### 3. Parallax Animation Glitches
 - **Challenge:** Background patterns "jumped" when looping because animation keyframes didn't match pattern sizes.
-- **Mitigation:** Implemented size-aware scroll animations in `globals.css` using `--scroll-size` variables, ensuring keyframes match the 128px/64px/32px pattern sizes exactly.
+- **Mitigation:** Implemented a unified `animate-scroll` CSS animation driven by `--scroll-size` and `--scroll-duration` custom properties per layer, ensuring keyframes match the 128px/64px/32px pattern sizes exactly. All 4 scrolling layers (macro, mid, grid, occlusion) use this single mechanism.
 
 ### 4. Performance Constraints
 - **Challenge:** Computationally expensive `filter: blur()` and constant Bloom from ambient spores.
-- **Mitigation:** Replaced full-screen blur with optimized linear gradients for occlusion. Added an `activeBurstCount` threshold so ambient spores no longer trigger the bloom pass unnecessarily.
+- **Mitigation:** Replaced full-screen blur with optimized linear gradients for occlusion. Added an `activeBurstCount` threshold so ambient spores no longer trigger the bloom pass unnecessarily. Added `_activeCount` tracking to `ParticleSystem` for O(1) early-out in `update()` and `draw()`, skipping the entire 1200-particle loop when nothing is active.
+
+### 5. Particle Pool Saturation
+- **Challenge:** Dense MIDI files can emit ~23 particles per note-on (14 burst + 4 foreground + 2 shockwave + debris). A 10-note chord produces ~230 particles in a single frame. Multiple rapid chords can approach the 1200 pool limit.
+- **Mitigation:** The system degrades gracefully — `acquire()` silently drops particles when the pool is full, so visual density plateaus rather than crashing. Phase 3 (Physics-Driven Particles) will increase per-note counts further, so pool size or per-note budgets may need revisiting.
