@@ -171,14 +171,15 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [savedTick] = useState(() => getSavedSongPosition(song.id));
   const currentTickRef = useRef(0);
 
-  // Auto-scale to fit screen width
+  // Track unified container size: width → scale, height → pixel-based compensation (avoids % quirks on iOS Safari)
   useEffect(() => {
-    const updateScale = () => {
-      setScale(calculateKeyboardScale(window.innerWidth));
-    };
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      setScale(calculateKeyboardScale(entries[0].contentRect.width));
+      setContainerPxHeight(entries[0].contentRect.height);
+    });
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
   }, []);
 
   // Track height for constant-speed waterfall
@@ -188,16 +189,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       setWaterfallHeight(entries[0].contentRect.height);
     });
     obs.observe(waterfallContainerRef.current);
-    return () => obs.disconnect();
-  }, []);
-
-  // Track unified container height for scale compensation (avoids % resolution quirks on iOS Safari)
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      setContainerPxHeight(entries[0].contentRect.height);
-    });
-    obs.observe(containerRef.current);
     return () => obs.disconnect();
   }, []);
 
@@ -294,7 +285,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }), [allSongs, song, onSongChange]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[calc(1rem+env(safe-area-inset-left))] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[env(safe-area-inset-left,0px)] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
       {/* Portrait Warning */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
         <div className="text-4xl mb-4">↻</div>
@@ -328,7 +319,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
           {/* Centered Content Wrapper — pixel height avoids iOS Safari % resolution quirks in flex containers */}
           <div
-            className="mx-auto flex flex-col relative transition-transform duration-300 ease-out origin-top"
+            className="mx-auto flex flex-col relative transition-transform duration-300 ease-out origin-top-left"
             style={{
               minWidth: 'fit-content',
               height: scale < 1 && containerPxHeight > 0 ? `${containerPxHeight / scale}px` : '100%',
