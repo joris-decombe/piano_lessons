@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { EffectsEngine, EffectsNote } from "@/lib/effects-engine";
+import { EffectsEngine, type EffectsNote } from "@/lib/effects-engine";
+export type { EffectsNote } from "@/lib/effects-engine";
 import { getTotalKeyboardWidth } from "./geometry";
 
 interface EffectsCanvasProps {
@@ -29,6 +30,14 @@ export function EffectsCanvas({
 
         const engine = new EffectsEngine(canvas);
         engineRef.current = engine;
+
+        // Sync initial props before first frame to avoid degenerate gradients
+        engine.impactY = containerHeight;
+        engine.containerHeight = containerHeight;
+        engine.theme = theme;
+        engine.isPlaying = isPlaying;
+        engine.activeNotes = activeNotes;
+
         engine.start();
 
         return () => {

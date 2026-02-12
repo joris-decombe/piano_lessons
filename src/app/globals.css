@@ -701,19 +701,6 @@ body {
   background-size: 320px 100%;
 }
 
-.waterfall-grid-bg.animate-scroll {
-  animation: scroll-grid calc(4s / var(--playback-rate, 1)) linear infinite;
-}
-
-[data-playing="false"] .waterfall-grid-bg.animate-scroll {
-  animation-play-state: paused;
-}
-
-@keyframes scroll-grid {
-  from { background-position: 0 0; }
-  to { background-position: 0 32px; }
-}
-
 /* ============================================
    WATERFALL ATMOSPHERE
    ============================================ */
