@@ -12,6 +12,7 @@ export interface ActiveNote {
     note: string;
     track: number;
     velocity: number;
+    startTick: number;
 }
 
 export interface PreviewNote {
@@ -122,7 +123,12 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             events.forEach(event => {
                 const key = `${event.note} -${event.track} `;
                 if (event.type === 'start') {
-                    activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
+                    activeNotesRef.current.set(key, {
+                        note: event.note,
+                        track: event.track,
+                        velocity: event.velocity,
+                        startTick: tick
+                    });
                 } else {
                     activeNotesRef.current.delete(key);
                 }
@@ -368,7 +374,12 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                             events.forEach(event => {
                                 const key = `${event.note} -${event.track} `;
                                 if (event.type === 'start') {
-                                    activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
+                                    activeNotesRef.current.set(key, {
+                                        note: event.note,
+                                        track: event.track,
+                                        velocity: event.velocity,
+                                        startTick: tick
+                                    });
                                     triggerHitstop = true;
                                     newCount++;
                                     if (event.velocity > maxV) maxV = event.velocity;
