@@ -313,6 +313,10 @@
   animation: scroll var(--scroll-duration, 0.5s) linear infinite;
 }
 
+[data-playing="false"] .animate-scroll {
+  animation-play-state: paused;
+}
+
 body {
   background: var(--color-void);
   color: var(--color-text);
