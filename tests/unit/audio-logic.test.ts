@@ -19,8 +19,8 @@ describe('Audio and UI Logic', () => {
       expect(scale).toBe(iPadWidth / BASE_WIDTH);
     });
 
-    it('should not scale below 0.5', () => {
-      expect(calculateKeyboardScale(300)).toBe(0.5);
+    it('should scale proportionally for very small widths', () => {
+      expect(calculateKeyboardScale(300)).toBeCloseTo(300 / BASE_WIDTH);
     });
   });
 

@@ -44,10 +44,12 @@ export interface SongSource {
 
 export interface PianoAudioSettings {
     lookAheadTime?: number;
+    initialPlaybackRate?: number;
+    initialTick?: number;
 }
 
 export function usePianoAudio(source: SongSource, settings: PianoAudioSettings = {}) {
-    const { lookAheadTime = 1.5 } = settings;
+    const { lookAheadTime = 1.5, initialPlaybackRate, initialTick } = settings;
     const [state, setState] = useState<PianoAudioState>({
         isLoaded: false,
         isPlaying: false,
@@ -67,8 +69,9 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const timelineKeysRef = useRef<number[]>([]); // Cache sorted keys
     const activeNotesRef = useRef<Map<string, ActiveNote>>(new Map());
     const lastProcessedTickRef = useRef(0);
-    const [playbackRate, setPlaybackRate] = useState(1);
-    const playbackRateRef = useRef(1);
+    const [playbackRate, setPlaybackRate] = useState(initialPlaybackRate ?? 1);
+    const playbackRateRef = useRef(initialPlaybackRate ?? 1);
+    const initialTickRef = useRef(initialTick ?? 0);
     const baseBpmRef = useRef<number>(120);
 
     // Keep ref in sync
@@ -261,14 +264,23 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             timelineKeysRef.current = Array.from(timeline.keys()).sort((a, b) => a - b);
 
 
+            // Restore saved position if provided
+            const restoreTick = initialTickRef.current;
+            if (restoreTick > 0) {
+                Tone.Transport.ticks = restoreTick;
+                lastProcessedTickRef.current = restoreTick;
+            }
+
+            const restoredNotes = restoreTick > 0 ? rebuildActiveNotes(restoreTick) : [];
+
             setState((prev) => ({
                 ...prev,
                 isLoaded: true,
                 duration: midi.duration,
                 midi: midi,
-                currentTick: 0,
-                currentTime: 0,
-                activeNotes: [], // Reset active notes on new song
+                currentTick: restoreTick,
+                currentTime: restoreTick > 0 ? restoreTick / ((midi.header.ppq || 480) * (initialBpm / 60)) : 0,
+                activeNotes: restoredNotes,
                 isLooping: false,
                 loopStartTick: 0,
                 loopEndTick: 0
