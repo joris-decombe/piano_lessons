@@ -6,6 +6,12 @@
 
 import { ParticleSystem } from "@/lib/particles";
 import { getKeyPosition, getTotalKeyboardWidth } from "@/components/piano/geometry";
+import { 
+    GOD_RAY_WIDTH, 
+    GOD_RAY_OPACITY_BASE, 
+    GOD_RAY_OPACITY_VARY, 
+    BLOOM_BURST_THRESHOLD 
+} from "@/lib/vfx-constants";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -42,7 +48,7 @@ interface PhosphorTrace {
 const PHOSPHOR_DURATION = 500; // ms
 const PHOSPHOR_COLOR = { r: 34, g: 197, b: 94 }; // Green-500
 
-const IMPACT_FLASH_DURATION = 150; // ms (extended from 50ms)
+const IMPACT_FLASH_DURATION = 150; // ms
 
 const DEBRIS_COOLDOWN = 250; // ms
 
@@ -56,6 +62,15 @@ const THEME_ACCENTS: Record<string, string> = {
     "8bit": "#e52521",
     "16bit": "#f08030",
     hibit: "#ff6188",
+};
+
+const THEME_ATMOSPHERE: Record<string, string> = {
+    cool: "#6366f1", // Indigo
+    warm: "#f59e0b", // Amber
+    mono: "#22c55e", // Green
+    "8bit": "#ff3232", // Red
+    "16bit": "#f08030", // Orange
+    hibit: "#ab9df2", // Lavender
 };
 
 const SCANLINE_THEMES = new Set(["8bit", "16bit", "mono"]);
@@ -130,10 +145,13 @@ function shiftHue(
 
 export class EffectsEngine {
     // --- Public mutable properties (set by React wrapper) ---
+    containerHeight = 0;
     impactY = 0;
     theme = "cool";
     isPlaying = false;
     activeNotes: EffectsNote[] = [];
+    /** Optional ref from usePianoAudio — when > 0, particles and spores freeze. */
+    hitstopRef: { current: number } | null = null;
 
     // --- Internal state ---
     private canvas: HTMLCanvasElement;
@@ -231,31 +249,33 @@ export class EffectsEngine {
                 const { left, width } = getKeyPosition(n.midi);
                 const centerX = left + width / 2;
 
-                // 1. Upward burst
+                // 1. Upward burst (play plane)
                 this.particles.emit({
                     x: centerX,
                     y: this.impactY,
                     color: n.color,
-                    count: 10,
-                    speed: 80,
-                    size: 2,
-                    lifetime: 0.6,
+                    count: 14,
+                    speed: 100,
+                    size: 3,
+                    lifetime: 0.7,
                     type: "burst",
+                    z: 1.0
                 });
 
-                // 2. Primary shockwave
+                // 2. Depth particles (random foreground sparks)
                 this.particles.emit({
                     x: centerX,
                     y: this.impactY,
                     color: n.color,
-                    count: 1,
-                    speed: 0,
+                    count: 4,
+                    speed: 150,
                     size: 4,
-                    lifetime: 0.3,
-                    type: "shockwave",
+                    lifetime: 0.8,
+                    type: "burst",
+                    z: 1.5 // Foreground
                 });
 
-                // 3. Secondary shockwave (double shockwave enhancement)
+                // 3. Primary shockwave
                 this.particles.emit({
                     x: centerX,
                     y: this.impactY,
@@ -263,7 +283,19 @@ export class EffectsEngine {
                     count: 1,
                     speed: 0,
                     size: 6,
-                    lifetime: 0.45,
+                    lifetime: 0.35,
+                    type: "shockwave",
+                });
+
+                // 4. Secondary shockwave (double shockwave enhancement)
+                this.particles.emit({
+                    x: centerX,
+                    y: this.impactY,
+                    color: n.color,
+                    count: 1,
+                    speed: 0,
+                    size: 8,
+                    lifetime: 0.5,
                     type: "shockwave",
                 });
 
@@ -282,7 +314,7 @@ export class EffectsEngine {
         }
 
         // --- Debris for sustained notes (throttled by cooldown) ---
-        if (now - this.lastDebrisTime >= DEBRIS_COOLDOWN) {
+        if (this.isPlaying && now - this.lastDebrisTime >= DEBRIS_COOLDOWN) {
             for (const n of notes) {
                 if (Math.random() > 0.8) {
                     const { left, width } = getKeyPosition(n.midi);
@@ -292,10 +324,10 @@ export class EffectsEngine {
                         y: this.impactY - 10,
                         color: n.color,
                         count: 1,
-                        speed: 30,
+                        speed: 35,
                         spread: Math.PI / 4,
-                        size: 1,
-                        lifetime: 0.4,
+                        size: 2,
+                        lifetime: 0.5,
                         type: "debris",
                     });
                 }
@@ -353,8 +385,14 @@ export class EffectsEngine {
         // Ensure bloom canvas matches main canvas
         this.syncBloomCanvas();
 
-        // 1. Update and draw core effects
-        if (this.isPlaying) {
+        // 1. Atmosphere & Background Effects
+        this.drawGodRays(ctx, time);
+
+        // 2. Update and draw core effects
+        // During hitstop, freeze particles and spore emission to match the visual freeze
+        const inHitstop = this.hitstopRef !== null && this.hitstopRef.current > 0;
+        if (this.isPlaying && !inHitstop) {
+            this.emitAmbientSpores();
             this.particles.update(dt);
         }
         this.particles.draw(ctx);
@@ -363,21 +401,21 @@ export class EffectsEngine {
         this.drawLightBeams(ctx, this.activeNotes, time);
         this.drawImpactRail(ctx, this.activeNotes);
 
-        // 1.5. Impact flash
+        // 2.5. Impact flash
         this.drawImpactFlash(ctx, time);
 
-        // 2. Phosphor persistence (Mono theme)
+        // 3. Phosphor persistence (Mono theme)
         if (this.theme === "mono") {
             this.drawPhosphor(ctx, time);
         }
 
-        // 3. Bloom pass — disabled for 8bit
+        // 4. Bloom pass — disabled for 8bit
         const is8Bit = this.theme === "8bit";
-        if (!is8Bit && this.bloomCtx && this.activeNotes.length > 0) {
+        if (!is8Bit && this.bloomCtx && (this.activeNotes.length > 0 || this.particles.activeBurstCount > BLOOM_BURST_THRESHOLD)) {
             this.applyBloom(ctx, canvas);
         }
 
-        // 4. Scanlines (after bloom pass)
+        // 5. Scanlines (after bloom pass)
         if (SCANLINE_THEMES.has(this.theme)) {
             this.drawScanlines(ctx, canvas);
         }
@@ -431,6 +469,64 @@ export class EffectsEngine {
     // ------------------------------------------------------------------
     // Drawing routines
     // ------------------------------------------------------------------
+
+    /** Volumetric light shafts (God Rays) Pierce through dust. */
+    private drawGodRays(ctx: CanvasRenderingContext2D, time: number): void {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        const atmosphereColor = THEME_ATMOSPHERE[this.theme] || THEME_ATMOSPHERE.cool;
+        const parsed = parseColor(atmosphereColor)!;
+        const shimmer = 0.5 + 0.5 * Math.sin(time * 0.001);
+        
+        // Render 3 distinct diagonal rays
+        const rayWidth = GOD_RAY_WIDTH;
+        const rays = [
+            { x: this.totalKeyboardWidth * 0.2, angle: Math.PI * 0.2 },
+            { x: this.totalKeyboardWidth * 0.5, angle: Math.PI * 0.15 },
+            { x: this.totalKeyboardWidth * 0.8, angle: Math.PI * 0.25 }
+        ];
+
+        rays.forEach((ray, i) => {
+            const opacity = (GOD_RAY_OPACITY_BASE + GOD_RAY_OPACITY_VARY * Math.sin(time * 0.0007 + i)) * shimmer;
+            const grad = ctx.createLinearGradient(ray.x, 0, ray.x + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
+            grad.addColorStop(0, `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0)`);
+            grad.addColorStop(0.5, `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, ${opacity})`);
+            grad.addColorStop(1, `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0)`);
+
+            ctx.fillStyle = grad;
+            
+            ctx.beginPath();
+            ctx.moveTo(ray.x - rayWidth/2, 0);
+            ctx.lineTo(ray.x + rayWidth/2, 0);
+            ctx.lineTo(ray.x + rayWidth/2 + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
+            ctx.lineTo(ray.x - rayWidth/2 + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
+            ctx.fill();
+        });
+
+        ctx.restore();
+    }
+
+    /** Emit ambient spores (Suspended Particulate Matter). */
+    private emitAmbientSpores(): void {
+        if (Math.random() > 0.90) { // Increased chance per frame to emit ambient spores
+            const atmosphereColor = THEME_ATMOSPHERE[this.theme] || THEME_ATMOSPHERE.cool;
+            const x = Math.random() * this.totalKeyboardWidth;
+            const y = Math.random() * this.containerHeight;
+            const z = Math.random() * 2; // Random depth tier
+
+            this.particles.emit({
+                x, y,
+                color: atmosphereColor,
+                count: 1,
+                speed: 10,
+                size: z > 1.2 ? 3 : 1,
+                lifetime: 2 + Math.random() * 3,
+                type: 'spore',
+                z
+            });
+        }
+    }
 
     /** Additive glow with sustained-note pulse and color cycling. */
     private drawKeyGlow(

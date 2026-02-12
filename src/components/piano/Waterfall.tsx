@@ -120,12 +120,45 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
 
     return (
         <div
-            className="absolute inset-0 overflow-hidden pointer-events-none"
+            className="absolute inset-0 overflow-hidden pointer-events-none bg-background transition-colors duration-500"
             style={{ width: `${totalWidth}px` }}
             data-playing={isPlaying}
         >
-            {/* 0. Background Grid & Patterns */}
-            <div className="waterfall-grid-bg animate-scroll" />
+            {/* 1. LAYER 5: SKY/DEEP ATMOSPHERE (Static) */}
+            <div className="waterfall-layer-sky" />
+
+            {/* 2. LAYER 4: MACRO-SCALE BACKGROUND (Distant structures, 5% speed) */}
+            <div 
+                className="waterfall-layer-macro animate-scroll" 
+                style={{ 
+                    '--scroll-size': '128px',
+                    '--scroll-duration': `calc(40s / var(--playback-rate, 1))`
+                } as React.CSSProperties} 
+            />
+
+            {/* FOG SHEET 1 */}
+            <div className="waterfall-fog-1" />
+
+            {/* 3. LAYER 3: MID-GROUND SILHOUETTES (Pipes/Arches simulation, 20% speed) */}
+            <div 
+                className="waterfall-layer-mid animate-scroll" 
+                style={{ 
+                    '--scroll-size': '64px',
+                    '--scroll-duration': `calc(10s / var(--playback-rate, 1))`
+                } as React.CSSProperties} 
+            />
+
+            {/* FOG SHEET 2 */}
+            <div className="waterfall-fog-2" />
+
+            {/* 4. LAYER 2: THE ACTIVE GRID (Moves with music, 100% speed) */}
+            <div 
+                className="waterfall-grid-bg animate-scroll z-4" 
+                style={{ 
+                    '--scroll-size': '32px',
+                    '--scroll-duration': `calc(4s / var(--playback-rate, 1))`
+                } as React.CSSProperties}
+            />
 
             {/* Octave Guidelines */}
             {showGrid && Array.from({ length: 9 }).map((_, i) => {
@@ -135,7 +168,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                 return (
                     <div
                         key={`guide-c-${i}`}
-                        className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-0"
+                        className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-5"
                         style={{ 
                             left: `${left}px`,
                             backgroundImage: 'linear-gradient(to bottom, var(--color-grid-line, var(--color-border)) 50%, transparent 50%)',
@@ -146,13 +179,14 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                 );
             })}
 
-            <div className="relative w-full h-full">
+            {/* 5. LAYER 1: THE NOTE WATERFALL */}
+            <div className="relative w-full h-full z-10">
                 {visibleNotes.map(note => (
                     <div
                         key={note.id}
                         className={twMerge(
                             "waterfall-note absolute",
-                            note.isBlack ? "z-15 waterfall-note--black" : "z-10",
+                            note.isBlack ? "z-20 waterfall-note--black" : "z-15",
                         )}
                         data-proximity={note.proximity > 0.85 ? "near" : note.proximity > 0.6 ? "mid" : undefined}
                         data-active={note.isActive ? "" : undefined}
@@ -171,6 +205,15 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                     </div>
                 ))}
             </div>
+
+            {/* 6. LAYER 0: EXTREME FRONT SILHOUETTES (Foreground Occlusion, 150% speed) */}
+            <div 
+                className="waterfall-occlusion animate-scroll" 
+                style={{ 
+                    '--scroll-size': '100%',
+                    '--scroll-duration': `calc(1.5s / var(--playback-rate, 1))`
+                } as React.CSSProperties} 
+            />
         </div>
     );
 }

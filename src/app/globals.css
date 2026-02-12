@@ -306,11 +306,15 @@
 
 @keyframes scroll {
   from { background-position: 0 0; }
-  to { background-position: 0 16px; } /* Matches background-size 16px for seamless loop */
+  to { background-position: 0 var(--scroll-size, 16px); }
 }
 
 .animate-scroll {
-  animation: scroll 0.5s linear infinite;
+  animation: scroll var(--scroll-duration, 0.5s) linear infinite;
+}
+
+[data-playing="false"] .animate-scroll {
+  animation-play-state: paused;
 }
 
 body {
@@ -640,17 +644,61 @@ body {
     rgba(0,0,0,0.3) 65%, rgba(0,0,0,0) 100%);
 }
 
-.waterfall-grid-bg.animate-scroll {
-  animation: scroll-grid calc(4s / var(--playback-rate, 1)) linear infinite;
+.waterfall-layer-sky {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(circle at 50% 100%, var(--color-surface) 0%, var(--color-void) 100%);
+  opacity: 0.8;
 }
 
-[data-playing="false"] .waterfall-grid-bg.animate-scroll {
-  animation-play-state: paused;
+.waterfall-layer-macro {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.1;
+  background-image: 
+    linear-gradient(to right, var(--color-border) 1px, transparent 1px), 
+    linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+  background-size: 128px 128px;
 }
 
-@keyframes scroll-grid {
-  from { background-position: 0 0; }
-  to { background-position: 0 32px; }
+.waterfall-layer-mid {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0.15;
+  background-image: 
+    linear-gradient(to right, var(--color-muted) 2px, transparent 2px), 
+    linear-gradient(to bottom, var(--color-muted) 2px, transparent 2px);
+  background-size: 64px 64px;
+}
+
+.waterfall-fog-1 {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top, transparent, rgba(var(--color-void-rgb, 6, 8, 16), 0.2) 50%, rgba(var(--color-void-rgb, 6, 8, 16), 0.4) 100%);
+}
+
+.waterfall-fog-2 {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: radial-gradient(ellipse at 50% 100%, transparent 0%, var(--color-void) 100%);
+  opacity: 0.4;
+}
+
+.waterfall-occlusion {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image: 
+    linear-gradient(90deg, transparent 0px, var(--color-void) 2px, var(--color-void) 13px, transparent 15px, transparent 100%),
+    linear-gradient(90deg, transparent 0%, transparent 44%, var(--color-void) 45%, var(--color-void) 49%, transparent 50%, transparent 100%);
+  background-size: 320px 100%;
 }
 
 /* ============================================
@@ -709,30 +757,37 @@ body {
 
 /* Base note block — Dead Cells style (soft lit depth + atmospheric glow) */
 .waterfall-note {
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 3px;
+  /* Fake Normal Mapping: Simulates top-left light source */
+  background-image: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.45) 0%, 
+    transparent 50%, 
+    rgba(0, 0, 0, 0.2) 100%
+  );
   box-shadow:
-    inset 0 1px 3px rgba(255, 255, 255, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
     0 0 6px rgba(255, 255, 255, 0.1);
   image-rendering: pixelated;
   contain: layout style;
   transition: box-shadow 0.15s ease, filter 0.15s ease;
 }
 
-/* Note body texture — subtle glass highlight */
+/* Note body texture — subtle glass highlight and pixel grain */
 .waterfall-note::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   border-radius: 3px;
+  /* Specular Highlight Cluster (Fake reflection) */
   background:
     linear-gradient(
       to bottom,
-      rgba(255, 255, 255, 0.12) 0%,
-      transparent 25%,
-      transparent 100%
-    );
+      rgba(255, 255, 255, 0.15) 0%,
+      transparent 25%
+    ),
+    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.4) 0%, transparent 10%);
   z-index: 1;
 }
 

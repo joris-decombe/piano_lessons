@@ -20,18 +20,26 @@
 
 ## **2. Visual Architecture**
 
-### **2.1. Z-Index Stack (Bottom to Top)**
-1.  **Waterfall Track (z-10):** Falling notes. **Stops exactly at the top of the visible keys.**
-    *   *Opacity:* `0.9` (Vibrant).
-    *   *Texture:* Vertical Gradient (`linear-gradient`) to show motion.
-2.  **Keyboard Container (z-20):** Contains Keys and Frame.
-    *   **Keys:** Opaque objects.
-    *   **Active Keys:** Render a semi-transparent **Color Overlay** on top of the opaque face.
-3.  **Nameboard (z-30):** Opaque container covering the top edge of the waterfall.
-4.  **Reflections (z-60):** Rendered on top of everything to ensure visibility.
-5.  **Key Slip (z-60):** Bottom furniture piece.
+### **2.1. Z-Index Stack & Parallax Layers (Bottom to Top)**
+1.  **Layer 5: Sky/Deep Atmosphere (z-0):** Static radial gradient skybox.
+2.  **Layer 4: Macro-Scale Background (z-0):** Distant architectural structures scrolling at 5% speed.
+3.  **Fog Sheet 1 (z-1):** Vertical linear gradient creating depth between macro and midground.
+4.  **Layer 3: Mid-Ground Silhouettes (z-2):** Pipes/Arches scrolling at 20% speed.
+5.  **Fog Sheet 2 (z-3):** Radial gradient haze between midground and play plane.
+6.  **Layer 2: Active Grid (z-4):** Scrolling rhythmic grid moving at 100% speed.
+7.  **Octave Guidelines (z-5):** Static vertical markers for keyboard alignment.
+8.  **Waterfall Track / Layer 1 (z-10):** Falling notes (100% speed). **Stops at key contact.**
+    *   *Texture:* 135-degree "Fake Normal" gradient + specular highlight cluster.
+9.  **Keyboard Container (z-20):** Keys and Frame.
+10. **Layer 0: Foreground Occlusion (z-30):** Out-of-focus silhouetted chains/bars scrolling at 150% speed.
+11. **Reflections & Effects (z-60):** God Rays, Bloom, and Particle overlays.
 
-### **2.2. The Satie-16 Palette**
+### **2.2. Atmospheric Effects ("Thick Air")**
+*   **God Rays:** 3 diagonal, shimmering additive gradients pierce the waterfall.
+*   **Suspended Particulate Matter:** Continuous theme-specific particles (spores/dust) at various depth tiers (z=0 to 2).
+*   **Hitstop:** Procedural 35ms visual freeze on high-velocity (v>0.8) or chord impacts to emphasize "tactile snap."
+
+### **2.3. The Satie-16 Palette**
 Strict 16-color palette defined in `globals.css`.
 
 | Variable | Hex | Role |

@@ -358,6 +358,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                         containerHeight={waterfallHeight}
                         theme={theme}
                         isPlaying={audio.isPlaying}
+                        hitstopRef={audio.hitstopRef}
                     />
                 </div>
 
