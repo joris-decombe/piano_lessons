@@ -80,11 +80,11 @@ describe('ParticleSystem', () => {
     it('does not exceed pool size', () => {
         const ps = new ParticleSystem();
         // Try to emit way more than pool size
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 150; i++) {
             ps.emit({ x: 0, y: 0, color: '#fff', count: 10, lifetime: 10 });
         }
-        // Should cap at pool size (800)
-        expect(ps.activeCount).toBeLessThanOrEqual(800);
+        // Should cap at pool size (1200)
+        expect(ps.activeCount).toBeLessThanOrEqual(1200);
     });
 
     it('dt is clamped in practice (no explosion on large dt)', () => {

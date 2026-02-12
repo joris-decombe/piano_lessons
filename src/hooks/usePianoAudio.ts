@@ -2,6 +2,11 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
 import { validatePlaybackRate } from "@/lib/audio-logic";
+import { 
+    HITSTOP_DURATION, 
+    HITSTOP_COOLDOWN, 
+    HITSTOP_VELOCITY_THRESHOLD 
+} from "@/lib/vfx-constants";
 
 export interface ActiveNote {
     note: string;
@@ -73,6 +78,11 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const playbackRateRef = useRef(initialPlaybackRate ?? 1);
     const initialTickRef = useRef(initialTick ?? 0);
     const baseBpmRef = useRef<number>(120);
+    
+    // --- VFX State (Mutable refs, safe for React Compiler outside of render) ---
+    const hitstopRemainingRef = useRef<number>(0);
+    const lastTimeRef = useRef<number>( performance.now() );
+    const lastHitstopTimeRef = useRef<number>(0);
 
     // Keep ref in sync
     useEffect(() => {
@@ -318,9 +328,26 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     return;
                 }
 
+                // Calculate DT for hitstop logic
+                const time = performance.now();
+                const dt = lastTimeRef.current ? Math.min((time - lastTimeRef.current) / 1000, 0.05) : 0.016;
+                lastTimeRef.current = time;
+
+                // Hitstop (Visual Freeze) Logic
+                if (hitstopRemainingRef.current > 0) {
+                    hitstopRemainingRef.current -= dt;
+                    animationFrame = requestAnimationFrame(syncLoop);
+                    return;
+                }
+
                 const currentTick = Math.floor(Tone.Transport.ticks);
                 const lastProcessedTick = lastProcessedTickRef.current;
                 let notesChanged = false;
+                
+                // Track hitstop triggers surgically
+                let triggerHitstop = false;
+                let maxV = 0;
+                let newCount = 0;
 
                 // Determine direction for tick processing
                 const startTick = Math.min(lastProcessedTick, currentTick);
@@ -342,11 +369,24 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                                 const key = `${event.note} -${event.track} `;
                                 if (event.type === 'start') {
                                     activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
+                                    triggerHitstop = true;
+                                    newCount++;
+                                    if (event.velocity > maxV) maxV = event.velocity;
                                 } else {
                                     activeNotesRef.current.delete(key);
                                 }
                             });
                         }
+                    }
+                }
+
+                // Trigger Hitstop surgically: high velocity OR chords, with cooldown
+                // Logic is designed to be stable for React Compiler
+                const now = performance.now();
+                if (triggerHitstop && currentTick > lastProcessedTick && (now - lastHitstopTimeRef.current) > HITSTOP_COOLDOWN) {
+                    if (maxV > HITSTOP_VELOCITY_THRESHOLD || newCount > 1) {
+                        hitstopRemainingRef.current = HITSTOP_DURATION;
+                        lastHitstopTimeRef.current = now;
                     }
                 }
 
