@@ -51,17 +51,39 @@ Directly tie visuals to tactile feedback and power.
 
 ## Implementation Roadmap
 
-### Phase 1: Animation & Atmosphere
-- [ ] 60fps Fluid Interpolation (Zero Anti-Aliasing).
-- [ ] Volumetric God Rays and Layered Fog Sheets.
-- [ ] Suspended Particulate Matter (Multi-depth).
+### Phase 1: Atmosphere & Parallax — ✅ COMPLETED
+- [x] 60fps Fluid Interpolation (Surgically integrated in `usePianoAudio.ts`).
+- [x] Volumetric God Rays and Layered Fog Sheets (Additive gradients in `EffectsEngine.ts`).
+- [x] Suspended Particulate Matter (Multi-depth physics-based spores in `particles.ts`).
+- [x] 6-Plane Parallax Composition with Foreground Occlusion (`Waterfall.tsx`).
+- [x] Procedural Hitstop (35ms freeze on high-velocity impacts).
 
-### Phase 2: Parallax & Lighting
-- [ ] 4-6 Parallax Planes with Foreground Occlusion.
-- [ ] Dynamic Real-Time Lighting (Normal-style interaction).
-- [ ] Specular Highlights and Pixel Dithering.
+### Phase 2: Lighting & Texture — ⏳ NEXT
+- [ ] Dynamic Real-Time Lighting (Normal-style interaction on keys).
+- [ ] Specular Highlights and Pixel Dithering (Furniture textures).
+- [ ] Biome-specific Color Grading and LUTs.
 
-### Phase 3: Post-Processing & Juice
-- [ ] Bloom, Chromatic Aberration, and Vignetting.
-- [ ] Biome-specific Color Grading (LUTs).
-- [ ] Hitstop, Screen Shake, and Physics-Driven Particles.
+### Phase 3: Post-Processing & Juice — ⏳ PLANNED
+- [ ] Bloom (Enhanced), Chromatic Aberration, and Vignetting.
+- [ ] Physics-Driven Particles (Bounce/Geometric interaction).
+- [ ] Screen Shake and Frame Distortion.
+
+---
+
+## Challenges & Mitigations
+
+### 1. Audio-Visual Desynchronization (Hitstop)
+- **Challenge:** Momentary visual freezes causing cumulative lag behind the audio track.
+- **Mitigation:** Refined Hitstop to trigger only on high-velocity notes (>0.8) or chords, with a 200ms cooldown and a reduced 35ms duration. This preserves the "tactile snap" without compromising musical synchronization.
+
+### 2. React Compiler Safety
+- **Challenge:** Adding logic to `EffectsCanvas.tsx` caused "dependency array size" runtime crashes due to automatic memoization.
+- **Mitigation:** Migrated all complex rendering and state management to the imperative `EffectsEngine` class. This bypasses the compiler's dependency tracking for the render loop entirely.
+
+### 3. Parallax Animation Glitches
+- **Challenge:** Background patterns "jumped" when looping because animation keyframes didn't match pattern sizes.
+- **Mitigation:** Implemented size-aware scroll animations in `globals.css` using `--scroll-size` variables, ensuring keyframes match the 128px/64px/32px pattern sizes exactly.
+
+### 4. Performance Constraints
+- **Challenge:** Computationally expensive `filter: blur()` and constant Bloom from ambient spores.
+- **Mitigation:** Replaced full-screen blur with optimized linear gradients for occlusion. Added an `activeBurstCount` threshold so ambient spores no longer trigger the bloom pass unnecessarily.
