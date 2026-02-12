@@ -161,6 +161,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [waterfallHeight, setWaterfallHeight] = useState(0);
   const waterfallContainerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [containerPxHeight, setContainerPxHeight] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
@@ -186,6 +188,16 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       setWaterfallHeight(entries[0].contentRect.height);
     });
     obs.observe(waterfallContainerRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Track unified container height for scale compensation (avoids % resolution quirks on iOS Safari)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      setContainerPxHeight(entries[0].contentRect.height);
+    });
+    obs.observe(containerRef.current);
     return () => obs.disconnect();
   }, []);
 
@@ -312,14 +324,14 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       <main className="relative flex-1 min-h-0 w-full flex flex-col bg-[var(--color-void)]">
 
         {/* Unified Container */}
-        <div className="flex-1 w-full overflow-hidden overflow-y-hidden relative flex flex-col no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div ref={containerRef} className="flex-1 w-full overflow-hidden relative" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Centered Content Wrapper — height compensated so keyboard reaches bottom */}
+          {/* Centered Content Wrapper — pixel height avoids iOS Safari % resolution quirks in flex containers */}
           <div
             className="mx-auto flex flex-col relative transition-transform duration-300 ease-out origin-top"
             style={{
               minWidth: 'fit-content',
-              height: scale < 1 ? `${100 / scale}%` : '100%',
+              height: scale < 1 && containerPxHeight > 0 ? `${containerPxHeight / scale}px` : '100%',
               transform: `scale(${scale})`,
             }}
           >
