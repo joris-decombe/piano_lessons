@@ -317,61 +317,69 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         {/* Unified Container */}
         <div ref={containerRef} className="flex-1 w-full overflow-hidden relative" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Centered Content Wrapper — pixel height avoids iOS Safari % resolution quirks in flex containers */}
+          {/* Centered Content Wrapper — 1296px Base Width for symmetric scaling */}
           <div
-            className="mx-auto flex flex-col relative transition-transform duration-300 ease-out origin-top-left"
+            className="mx-auto flex flex-col items-center relative transition-transform duration-300 ease-out origin-top-left"
             style={{
-              minWidth: 'fit-content',
+              width: '1296px', // Match BASE_PIANO_WIDTH scaling logic
               height: scale < 1 && containerPxHeight > 0 ? `${containerPxHeight / scale}px` : '100%',
               transform: `scale(${scale})`,
             }}
           >
-            
+
             {/* Action Area: Waterfall flows BEHIND Keyboard */}
-            <div className="relative flex-1 flex flex-col min-h-0">
-                
-                {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
-                <div
-                  ref={waterfallContainerRef}
-                  data-testid="waterfall-container"
-                  className="absolute top-0 left-0 right-0 z-40 pointer-events-none"
-                  style={{ bottom: 'var(--spacing-key-h)', '--playback-rate': audio.playbackRate } as React.CSSProperties}
-                >
-                    <div className="waterfall-atmosphere" aria-hidden="true" />
-                    <Waterfall
-                        midi={audio.midi}
-                        currentTick={audio.currentTick}
-                        isPlaying={audio.isPlaying}
-                        playbackRate={audio.playbackRate}
-                        activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
-                        lookAheadTicks={audio.lookAheadTicks}
-                        showGrid={showGrid}
-                        containerHeight={waterfallHeight}
-                    />
-                </div>
+            {/* Use Flexbox to center the 1248px content within the 1296px container */}
+            <div className="relative flex-1 flex flex-col min-h-0 items-center w-full">
 
-                {/* 1b. Effects Canvas Overlay - Particles, glow, trails */}
-                {/* Shares waterfall bounds so it never covers the keyboard */}
-                <div
-                  className="absolute top-0 left-0 right-0 z-[42] pointer-events-none"
-                  style={{ bottom: 'var(--spacing-key-h)' }}
-                >
-                    <EffectsCanvas
-                        activeNotes={effectsNotes}
-                        containerHeight={waterfallHeight}
-                        theme={theme}
-                        isPlaying={audio.isPlaying}
-                        hitstopRef={audio.hitstopRef}
-                    />
-                </div>
+              {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
+              <div
+                ref={waterfallContainerRef}
+                data-testid="waterfall-container"
+                className="absolute top-0 z-40 pointer-events-none"
+                style={{
+                  width: '1248px', // Exact content width
+                  bottom: 'var(--spacing-key-h)',
+                  '--playback-rate': audio.playbackRate
+                } as React.CSSProperties}
+              >
+                <div className="waterfall-atmosphere" aria-hidden="true" />
+                <Waterfall
+                  midi={audio.midi}
+                  currentTick={audio.currentTick}
+                  isPlaying={audio.isPlaying}
+                  playbackRate={audio.playbackRate}
+                  activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                  lookAheadTicks={audio.lookAheadTicks}
+                  showGrid={showGrid}
+                  containerHeight={waterfallHeight}
+                />
+              </div>
 
-                {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
-                <div className="flex-1" />
+              {/* 1b. Effects Canvas Overlay - Particles, glow, trails */}
+              {/* Shares waterfall bounds so it never covers the keyboard */}
+              <div
+                className="absolute top-0 z-[42] pointer-events-none"
+                style={{
+                  width: '1248px',
+                  bottom: 'var(--spacing-key-h)'
+                }}
+              >
+                <EffectsCanvas
+                  activeNotes={effectsNotes}
+                  containerHeight={waterfallHeight}
+                  theme={theme}
+                  isPlaying={audio.isPlaying}
+                  hitstopRef={audio.hitstopRef}
+                />
+              </div>
 
-                {/* 3. Keyboard Layer - z-50 to render above waterfall and effects */}
-                <div className="relative shrink-0 z-50">
-                    <Keyboard keys={coloredKeys} />
-                </div>
+              {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
+              <div className="flex-1" />
+
+              {/* 3. Keyboard Layer - z-50 to render above waterfall and effects */}
+              <div className="relative shrink-0 z-50" style={{ width: '1248px' }}>
+                <Keyboard keys={coloredKeys} />
+              </div>
             </div>
 
           </div>
@@ -379,7 +387,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       </main>
 
       {/* Controls Area */}
-      <footer className="mt-6 landscape:mt-1 w-full max-w-2xl mx-auto z-[60]">
+      <footer className="mt-6 landscape:mt-8 w-full max-w-2xl mx-auto z-[60]">
         <Controls
           isPlaying={audio.isPlaying}
           onTogglePlay={audio.togglePlay}
