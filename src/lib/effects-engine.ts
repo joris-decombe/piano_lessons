@@ -312,7 +312,7 @@ export class EffectsEngine {
         }
 
         // --- Debris for sustained notes (throttled by cooldown) ---
-        if (now - this.lastDebrisTime >= DEBRIS_COOLDOWN) {
+        if (this.isPlaying && now - this.lastDebrisTime >= DEBRIS_COOLDOWN) {
             for (const n of notes) {
                 if (Math.random() > 0.8) {
                     const { left, width } = getKeyPosition(n.midi);
