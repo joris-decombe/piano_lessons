@@ -285,7 +285,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }), [allSongs, song, onSongChange]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[env(safe-area-inset-left,0px)] py-6 md:px-8 landscape:pt-1 landscape:pb-[calc(0.25rem+env(safe-area-inset-bottom))] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[env(safe-area-inset-left,0px)] py-6 md:px-8 landscape:pt-1 landscape:pb-[env(safe-area-inset-bottom)] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
       {/* Portrait Warning */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
         <div className="text-4xl mb-4">↻</div>
