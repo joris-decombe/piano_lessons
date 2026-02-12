@@ -254,7 +254,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     return audio.activeNotes.map(activeNote => {
       const midiNumber = Tone.Frequency(activeNote.note).toMidi();
       const trackColor = getNoteColor(activeNote.track, midiNumber, colors, splitSettings);
-      return { note: activeNote.note, color: trackColor };
+      return { note: activeNote.note, color: trackColor, startTick: activeNote.startTick };
     });
   }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
 
@@ -264,6 +264,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       note: ck.note,
       midi: Tone.Frequency(ck.note).toMidi(),
       color: ck.color,
+      startTick: ck.startTick,
     }));
   }, [coloredKeys]);
 

@@ -6,11 +6,11 @@
 
 import { ParticleSystem } from "@/lib/particles";
 import { getKeyPosition, getTotalKeyboardWidth } from "@/components/piano/geometry";
-import { 
-    GOD_RAY_WIDTH, 
-    GOD_RAY_OPACITY_BASE, 
-    GOD_RAY_OPACITY_VARY, 
-    BLOOM_BURST_THRESHOLD 
+import {
+    GOD_RAY_WIDTH,
+    GOD_RAY_OPACITY_BASE,
+    GOD_RAY_OPACITY_VARY,
+    BLOOM_BURST_THRESHOLD
 } from "@/lib/vfx-constants";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +21,7 @@ export interface EffectsNote {
     note: string;
     midi: number;
     color: string;
+    startTick: number; // Unique ID for VFX
 }
 
 // ---------------------------------------------------------------------------
@@ -109,8 +110,8 @@ function shiftHue(
                 Math.max(
                     0,
                     r * (0.667 + cos * 0.333) +
-                        g * (0.333 - cos * 0.333 + sin * 0.577) +
-                        b * (0.333 - cos * 0.333 - sin * 0.577),
+                    g * (0.333 - cos * 0.333 + sin * 0.577) +
+                    b * (0.333 - cos * 0.333 - sin * 0.577),
                 ),
             ),
         ),
@@ -120,8 +121,8 @@ function shiftHue(
                 Math.max(
                     0,
                     r * (0.333 - cos * 0.333 - sin * 0.577) +
-                        g * (0.667 + cos * 0.333) +
-                        b * (0.333 - cos * 0.333 + sin * 0.577),
+                    g * (0.667 + cos * 0.333) +
+                    b * (0.333 - cos * 0.333 + sin * 0.577),
                 ),
             ),
         ),
@@ -131,8 +132,8 @@ function shiftHue(
                 Math.max(
                     0,
                     r * (0.333 - cos * 0.333 + sin * 0.577) +
-                        g * (0.333 - cos * 0.333 - sin * 0.577) +
-                        b * (0.667 + cos * 0.333),
+                    g * (0.333 - cos * 0.333 - sin * 0.577) +
+                    b * (0.667 + cos * 0.333),
                 ),
             ),
         ),
@@ -238,13 +239,17 @@ export class EffectsEngine {
      * The React wrapper should call this whenever activeNotes change.
      */
     emitForNewNotes(notes: EffectsNote[]): void {
-        const currentKeys = new Set(notes.map((n) => `${n.midi}`));
+        // Use composite key (`${midi}-${startTick}`) instead of just `${midi}`.
+        // This is critical for detecting consecutive or rapid repetitions of the same note.
+        // Without `startTick`, the engine incorrectly sees the note as "already active" 
+        // and skips the particle burst/shockwave trigger.
+        const currentKeys = new Set(notes.map((n) => `${n.midi}-${n.startTick}`));
         const prevKeys = this.prevNotes;
         const now = performance.now();
 
         // --- Emit particles + impact flash for new note-ons ---
         for (const n of notes) {
-            const key = `${n.midi}`;
+            const key = `${n.midi}-${n.startTick}`;
             if (!prevKeys.has(key)) {
                 const { left, width } = getKeyPosition(n.midi);
                 const centerX = left + width / 2;
@@ -478,7 +483,7 @@ export class EffectsEngine {
         const atmosphereColor = THEME_ATMOSPHERE[this.theme] || THEME_ATMOSPHERE.cool;
         const parsed = parseColor(atmosphereColor)!;
         const shimmer = 0.5 + 0.5 * Math.sin(time * 0.001);
-        
+
         // Render 3 distinct diagonal rays
         const rayWidth = GOD_RAY_WIDTH;
         const rays = [
@@ -495,12 +500,12 @@ export class EffectsEngine {
             grad.addColorStop(1, `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0)`);
 
             ctx.fillStyle = grad;
-            
+
             ctx.beginPath();
-            ctx.moveTo(ray.x - rayWidth/2, 0);
-            ctx.lineTo(ray.x + rayWidth/2, 0);
-            ctx.lineTo(ray.x + rayWidth/2 + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
-            ctx.lineTo(ray.x - rayWidth/2 + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
+            ctx.moveTo(ray.x - rayWidth / 2, 0);
+            ctx.lineTo(ray.x + rayWidth / 2, 0);
+            ctx.lineTo(ray.x + rayWidth / 2 + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
+            ctx.lineTo(ray.x - rayWidth / 2 + Math.tan(ray.angle) * this.containerHeight, this.containerHeight);
             ctx.fill();
         });
 

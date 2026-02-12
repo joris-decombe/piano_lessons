@@ -12,6 +12,11 @@ export interface ActiveNote {
     note: string;
     track: number;
     velocity: number;
+    /** 
+     * Timestamp (in ticks) when this note started. 
+     * Used by EffectsEngine to distinguish separate attacks of the same pitch. 
+     */
+    startTick: number;
 }
 
 export interface PreviewNote {
@@ -122,7 +127,12 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             events.forEach(event => {
                 const key = `${event.note} -${event.track} `;
                 if (event.type === 'start') {
-                    activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
+                    activeNotesRef.current.set(key, {
+                        note: event.note,
+                        track: event.track,
+                        velocity: event.velocity,
+                        startTick: tick
+                    });
                 } else {
                     activeNotesRef.current.delete(key);
                 }
@@ -368,7 +378,12 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                             events.forEach(event => {
                                 const key = `${event.note} -${event.track} `;
                                 if (event.type === 'start') {
-                                    activeNotesRef.current.set(key, { note: event.note, track: event.track, velocity: event.velocity });
+                                    activeNotesRef.current.set(key, {
+                                        note: event.note,
+                                        track: event.track,
+                                        velocity: event.velocity,
+                                        startTick: tick
+                                    });
                                     triggerHitstop = true;
                                     newCount++;
                                     if (event.velocity > maxV) maxV = event.velocity;
