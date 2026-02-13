@@ -10,7 +10,9 @@ import {
     GOD_RAY_WIDTH,
     GOD_RAY_OPACITY_BASE,
     GOD_RAY_OPACITY_VARY,
-    BLOOM_BURST_THRESHOLD
+    BLOOM_BURST_THRESHOLD,
+    THEME_PARTICLE_BEHAVIORS,
+    THEME_COLOR_GRADES,
 } from "@/lib/vfx-constants";
 
 // ---------------------------------------------------------------------------
@@ -248,23 +250,29 @@ export class EffectsEngine {
         const now = performance.now();
 
         // --- Emit particles + impact flash for new note-ons ---
+        const behavior = THEME_PARTICLE_BEHAVIORS[this.theme] || THEME_PARTICLE_BEHAVIORS.cool;
+        const sizeMin = behavior.sizeRange[0];
+        const sizeMax = behavior.sizeRange[1];
+        const themeSize = sizeMin + Math.random() * (sizeMax - sizeMin);
+
         for (const n of notes) {
             const key = `${n.midi}-${n.startTick}`;
             if (!prevKeys.has(key)) {
                 const { left, width } = getKeyPosition(n.midi);
                 const centerX = left + width / 2;
 
-                // 1. Upward burst (play plane)
+                // 1. Upward burst (play plane) — theme-aware type, speed, size, lifetime
                 this.particles.emit({
                     x: centerX,
                     y: this.impactY,
                     color: n.color,
                     count: 14,
-                    speed: 100,
-                    size: 3,
-                    lifetime: 0.7,
-                    type: "burst",
-                    z: 1.0
+                    speed: 100 * behavior.speedMul,
+                    size: themeSize,
+                    lifetime: 0.7 * behavior.lifetimeMul,
+                    type: behavior.impactType,
+                    z: 1.0,
+                    gravityMul: behavior.gravityMul
                 });
 
                 // 2. Depth particles (random foreground sparks)
@@ -273,14 +281,15 @@ export class EffectsEngine {
                     y: this.impactY,
                     color: n.color,
                     count: 4,
-                    speed: 150,
-                    size: 4,
-                    lifetime: 0.8,
-                    type: "burst",
-                    z: 1.5 // Foreground
+                    speed: 150 * behavior.speedMul,
+                    size: themeSize + 1,
+                    lifetime: 0.8 * behavior.lifetimeMul,
+                    type: behavior.impactType,
+                    z: 1.5,
+                    gravityMul: behavior.gravityMul
                 });
 
-                // 3. Primary shockwave
+                // 3. Primary shockwave (universal)
                 this.particles.emit({
                     x: centerX,
                     y: this.impactY,
@@ -292,7 +301,7 @@ export class EffectsEngine {
                     type: "shockwave",
                 });
 
-                // 4. Secondary shockwave (double shockwave enhancement)
+                // 4. Secondary shockwave (universal)
                 this.particles.emit({
                     x: centerX,
                     y: this.impactY,
@@ -420,6 +429,9 @@ export class EffectsEngine {
             this.applyBloom(ctx, canvas);
         }
 
+        // 4.5. Color grading (after bloom, before scanlines)
+        this.drawColorGrade(ctx, canvas);
+
         // 5. Scanlines (after bloom pass)
         if (SCANLINE_THEMES.has(this.theme)) {
             this.drawScanlines(ctx, canvas);
@@ -512,23 +524,27 @@ export class EffectsEngine {
         ctx.restore();
     }
 
-    /** Emit ambient spores (Suspended Particulate Matter). */
+    /** Emit ambient particles (theme-aware type and rate). */
     private emitAmbientSpores(): void {
-        if (Math.random() > 0.90) { // Increased chance per frame to emit ambient spores
+        const behavior = THEME_PARTICLE_BEHAVIORS[this.theme] || THEME_PARTICLE_BEHAVIORS.cool;
+        if (Math.random() > (1 - behavior.ambientRate)) {
             const atmosphereColor = THEME_ATMOSPHERE[this.theme] || THEME_ATMOSPHERE.cool;
             const x = Math.random() * this.totalKeyboardWidth;
             const y = Math.random() * this.containerHeight;
             const z = Math.random() * 2; // Random depth tier
+            const sizeMin = behavior.sizeRange[0];
+            const sizeMax = behavior.sizeRange[1];
 
             this.particles.emit({
                 x, y,
                 color: atmosphereColor,
                 count: 1,
-                speed: 10,
-                size: z > 1.2 ? 3 : 1,
-                lifetime: 2 + Math.random() * 3,
-                type: 'spore',
-                z
+                speed: 10 * behavior.speedMul,
+                size: z > 1.2 ? sizeMax : sizeMin,
+                lifetime: (2 + Math.random() * 3) * behavior.lifetimeMul,
+                type: behavior.ambientType,
+                z,
+                gravityMul: behavior.gravityMul
             });
         }
     }
@@ -845,6 +861,29 @@ export class EffectsEngine {
         for (let y = 0; y < canvas.height; y += 2) {
             ctx.fillRect(0, y, canvas.width, 1);
         }
+        ctx.restore();
+    }
+
+    /** Biome-specific color grading via multiply/screen compositing. */
+    private drawColorGrade(
+        ctx: CanvasRenderingContext2D,
+        canvas: HTMLCanvasElement,
+    ): void {
+        const grade = THEME_COLOR_GRADES[this.theme];
+        if (!grade) return;
+
+        ctx.save();
+
+        // Shadow tint — shifts dark areas
+        ctx.globalCompositeOperation = "multiply";
+        ctx.fillStyle = grade.shadowTint;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Highlight tint — shifts bright areas
+        ctx.globalCompositeOperation = "screen";
+        ctx.fillStyle = grade.highlightTint;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         ctx.restore();
     }
 }

@@ -627,6 +627,35 @@ body {
 }
 
 /* ============================================
+   KEYBOARD CAVITY DITHER
+   ============================================ */
+
+.piano-cavity-dither {
+    background-image: repeating-conic-gradient(
+        rgba(255, 255, 255, 0.03) 0% 25%, transparent 0% 50%
+    );
+    background-size: 2px 2px;
+}
+
+[data-theme="8bit"] .piano-cavity-dither {
+    background-image: repeating-conic-gradient(
+        rgba(255, 255, 255, 0.05) 0% 25%, transparent 0% 50%
+    );
+}
+
+[data-theme="mono"] .piano-cavity-dither {
+    background-image: repeating-conic-gradient(
+        rgba(34, 197, 94, 0.04) 0% 25%, transparent 0% 50%
+    );
+}
+
+[data-theme="warm"] .piano-cavity-dither {
+    background-image: repeating-conic-gradient(
+        rgba(245, 158, 11, 0.03) 0% 25%, transparent 0% 50%
+    );
+}
+
+/* ============================================
    WATERFALL BACKGROUND & EFFECTS
    ============================================ */
 

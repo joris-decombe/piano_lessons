@@ -8,9 +8,15 @@ interface KeyProps {
     isActive: boolean;
     isLeftNeighborActive?: boolean;
     isRightNeighborActive?: boolean;
+    // Neighbor colors for side-illumination
+    leftNeighborColor?: string;
+    rightNeighborColor?: string;
     // Black Neighbor States
     leftBlackNeighborState?: 'none' | 'idle' | 'active';
     rightBlackNeighborState?: 'none' | 'idle' | 'active';
+    // Black neighbor colors for AO tinting
+    leftBlackNeighborColor?: string;
+    rightBlackNeighborColor?: string;
     // Precise Cut Geometry (Pixels)
     cutLeft?: number;
     cutRight?: number;
@@ -19,7 +25,7 @@ interface KeyProps {
     style?: React.CSSProperties;
 }
 
-export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
+export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftNeighborColor, rightNeighborColor, leftBlackNeighborState, rightBlackNeighborState, leftBlackNeighborColor, rightBlackNeighborColor, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
 
     // --- GEOMETRY & PHYSICS ---
     // Physical dip + squash/stretch for impact feel
@@ -31,16 +37,32 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
     
     // --- SHADOWS (Hard Pixel Art) ---
 
-    // White Key Internal Depth (Cast by neighbors)
+    // White Key Internal Depth (Cast by neighbors) + Side Illumination
     const getInternalShadows = () => {
-        if (isBlack || !isActive) return "none";
+        if (isBlack) return "none";
         const shadows = [];
-        if (!isLeftNeighborActive) shadows.push("var(--shadow-key-left)");
-        if (!isRightNeighborActive) shadows.push("var(--shadow-key-right)");
+        if (isActive) {
+            // Depth shadows from inactive neighbors
+            if (!isLeftNeighborActive) shadows.push("var(--shadow-key-left)");
+            if (!isRightNeighborActive) shadows.push("var(--shadow-key-right)");
+            // Self-illumination: light escapes to sides where neighbor is NOT active
+            if (activeColor) {
+                if (!isLeftNeighborActive) shadows.push(`inset 3px 0 0 0 ${activeColor}40`);
+                if (!isRightNeighborActive) shadows.push(`inset -3px 0 0 0 ${activeColor}40`);
+            }
+        } else {
+            // Neighbor-cast illumination: inactive key lit by active neighbors
+            if (isLeftNeighborActive && leftNeighborColor) {
+                shadows.push(`inset 2px 0 0 0 ${leftNeighborColor}30`);
+            }
+            if (isRightNeighborActive && rightNeighborColor) {
+                shadows.push(`inset -2px 0 0 0 ${rightNeighborColor}30`);
+            }
+        }
         return shadows.length > 0 ? shadows.join(", ") : "none";
     };
 
-    // Black Key AO (Ambient Occlusion) on White Keys
+    // Black Key AO (Ambient Occlusion) on White Keys — tinted when active
     const getAOOverlay = () => {
         if (isBlack || isActive) return null;
         const bands = [];
@@ -48,12 +70,12 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
         if (leftBlackNeighborState === 'idle') {
             bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[2px] bg-[var(--color-key-white-lo)] opacity-80 pointer-events-none z-[5]" style={aoStyle} />);
         } else if (leftBlackNeighborState === 'active') {
-            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] bg-[var(--color-key-white-lo)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
+            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] opacity-60 pointer-events-none z-[5]" style={{ ...aoStyle, backgroundColor: leftBlackNeighborColor || 'var(--color-key-white-lo)' }} />);
         }
         if (rightBlackNeighborState === 'idle') {
             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[2px] bg-[var(--color-key-white-lo)] opacity-80 pointer-events-none z-[5]" style={aoStyle} />);
         } else if (rightBlackNeighborState === 'active') {
-            bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] bg-[var(--color-key-white-lo)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
+            bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] opacity-60 pointer-events-none z-[5]" style={{ ...aoStyle, backgroundColor: rightBlackNeighborColor || 'var(--color-key-white-lo)' }} />);
         }
         return bands;
     };
@@ -93,6 +115,8 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                     )}
                     {/* Subtle highlight on top edge */}
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-[var(--color-key-black-hi)] opacity-50" />
+                    {/* Specular pixel cluster */}
+                    <div className="absolute top-[1px] left-[2px] w-[2px] h-[1px] bg-[var(--color-key-black-hi)] opacity-60 pointer-events-none" />
                 </div>
             </div>
         );
@@ -151,7 +175,11 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
 
                 {/* Top highlight line */}
                 {!isActive && (
-                    <div className="absolute top-0 left-0 right-[1px] h-[1px] bg-[var(--color-key-white-hi)]" />
+                    <>
+                        <div className="absolute top-0 left-0 right-[1px] h-[1px] bg-[var(--color-key-white-hi)]" />
+                        {/* Specular pixel cluster — wet highlight */}
+                        <div className="absolute top-[2px] left-[2px] w-[3px] h-[1px] bg-white opacity-40 pointer-events-none" />
+                    </>
                 )}
 
                 {label && (

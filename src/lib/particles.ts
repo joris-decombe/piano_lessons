@@ -1,4 +1,4 @@
-import { getZScale } from "./vfx-constants";
+import { getZScale, type ThemeParticleType } from "./vfx-constants";
 
 /**
  * Pool-based particle system for canvas effects.
@@ -15,8 +15,9 @@ export interface Particle {
     color: string;
     size: number;
     active: boolean;
-    type: 'burst' | 'debris' | 'shockwave' | 'spore';
+    type: ThemeParticleType;
     z: number; // 0 (far) to 2 (close). 1.0 is the play plane.
+    gravityMul: number; // per-particle gravity multiplier (default 1.0)
 }
 
 export interface EmitOptions {
@@ -29,8 +30,9 @@ export interface EmitOptions {
     size?: number;
     lifetime?: number;
     gravity?: number;
-    type?: 'burst' | 'debris' | 'shockwave' | 'spore';
+    type?: ThemeParticleType;
     z?: number;
+    gravityMul?: number;
 }
 
 const POOL_SIZE = 1200; // Increased pool for ambient spores
@@ -47,8 +49,9 @@ export class ParticleSystem {
             x: 0, y: 0, vx: 0, vy: 0,
             life: 0, maxLife: 0,
             color: '', size: 1, active: false,
-            type: 'burst',
-            z: 1.0
+            type: 'burst' as ThemeParticleType,
+            z: 1.0,
+            gravityMul: 1.0
         }));
     }
 
@@ -73,10 +76,15 @@ export class ParticleSystem {
             size = 2,
             lifetime = 0.35,
             type = 'burst',
-            z = 1.0
+            z = 1.0,
+            gravityMul = 1.0
         } = opts;
 
-        const baseAngle = type === 'debris' ? Math.PI / 2 : -Math.PI / 2;
+        const baseAngle = type === 'debris' || type === 'pixel_debris'
+            ? Math.PI / 2
+            : type === 'ember'
+                ? -Math.PI / 2  // embers rise
+                : -Math.PI / 2;
 
         for (let i = 0; i < count; i++) {
             const p = this.acquire();
@@ -95,6 +103,7 @@ export class ParticleSystem {
             p.size = type === 'shockwave' ? size * 4 : size;
             p.type = type;
             p.z = z;
+            p.gravityMul = gravityMul;
         }
     }
 
@@ -118,7 +127,7 @@ export class ParticleSystem {
             const parallax = getZScale(p.z);
 
             if (p.type === 'burst' || p.type === 'debris') {
-                p.vy += this.gravity * dt * parallax;
+                p.vy += this.gravity * p.gravityMul * dt * parallax;
             } else if (p.type === 'shockwave') {
                 // Shockwaves expand but don't fall
                 p.size += 40 * dt * parallax;
@@ -127,6 +136,17 @@ export class ParticleSystem {
                 p.vx += Math.sin(p.life * 2) * 5 * dt;
                 // Slow vertical rise
                 p.vy = -15 * parallax;
+            } else if (p.type === 'ember') {
+                // Embers rise against gravity with horizontal flicker
+                p.vy -= this.gravity * 0.3 * dt * parallax;
+                p.vx += Math.sin(p.life * 6) * 15 * dt;
+            } else if (p.type === 'pixel_debris') {
+                // Heavy fall, no wind
+                p.vy += this.gravity * 2.0 * dt * parallax;
+            } else if (p.type === 'phosphor_flicker') {
+                // Rapid deceleration — barely moves (CRT decay)
+                p.vx *= 0.95;
+                p.vy *= 0.95;
             }
 
             p.x += p.vx * dt * parallax;
@@ -164,11 +184,35 @@ export class ParticleSystem {
                     ctx.arc(x, y, outerR, 0, Math.PI * 2);
                     ctx.arc(x, y, innerR, 0, Math.PI * 2, true);
                     ctx.fill();
+                } else if (p.type === 'ember') {
+                    // Core pixel + dim 1px halo, brightness flickers
+                    const flicker = 0.6 + 0.4 * Math.sin(p.life * 10);
+                    ctx.globalAlpha = alpha * flicker;
+                    ctx.fillRect(x, y, Math.max(1, size), Math.max(1, size));
+                    // Dim halo
+                    ctx.globalAlpha = alpha * flicker * 0.25;
+                    ctx.fillRect(x - 1, y - 1, size + 2, size + 2);
+                } else if (p.type === 'pixel_debris') {
+                    // Sharp square pixels, no soft edges
+                    ctx.globalAlpha = alpha;
+                    ctx.fillRect(x, y, Math.max(1, Math.round(size)), Math.max(1, Math.round(size)));
+                    // 1px white highlight on top edge
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.fillRect(x, y, Math.max(1, Math.round(size)), 1);
+                    ctx.fillStyle = p.color;
+                } else if (p.type === 'phosphor_flicker') {
+                    // Random per-frame alpha flicker (CRT decay)
+                    const flickerAlpha = alpha * (0.3 + Math.random() * 0.7);
+                    ctx.globalAlpha = flickerAlpha;
+                    ctx.fillRect(x, y, Math.max(1, size), Math.max(1, size));
+                    // 2px green afterglow trail
+                    ctx.globalAlpha = flickerAlpha * 0.3;
+                    ctx.fillRect(x, y + Math.max(1, size), Math.max(1, size), 2);
                 } else {
                     if (p.type === 'spore' && p.z < 0.8) {
                         ctx.globalAlpha = alpha * 0.4;
                         ctx.fillRect(x, y, Math.max(1, size), Math.max(1, size));
-                    } 
+                    }
                     else if (p.z > 1.2) {
                         ctx.globalAlpha = alpha * 0.2;
                         ctx.fillRect(x - Math.floor(size/2), y - Math.floor(size/2), size, size);
@@ -197,12 +241,12 @@ export class ParticleSystem {
         return this._activeCount;
     }
 
-    /** Number of active 'burst' or 'shockwave' particles (for bloom threshold). */
+    /** Number of active impact particles (for bloom threshold). */
     get activeBurstCount(): number {
         let count = 0;
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
-            if (p.active && (p.type === 'burst' || p.type === 'shockwave')) {
+            if (p.active && (p.type === 'burst' || p.type === 'shockwave' || p.type === 'ember' || p.type === 'pixel_debris')) {
                 count++;
             }
         }
