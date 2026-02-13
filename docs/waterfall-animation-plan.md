@@ -186,7 +186,7 @@ All VFX run on every theme with per-theme tuning via `THEME_VFX_PROFILES` and `T
 
 ### Animation principles applied
 - **Sub-pixel animation**: Color tweening for smoother-than-grid motion (glow fades, particle alpha)
-- **Squash and stretch**: Note vibrate animation, key press deformation (planned)
+- **Squash and stretch**: Note vibrate animation, key press deformation
 - **Anticipation/follow-through**: Note trail = anticipation of impact; particles = follow-through after impact
 - **Easing**: Particle velocity with gravity (ease-out), glow intensity with sine wave
 - **Color cycling**: Palette rotation for sustained notes and ambient life
