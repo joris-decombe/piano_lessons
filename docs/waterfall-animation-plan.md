@@ -59,8 +59,14 @@ The entire app follows the Dead Cells aesthetic: pixel art with rich textures, b
 - **Note trails + light beams:** Gradient tails and upward beams for active notes
 - **Impact flash:** Color-tinted bright rectangle on note-on, quadratic ease-out
 - **Impact rail:** Single 1px theme-colored position marker at 25% opacity
-- **Bloom pass:** Quarter-res offscreen canvas, additive compositing (chromatic aberration for Cool, stronger for HiBit, disabled for 8bit)
-- **Phosphor persistence:** Green afterglow on note-off (Mono theme only)
+- **Bloom pass:** Quarter-res offscreen canvas, additive compositing, per-theme intensity via `THEME_VFX_PROFILES`
+- **Chromatic aberration:** Per-theme RGB channel offset on bloom layer (Cool, Warm, 16-Bit, Hi-Bit)
+- **Phosphor persistence:** Theme-colored afterglow on note-off (all themes, accent-colored, per-theme duration)
+- **Color grading:** Post-bloom multiply/screen compositing for biome-specific shadow/highlight tinting
+- **Theme-specific particles:** Embers (Warm), pixel debris (8-Bit), phosphor flicker (Mono), tuned bursts (others)
+- **Key side-illumination:** Active keys bleed colored light to inactive neighbors via inset shadows
+- **Cavity dithering:** Checkerboard pattern on keyboard cavity, theme-tinted
+- **Specular highlights:** Tiny pixel clusters on key surfaces
 
 ## Planned Effects — Implementation Status
 
@@ -70,21 +76,23 @@ The entire app follows the Dead Cells aesthetic: pixel art with rich textures, b
 2. **Active key glow** ✅
 3. **Note trail / motion blur** ✅
 
-### Tier 2: Polish — PARTIAL
+### Tier 2: Polish — DONE
 
-4. **Bloom post-processing** ✅
-5. **Key press squash/stretch** ❌ NOT YET IMPLEMENTED
-   - CSS-only enhancement to existing Key component
-   - Active white keys: `scaleX(1.02) scaleY(0.97)`
-   - Active black keys: `scaleX(0.98) scaleY(1.02)`
+4. **Bloom post-processing** ✅ (all themes, per-theme intensity via `THEME_VFX_PROFILES`)
+5. **Key press squash/stretch** ✅ (CSS transform on active keys)
 6. **Sustained note pulse** ✅
 
-### Tier 3: Theme-Specific Flair — PARTIAL
+### Tier 3: Theme-Specific Flair — DONE
 
-7. **CRT scanlines** ✅ (CSS, 8-bit/16-bit/Mono themes)
-8. **Chromatic aberration** ✅ (Cool theme, 1px RGB offset on bloom layer)
+7. **CRT scanlines** ✅ (all themes, per-theme intensity via `THEME_VFX_PROFILES`)
+8. **Chromatic aberration** ✅ (Cool, Warm, 16-Bit, Hi-Bit — per-theme offset/alpha)
 9. **Color cycling** ✅ (slow hue rotation on active key glow)
-10. **Phosphor persistence** ✅ (Mono theme only, 500ms green afterglow)
+10. **Phosphor persistence** ✅ (all themes, accent-colored, per-theme duration)
+11. **Theme-specific particles** ✅ (embers/pixel debris/phosphor flicker per theme)
+12. **Biome color grading** ✅ (multiply/screen shadow/highlight tinting)
+13. **Key side-illumination** ✅ (active keys bleed light to neighbors)
+14. **Cavity dithering** ✅ (checkerboard pattern, theme-tinted)
+15. **Specular highlights** ✅ (pixel clusters on key surfaces)
 
 ### Tier 4: Note Styles — FUTURE
 
@@ -92,16 +100,16 @@ Selectable note styles independent of color theme.
 
 ## Theme-Specific Effects
 
-Each theme layers its accent color as outer glow on top of the base bevel:
+All VFX run on every theme with per-theme tuning via `THEME_VFX_PROFILES` and `THEME_PARTICLE_BEHAVIORS` in `src/lib/vfx-constants.ts`.
 
-| Theme | Note Glow Color | Bloom | Chromatic Aberration | Phosphor | Notes |
-|-------|----------------|-------|---------------------|----------|-------|
-| Cool | Indigo `#6366f1` | Yes | Yes (1px RGB offset) | No | Default theme |
-| Warm | Amber `#f59e0b` | Yes | No | No | Sepia-tinted highlight |
-| Mono | Green `#22c55e` | Yes | No | Yes (500ms decay) | CRT phosphor + scanlines |
-| 8bit | Red `#ff3232` | No | No | No | Harsh bevel (0.9 alpha) |
-| 16bit | Orange `#f08030` | Yes | No | No | SNES depth gradient |
-| HiBit | Pink `#ff6188` | Yes (stronger) | No | No | Higher saturation |
+| Theme | Particles | Bloom | Chromatic | Scanlines | Phosphor | Color Grade |
+|-------|-----------|-------|-----------|-----------|----------|-------------|
+| Cool | Burst + spore | 0.50 | 1px, 0.35α | 0.02 | Indigo, 350ms | Teal-blue shadows |
+| Warm | Ember (rising) | 0.45 | 1px, 0.20α | 0.02 | Amber, 400ms | Deep brown shadows |
+| Mono | Burst + phosphor flicker | 0.50 | — | 0.04 | Green, 500ms | Dark green shadows |
+| 8-Bit | Pixel debris (heavy) | 0.35 | — | 0.04 | Red, 250ms | Deep blue shadows |
+| 16-Bit | Burst + spore | 0.45 | 1px, 0.15α | 0.04 | Orange, 300ms | Purple shadows |
+| Hi-Bit | Burst + spore (floaty) | 0.70 | 1px, 0.25α | 0.02 | Pink, 400ms | Deep violet shadows |
 
 ## Note Styles (Future)
 
@@ -140,14 +148,17 @@ Each theme layers its accent color as outer glow on top of the base bevel:
 
 ### Created (across PRs)
 - `src/components/piano/EffectsCanvas.tsx` — Canvas component + RAF loop + all effect draw functions
-- `src/lib/particles.ts` — Pool-based particle system (emit, update, draw)
-- `src/lib/effects-engine.ts` — Imperative effects engine (bypasses React Compiler)
+- `src/lib/particles.ts` — Pool-based particle system with theme-specific types (burst, ember, pixel_debris, phosphor_flicker, spore, debris, shockwave)
+- `src/lib/effects-engine.ts` — Imperative effects engine (bypasses React Compiler) with theme-aware emission, color grading, bloom, scanlines, phosphor
+- `src/lib/vfx-constants.ts` — VFX config tables: `THEME_PARTICLE_BEHAVIORS`, `THEME_COLOR_GRADES`, `THEME_VFX_PROFILES`
 - `tests/unit/particles.test.ts` — Unit tests for particle lifecycle
 
 ### Modified (across PRs)
 - `src/app/page.tsx` — Mounts `<EffectsCanvas>` and `<div class="waterfall-atmosphere">` in waterfall container
-- `src/app/globals.css` — Dead Cells note styling, rounded UI components, proximity glow, theme-specific overrides, scrolling grid, atmospheric backgrounds (vignette, keyboard warmth glow, upper haze), theme-tinted grid lines, noise/grain texture for all themes
+- `src/app/globals.css` — Dead Cells note styling, rounded UI components, proximity glow, theme-specific overrides, scrolling grid, atmospheric backgrounds, cavity dither patterns
 - `src/components/piano/Waterfall.tsx` — Theme-tinted octave guidelines via `--color-grid-line`
+- `src/components/piano/Key.tsx` — Side-illumination shadows, specular pixel highlights, tinted AO overlays
+- `src/components/piano/Keyboard.tsx` — Passes neighbor colors to Key, cavity dither class
 - `CLAUDE.md` — Added `contain: paint` warning
 
 ### Future (Note Styles feature)
