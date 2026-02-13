@@ -19,7 +19,7 @@
 Three techniques create this illusion:
 
 - **Volumetric Light Shafts ("God Rays"):** Diagonal, semi-transparent additive shapes that shimmer over time, simulating light piercing through dust or grates. They anchor the eye and break up horizontal monotony.
-- **Suspended Particulate Matter:** Each biome has unique, continuous particle emitters at multiple depths (foreground, midground, background). Dust drifts in the *Prisoners' Quarters*, bubbles rise in the *Toxic Sewers*, ash blows across the *Ramparts*. This creates a literal volume of air between layers. In our adaptation, each theme should produce distinct particle behavior — not just different colors.
+- **Suspended Particulate Matter:** Each biome has unique, continuous particle emitters at multiple depths (foreground, midground, background). Dust drifts in the *Prisoners' Quarters*, bubbles rise in the *Toxic Sewers*, ash blows across the *Ramparts*. This creates a literal volume of air between layers. In our adaptation, each theme produces distinct particle behavior via `THEME_PARTICLE_BEHAVIORS` — rising embers (warm), heavy pixel debris (8bit), phosphor flicker (mono), tuned bursts (others).
 - **Fog Sheets and Gradients:** Semi-transparent gradients placed *between* parallax layers. The further back a layer is, the more fog washes out its contrast, pushing it into the distance. This is the cheapest and most effective depth cue.
 
 ## 3. Parallax Composition
@@ -37,10 +37,9 @@ Three techniques create this illusion:
 We can't generate true normal maps, but we can approximate the perceptual result:
 
 - **Fake Normal Mapping:** Static directional gradients on note surfaces that simulate a consistent top-left light source. This creates the illusion of volume on flat rectangles.
-- **Dynamic Side-Illumination:** When a note impacts, neighboring keys and frame elements should brighten on the side facing the impact and darken on the opposite side. This simulates the light-pixel interaction that makes *Dead Cells*' 2D surfaces feel three-dimensional.
+- **Dynamic Side-Illumination:** Active keys bleed colored light to inactive neighbors via gradient overlay divs (3-4px wide, 20-25% opacity). Active keys also emit self-illumination on edges where no neighbor is active. Black key AO overlays tint to the active key's color.
 - **Grunge and Texture:**
-    - **Dithering:** Checkerboard pixel patterns to blend colors manually, creating gritty textures on furniture surfaces. Avoids the "flat Flash-game" look.
-    - **Specular Highlights:** High-contrast white pixel clusters on edges to simulate wet or reflective surfaces catching ambient light.
+    - ~~Dithering~~ and ~~specular highlights~~ were implemented but removed — invisible at the rendered pixel scale. The keyboard cavity is almost entirely hidden behind keys, and white-on-white specular pixels had zero contrast.
 
 ## 5. Color Theory and Biome Identity
 
@@ -54,10 +53,10 @@ We can't generate true normal maps, but we can approximate the perceptual result
 
 **Why:** The post-processing stack glues disparate elements — sprites, tilesets, particles, lighting — into a cohesive image. Without it, individual techniques look like layers stacked on top of each other rather than a unified scene.
 
-- **Bloom (Glow):** The most dominant effect in *Dead Cells*. Light sources and saturated elements are pushed past 100% brightness, bleeding color into surrounding pixels. This creates the signature "neon against dark stone" look. Bloom already exists in our effects pipeline but needs stronger bleed and per-theme tuning.
-- **Color Grading / LUTs:** Each biome is painted with a specific color grade — shadows shifted toward teal, highlights toward orange (or biome equivalents). We don't have this yet.
-- **Chromatic Aberration:** At the very edges of the screen, RGB channels are slightly separated, mimicking physical lens imperfection. We have a basic version (cool theme only, uniform) that needs to become edge-focused and available across all themes.
-- **Vignetting:** Subtly darkened screen corners draw the eye to center. Our fog and atmosphere gradients provide partial vignetting, but a dedicated pass would be more controllable.
+- **Bloom (Glow):** The most dominant effect in *Dead Cells*. Light sources and saturated elements are pushed past 100% brightness, bleeding color into surrounding pixels. This creates the signature "neon against dark stone" look. Bloom runs on all themes with per-theme intensity via `THEME_VFX_PROFILES.bloomAlpha` (0.35 for 8-Bit to 0.70 for Hi-Bit). Quarter-resolution offscreen canvas with additive compositing.
+- **Color Grading / LUTs:** Each theme applies biome-specific color grading via `THEME_COLOR_GRADES` — multiply compositing for shadow tints (teal-blue, deep brown, dark green, etc.) and screen compositing for highlight tints. Applied after bloom, before scanlines.
+- **Chromatic Aberration:** Per-theme RGB channel offset on the bloom layer. Cool, Warm, 16-Bit, and Hi-Bit get 1px offset at varying alpha. Mono and 8-Bit have no chromatic offset (matches their aesthetic). Configured via `THEME_VFX_PROFILES`.
+- **Vignetting:** Subtly darkened screen corners draw the eye to center. Currently approximated by fog gradients and atmospheric backgrounds. A dedicated pass remains a Phase 3 option.
 
 ## 7. "The Juice" (Game Feel)
 
@@ -80,15 +79,20 @@ We can't generate true normal maps, but we can approximate the perceptual result
 - [x] Migrated rendering to imperative engine class to bypass React Compiler instability.
 - [x] Unified CSS scroll animation mechanism for all parallax layers.
 
-### Phase 2: Lighting, Texture & Color Identity — ⏳ NEXT
-- [ ] Dynamic side-illumination on keys from active note impacts.
-- [ ] Pixel dithering and specular highlights on piano furniture surfaces.
-- [ ] Biome-specific color grading (LUT-style shadow/highlight shifts per theme).
-- [ ] Theme-specific particle behaviors (not just colors — e.g. rising embers for warm, falling pixel debris for 8bit, phosphor flicker for mono).
+### Phase 2: Lighting, Texture & Color Identity — ✅ COMPLETED
+- [x] Dynamic side-illumination on keys from active note impacts (gradient overlay divs, not box-shadow — CSS `var()` colors don't support hex opacity suffixes).
+- [x] Biome-specific color grading (multiply/screen shadow/highlight tinting per theme via `THEME_COLOR_GRADES`).
+- [x] Theme-specific particle behaviors: rising embers (warm), heavy pixel debris (8bit), phosphor flicker (mono), tuned bursts (others) via `THEME_PARTICLE_BEHAVIORS`.
+- [x] All VFX enabled on all themes with per-theme tuning via `THEME_VFX_PROFILES` (bloom, chromatic aberration, scanlines, phosphor persistence).
+- [x] Black key AO tinted by active neighbor color.
+- [x] White key cutout depth aligned with black key bottom edge (98px).
+- ~~Pixel dithering and specular highlights~~ — removed, invisible at rendered scale.
 
 ### Phase 3: Post-Processing & Juice — ⏳ PLANNED
-- [ ] Stronger bloom with per-theme intensity tuning (currently uniform).
-- [ ] Edge-focused chromatic aberration across all themes (currently cool-only, uniform).
+- [x] Stronger bloom with per-theme intensity tuning (via `THEME_VFX_PROFILES.bloomAlpha`).
+- [x] Chromatic aberration across all applicable themes (Cool, Warm, 16-Bit, Hi-Bit — per-theme offset/alpha).
+- [x] CRT scanlines on all themes (per-theme alpha via `THEME_VFX_PROFILES.scanlineAlpha`).
+- [x] Phosphor persistence on all themes (accent-colored, per-theme duration).
 - [ ] Dedicated vignette pass (currently approximated by fog gradients).
 - [ ] Physics-driven particles that collide with keyboard geometry.
 - [ ] Screen shake and frame distortion on heavy impacts.
@@ -116,3 +120,11 @@ We can't generate true normal maps, but we can approximate the perceptual result
 ### 5. Particle Pool Saturation
 - **Challenge:** Each note-on emits ~23 particles (burst, foreground, shockwave, debris). A 10-note chord produces ~230 in one frame. Multiple rapid chords can approach the 1200 pool limit.
 - **Mitigation:** Graceful degradation — the pool silently drops emissions when full, so visual density plateaus rather than crashing or allocating. Phase 3 will add physics-driven particles, increasing per-note counts, so pool budgeting may need revisiting.
+
+### 6. CSS `var()` Colors in Dynamic Styles
+- **Challenge:** Active note colors are CSS variable strings (e.g. `var(--color-note-left)`). Appending hex opacity suffixes like `${color}80` produces invalid CSS (`var(--color-note-left)80`), silently breaking `box-shadow` and `backgroundColor` styles.
+- **Mitigation:** Use gradient overlay `<div>` elements with opacity classes instead of `box-shadow` for color effects that reference CSS variable colors. This pattern is used for key side-illumination.
+
+### 7. Sub-Pixel-Scale Effects
+- **Challenge:** Some effects designed on paper (keyboard cavity dithering, 3x1px specular highlights on keys) are invisible at the rendered scale because the target surfaces are too small or the contrast is too low (white-on-white).
+- **Mitigation:** Prototyped and removed. Not every *Dead Cells* technique translates to our scale. The keyboard cavity is almost entirely hidden behind keys, and specular highlights need a darker surface to register.
