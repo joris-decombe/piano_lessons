@@ -90,7 +90,7 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
 
     const getClipPath = () => {
         if (isBlack || (cutLeft === 0 && cutRight === 0)) return undefined;
-        const cutH = "96px"; 
+        const cutH = "98px";
         return `polygon(${cutLeft}px 0, ${cutLeft}px ${cutH}, 0 ${cutH}, 0 100%, 100% 100%, 100% ${cutH}, calc(100% - ${cutRight}px) ${cutH}, calc(100% - ${cutRight}px) 0)`;
     };
     
