@@ -231,9 +231,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   });
 
   const [splitHands, setSplitHands] = useState(true);
-  const [leftColor, setLeftColor] = useState("var(--color-note-left)");
-  const [rightColor, setRightColor] = useState("var(--color-note-right)");
-  const [unifiedColor, setUnifiedColor] = useState("var(--color-note-unified)");
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
   const [showGrid, setShowGrid] = useState(true);
@@ -248,7 +245,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
   // Combine Active notes for visualization
   const coloredKeys = useMemo(() => {
-    const colors = { split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor };
+    const colors = {
+      split: splitHands,
+      left: "var(--color-note-left)",
+      right: "var(--color-note-right)",
+      unified: "var(--color-note-unified)"
+    };
     const splitSettings = { strategy: splitStrategy, splitPoint };
 
     return audio.activeNotes.map(activeNote => {
@@ -256,7 +258,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       const trackColor = getNoteColor(activeNote.track, midiNumber, colors, splitSettings);
       return { note: activeNote.note, color: trackColor, startTick: activeNote.startTick };
     });
-  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
+  }, [audio.activeNotes, splitHands, splitStrategy, splitPoint]);
 
   // Effects canvas data: active notes with MIDI numbers for key positioning
   const effectsNotes: EffectsNote[] = useMemo(() => {
@@ -271,13 +273,10 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   // Memoize settings objects to prevent Controls re-renders
   const visualSettings = useMemo(() => ({
     splitHands, setSplitHands,
-    leftColor, setLeftColor,
-    rightColor, setRightColor,
-    unifiedColor, setUnifiedColor,
     splitStrategy, setSplitStrategy,
     splitPoint, setSplitPoint,
     showGrid, setShowGrid
-  }), [splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showGrid]);
+  }), [splitHands, splitStrategy, splitPoint, showGrid]);
 
   const songSettingsMemo = useMemo(() => ({
     songs: allSongs,
@@ -287,6 +286,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
   return (
     <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[env(safe-area-inset-left,0px)] py-6 md:px-8 landscape:pt-1 landscape:pb-[env(safe-area-inset-bottom)] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
+      {/* Vignette overlay — cinematic edge darkening */}
+      <div className="vignette-overlay" aria-hidden="true" />
+
       {/* Portrait Warning */}
       <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
         <div className="text-4xl mb-4">↻</div>
@@ -349,7 +351,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   currentTick={audio.currentTick}
                   isPlaying={audio.isPlaying}
                   playbackRate={audio.playbackRate}
-                  activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                  activeColors={{
+                    split: splitHands,
+                    left: "var(--color-note-left)",
+                    right: "var(--color-note-right)",
+                    unified: "var(--color-note-unified)"
+                  }}
                   lookAheadTicks={audio.lookAheadTicks}
                   showGrid={showGrid}
                   containerHeight={waterfallHeight}
@@ -370,7 +377,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   containerHeight={waterfallHeight}
                   theme={theme}
                   isPlaying={audio.isPlaying}
-                  hitstopRef={audio.hitstopRef}
                 />
               </div>
 

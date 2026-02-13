@@ -51,6 +51,12 @@ Local `useState` for UI state, refs for mutable Tone.js references, `useSyncExte
 - **Static export**: `output: "export"` — no server-side features (no API routes, no SSR)
 - **React Compiler**: Enabled (`reactCompiler: true`) — automatic memoization via `babel-plugin-react-compiler`. **WARNING:** The compiler (Turbopack/SWC) generates internal dependency arrays for `useEffect`/`useCallback` at compile time. Any code change that alters the compiler's dependency analysis (adding new local variables, `for` loops, or function calls inside effect/callback bodies) can change the internal array size, causing the runtime error: _"The final argument passed to useEffect changed size between renders."_ The `"use no memo"` opt-out directive is **not recognized** by this Turbopack integration. Safe changes: modifying numeric literals and math formulas using only already-captured variables. Unsafe: adding new control flow, new `useRef` hooks, or referencing new variables inside effects. For complex changes to `EffectsCanvas.tsx`, consider migrating to the imperative `EffectsEngine` class (`src/lib/effects-engine.ts`) which bypasses the compiler entirely.
 - **CSS `contain: paint` clips `box-shadow`**: Waterfall notes (`.waterfall-note`) use `contain: layout style` — do NOT add `paint` containment. `contain: paint` clips all outer `box-shadow` overflow, making glow effects completely invisible. This was a long-standing silent bug that hid every visual change to note styling.
+- **CSS `var()` colors cannot take hex opacity suffixes**: Active note colors are CSS variable strings (e.g. `var(--color-note-left)`). Appending hex opacity like `${color}80` produces invalid CSS (`var(--color-note-left)80`), silently breaking `box-shadow` and `backgroundColor`. Use gradient overlay `<div>` elements with opacity classes instead.
+- **White key cutout depth must match black key bottom**: `cutH` in `Key.tsx`'s `getClipPath()` must equal the black key's `top` offset + height (currently `2px + 96px = 98px`). A mismatch exposes white key edges below or above the black key.
+- **VFX constants are data-driven**: All theme-specific VFX tuning lives in `src/lib/vfx-constants.ts` via `THEME_VFX_PROFILES`, `THEME_PARTICLE_BEHAVIORS`, and `THEME_COLOR_GRADES`. Per-theme vignette intensity is in CSS via `--vignette-alpha`. Do NOT hardcode theme gates (e.g. `if (theme === '8bit')`) in the effects engine — use the config tables.
+- **`.pixel-panel` must not set `position: relative` in CSS**: The settings popover and other panels use Tailwind's `absolute` class for positioning. Un-layered CSS (`position: relative`) overrides Tailwind utilities, breaking layout. Dithering uses `background-image` layers instead of pseudo-elements to avoid needing positioning.
+- **Sub-pixel-scale effects need dark surfaces**: Effects smaller than ~4px need adequate contrast to be visible. Specular highlights work on black keys (dark surface) but not white keys. Dithering works on `.pixel-panel` (dark mid-tone) but not on the keyboard cavity (hidden behind keys).
+- **Git workflow**: Never amend commits — always fix forward. This is a multi-PR plan; preserve history across PRs.
 - **Path alias**: `@/*` maps to `./src/*`
 - **Playwright baseURL**: `http://localhost:3000/piano_lessons`
 
@@ -62,7 +68,7 @@ Local `useState` for UI state, refs for mutable Tone.js references, `useSyncExte
 
 ## Active Plans
 
-- **Waterfall animation upgrade**: See `docs/waterfall-animation-plan.md` — Hybrid Canvas overlay (Option B) for particle effects, glow, bloom, and theme-specific VFX on top of the existing DOM waterfall/keyboard.
+- **Waterfall animation upgrade**: See `docs/waterfall-animation-plan.md` and `docs/dead-cells-style-plan.md` — Hybrid Canvas overlay for particle effects, glow, bloom, and theme-specific VFX. All 3 phases complete: Phase 1 (Atmosphere & Parallax), Phase 2 (Lighting, Texture & Color Identity), Phase 3 (Post-Processing & Juice — vignette, dithering, specular, particle physics).
 
 ## Conventions
 

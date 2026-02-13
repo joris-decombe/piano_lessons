@@ -81,6 +81,17 @@ const THEME_ATMOSPHERE: Record<string, string> = {
 
 /** Parse a CSS color string to extract RGB values for glow rendering. */
 function parseColor(color: string): { r: number; g: number; b: number } | null {
+    // Handle CSS variables (e.g. var(--color-note-left))
+    if (color.startsWith("var(")) {
+        const varName = color.match(/var\((--[^)]+)\)/)?.[1];
+        if (varName && typeof window !== "undefined") {
+            const resolved = getComputedStyle(document.documentElement)
+                .getPropertyValue(varName)
+                .trim();
+            if (resolved) return parseColor(resolved);
+        }
+    }
+
     const hex = color.match(/^#([0-9a-f]{6})$/i);
     if (hex) {
         const v = parseInt(hex[1], 16);
@@ -150,8 +161,6 @@ export class EffectsEngine {
     theme = "cool";
     isPlaying = false;
     activeNotes: EffectsNote[] = [];
-    /** Optional ref from usePianoAudio — when > 0, particles and spores freeze. */
-    hitstopRef: { current: number } | null = null;
 
     // --- Internal state ---
     private canvas: HTMLCanvasElement;
@@ -400,12 +409,12 @@ export class EffectsEngine {
         this.drawGodRays(ctx, time);
 
         // 2. Update and draw core effects
-        // During hitstop, freeze particles and spore emission to match the visual freeze
-        const inHitstop = this.hitstopRef !== null && this.hitstopRef.current > 0;
-        if (this.isPlaying && !inHitstop) {
+        this.particles.floorY = this.impactY;
+        if (this.isPlaying) {
             this.emitAmbientSpores();
             this.particles.update(dt);
         }
+
         this.particles.draw(ctx);
         this.drawKeyGlow(ctx, this.activeNotes, time);
         this.drawNoteTrails(ctx, this.activeNotes);
@@ -448,6 +457,8 @@ export class EffectsEngine {
     }
 
     private applyBloom(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): void {
+        if (canvas.width === 0 || canvas.height === 0) return;
+
         const bloomCtx = this.bloomCtx!;
         const bloomCanvas = this.bloomCanvas;
         const profile = THEME_VFX_PROFILES[this.theme] || THEME_VFX_PROFILES.cool;

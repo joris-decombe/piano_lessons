@@ -123,6 +123,10 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                     )}
                     {/* Subtle highlight on top edge */}
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-[var(--color-key-black-hi)] opacity-50" />
+                    {/* Specular highlight — wet surface glint */}
+                    {!isActive && (
+                        <div className="absolute top-[1px] left-[2px] w-[3px] h-[1px] bg-[var(--color-key-black-hi)] opacity-50 pointer-events-none z-[1]" />
+                    )}
                 </div>
             </div>
         );
