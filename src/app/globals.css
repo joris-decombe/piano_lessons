@@ -13,7 +13,7 @@
   --foreground: #E2E4E9;
 }
 
-/* --- COOL THEME (Cyber/Neon) --- */
+/* --- COOL THEME (Neon) --- */
 :root, [data-theme="cool"] {
   /* Voids & Darks */
   --color-void: #060810;
@@ -51,7 +51,7 @@
   --color-grid-line: rgba(99, 102, 241, 0.5);
 }
 
-/* --- WARM THEME (Vintage/Sepia) --- */
+/* --- WARM THEME (Sepia) --- */
 [data-theme="warm"] {
   /* Voids & Darks */
   --color-void: #100804;
@@ -89,7 +89,7 @@
   --color-grid-line: rgba(180, 83, 9, 0.5);
 }
 
-/* --- MONO THEME (Terminal/Minimal) --- */
+/* --- MONO THEME (CRT) --- */
 [data-theme="mono"] {
   /* Voids & Darks - CRT phosphor tint */
   --color-void: #000000;
@@ -943,7 +943,7 @@ body {
     0 0 24px rgba(240, 128, 48, 0.25);
 }
 
-/* --- MONO (Terminal): Green phosphor glow --- */
+/* --- MONO (CRT): Green phosphor glow --- */
 [data-theme="mono"] .waterfall-note {
   box-shadow:
     inset 0 1px 3px rgba(255, 255, 255, 0.15),
@@ -983,7 +983,7 @@ body {
     0 0 24px rgba(34, 197, 94, 0.35);
 }
 
-/* --- COOL (Cyber): Indigo glow --- */
+/* --- COOL (Neon): Indigo glow --- */
 [data-theme="cool"] .waterfall-note {
   box-shadow:
     inset 0 1px 3px rgba(255, 255, 255, 0.15),
@@ -1004,7 +1004,7 @@ body {
     0 0 24px rgba(99, 102, 241, 0.35);
 }
 
-/* --- WARM (Vintage): Amber glow --- */
+/* --- WARM (Sepia): Amber glow --- */
 [data-theme="warm"] .waterfall-note {
   box-shadow:
     inset 0 1px 3px rgba(255, 255, 255, 0.15),

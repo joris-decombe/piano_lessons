@@ -64,7 +64,7 @@ export const THEMES: { id: Theme; name: string; description: string; swatches: s
   { id: "8bit", name: "8-Bit", description: "NES / Mario", swatches: ["#e52521", "#049cd8", "#fbd000"] },
   { id: "16bit", name: "16-Bit", description: "Street Fighter", swatches: ["#f08030", "#e03020", "#30a0f0"] },
   { id: "hibit", name: "Hi-Bit", description: "Celeste", swatches: ["#ff6188", "#78dce8", "#ab9df2"] },
-  { id: "cool", name: "Cyber", description: "Neon", swatches: ["#38bdf8", "#fb7185", "#a78bfa"] },
-  { id: "warm", name: "Vintage", description: "Sepia", swatches: ["#f59e0b", "#ef4444", "#d97706"] },
-  { id: "mono", name: "Terminal", description: "CRT", swatches: ["#22c55e", "#4ade80", "#16a34a"] },
+  { id: "cool", name: "Cool", description: "Neon", swatches: ["#38bdf8", "#fb7185", "#a78bfa"] },
+  { id: "warm", name: "Warm", description: "Sepia", swatches: ["#f59e0b", "#ef4444", "#d97706"] },
+  { id: "mono", name: "Mono", description: "CRT", swatches: ["#22c55e", "#4ade80", "#16a34a"] },
 ];
