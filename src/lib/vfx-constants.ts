@@ -78,10 +78,10 @@ export interface ThemeVfxProfile {
 }
 
 export const THEME_VFX_PROFILES: Record<string, ThemeVfxProfile> = {
-    cool:    { bloomAlpha: 0.5,  chromaticOffset: 1, chromaticAlpha: 0.35, scanlineAlpha: 0.02,  phosphorColor: { r: 99, g: 102, b: 241 }, phosphorDuration: 350 },
-    warm:    { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.20, scanlineAlpha: 0.02,  phosphorColor: { r: 245, g: 158, b: 11 }, phosphorDuration: 400 },
+    cool:    { bloomAlpha: 0.5,  chromaticOffset: 1, chromaticAlpha: 0.35, scanlineAlpha: 0.03,  phosphorColor: { r: 99, g: 102, b: 241 }, phosphorDuration: 350 },
+    warm:    { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.20, scanlineAlpha: 0.03,  phosphorColor: { r: 245, g: 158, b: 11 }, phosphorDuration: 400 },
     mono:    { bloomAlpha: 0.5,  chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 34, g: 197, b: 94 },  phosphorDuration: 500 },
     "8bit":  { bloomAlpha: 0.35, chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 229, g: 37, b: 33 },  phosphorDuration: 250 },
     "16bit": { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.15, scanlineAlpha: 0.04,  phosphorColor: { r: 240, g: 128, b: 48 }, phosphorDuration: 300 },
-    hibit:   { bloomAlpha: 0.7,  chromaticOffset: 1, chromaticAlpha: 0.25, scanlineAlpha: 0.02,  phosphorColor: { r: 255, g: 97, b: 136 }, phosphorDuration: 400 },
+    hibit:   { bloomAlpha: 0.7,  chromaticOffset: 1, chromaticAlpha: 0.25, scanlineAlpha: 0.03,  phosphorColor: { r: 255, g: 97, b: 136 }, phosphorDuration: 400 },
 };
