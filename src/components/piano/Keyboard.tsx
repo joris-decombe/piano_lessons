@@ -143,20 +143,26 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                         // Use pre-computed neighbor indices (O(1) lookups)
                         let leftBlackState: 'none' | 'idle' | 'active' = 'none';
                         let rightBlackState: 'none' | 'idle' | 'active' = 'none';
+                        let leftBlackColor: string | undefined;
+                        let rightBlackColor: string | undefined;
 
                         if (key.leftBlackIdx !== null) {
-                            leftBlackState = getActiveState(keysData[key.leftBlackIdx].note).isActive ? 'active' : 'idle';
+                            const blackState = getActiveState(keysData[key.leftBlackIdx].note);
+                            leftBlackState = blackState.isActive ? 'active' : 'idle';
+                            leftBlackColor = blackState.color;
                         }
                         if (key.rightBlackIdx !== null) {
-                            rightBlackState = getActiveState(keysData[key.rightBlackIdx].note).isActive ? 'active' : 'idle';
+                            const blackState = getActiveState(keysData[key.rightBlackIdx].note);
+                            rightBlackState = blackState.isActive ? 'active' : 'idle';
+                            rightBlackColor = blackState.color;
                         }
 
-                        const isLeftActive = key.leftWhiteIdx !== null
-                            ? getActiveState(keysData[key.leftWhiteIdx].note).isActive
-                            : false;
-                        const isRightActive = key.rightWhiteIdx !== null
-                            ? getActiveState(keysData[key.rightWhiteIdx].note).isActive
-                            : false;
+                        const leftWhiteState = key.leftWhiteIdx !== null
+                            ? getActiveState(keysData[key.leftWhiteIdx].note)
+                            : { isActive: false, color: undefined };
+                        const rightWhiteState = key.rightWhiteIdx !== null
+                            ? getActiveState(keysData[key.rightWhiteIdx].note)
+                            : { isActive: false, color: undefined };
 
                         return (
                             <Key
@@ -166,10 +172,14 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                                 cutLeft={key.cutLeft}
                                 cutRight={key.cutRight}
                                 isActive={isActive}
-                                isLeftNeighborActive={isLeftActive}
-                                isRightNeighborActive={isRightActive}
+                                isLeftNeighborActive={leftWhiteState.isActive}
+                                isRightNeighborActive={rightWhiteState.isActive}
+                                leftNeighborColor={leftWhiteState.color}
+                                rightNeighborColor={rightWhiteState.color}
                                 leftBlackNeighborState={leftBlackState}
                                 rightBlackNeighborState={rightBlackState}
+                                leftBlackNeighborColor={leftBlackColor}
+                                rightBlackNeighborColor={rightBlackColor}
                                 activeColor={color}
                                 label={key.label}
                                 style={{

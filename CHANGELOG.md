@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Canvas effects overlay with particle system, key glow, note trails, and bloom post-processing
 - Key press squash/stretch animation for physical impact feel
 - Sustained note glow pulse (2Hz sine wave on glow intensity)
-- Phosphor persistence afterglow for Mono/Terminal theme (green CRT decay)
+- Phosphor persistence afterglow for Mono theme (green CRT decay)
 - Chromatic aberration bloom for Cool theme (RGB channel split)
 - Color cycling via hue rotation on all glow effects
 - Pixel art animation upgrade plan (`docs/waterfall-animation-plan.md`)
@@ -51,11 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-01-22
 
 ### Added
-- 6 pixel art themes: 8-Bit (NES), 16-Bit (SNES), Hi-Bit (modern indie), Cyber, Vintage, Terminal
+- 6 pixel art themes: 8-Bit (NES), 16-Bit (SNES), Hi-Bit (modern indie), Cool (Neon), Warm (Sepia), Mono (CRT)
 - Theme selector on landing page with color swatches
 - Pixel art UI system (panels, buttons, toggles, bevels)
 - CRT scanline effect for retro themes
-- Phosphor glow for Terminal theme
+- Phosphor glow for Mono theme
 - Noise texture for Hi-Bit theme
 - Keyboard shortcuts: Space (play/pause), arrows (seek), Escape (back)
 - Toast notification system

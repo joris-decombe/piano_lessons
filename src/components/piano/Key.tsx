@@ -8,9 +8,15 @@ interface KeyProps {
     isActive: boolean;
     isLeftNeighborActive?: boolean;
     isRightNeighborActive?: boolean;
+    // Neighbor colors for side-illumination
+    leftNeighborColor?: string;
+    rightNeighborColor?: string;
     // Black Neighbor States
     leftBlackNeighborState?: 'none' | 'idle' | 'active';
     rightBlackNeighborState?: 'none' | 'idle' | 'active';
+    // Black neighbor colors for AO tinting
+    leftBlackNeighborColor?: string;
+    rightBlackNeighborColor?: string;
     // Precise Cut Geometry (Pixels)
     cutLeft?: number;
     cutRight?: number;
@@ -19,7 +25,7 @@ interface KeyProps {
     style?: React.CSSProperties;
 }
 
-export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftBlackNeighborState, rightBlackNeighborState, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
+export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftNeighborColor, rightNeighborColor, leftBlackNeighborState, rightBlackNeighborState, leftBlackNeighborColor, rightBlackNeighborColor, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
 
     // --- GEOMETRY & PHYSICS ---
     // Physical dip + squash/stretch for impact feel
@@ -40,7 +46,31 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
         return shadows.length > 0 ? shadows.join(", ") : "none";
     };
 
-    // Black Key AO (Ambient Occlusion) on White Keys
+    // Side-illumination overlays (colored divs instead of box-shadow, works with var() colors)
+    const getSideIllumination = () => {
+        if (isBlack) return null;
+        const overlays = [];
+        if (isActive && activeColor) {
+            // Self-illumination: light escapes to sides where neighbor is NOT active
+            if (!isLeftNeighborActive) {
+                overlays.push(<div key="si-l" className="absolute top-0 left-0 h-full w-[3px] opacity-25 pointer-events-none z-[2]" style={{ background: `linear-gradient(to right, ${activeColor}, transparent)` }} />);
+            }
+            if (!isRightNeighborActive) {
+                overlays.push(<div key="si-r" className="absolute top-0 right-0 h-full w-[3px] opacity-25 pointer-events-none z-[2]" style={{ background: `linear-gradient(to left, ${activeColor}, transparent)` }} />);
+            }
+        } else if (!isActive) {
+            // Neighbor-cast illumination: inactive key lit by active neighbors
+            if (isLeftNeighborActive && leftNeighborColor) {
+                overlays.push(<div key="ni-l" className="absolute top-0 left-0 h-full w-[4px] opacity-20 pointer-events-none z-[2]" style={{ background: `linear-gradient(to right, ${leftNeighborColor}, transparent)` }} />);
+            }
+            if (isRightNeighborActive && rightNeighborColor) {
+                overlays.push(<div key="ni-r" className="absolute top-0 right-0 h-full w-[4px] opacity-20 pointer-events-none z-[2]" style={{ background: `linear-gradient(to left, ${rightNeighborColor}, transparent)` }} />);
+            }
+        }
+        return overlays;
+    };
+
+    // Black Key AO (Ambient Occlusion) on White Keys — tinted when active
     const getAOOverlay = () => {
         if (isBlack || isActive) return null;
         const bands = [];
@@ -48,19 +78,19 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
         if (leftBlackNeighborState === 'idle') {
             bands.push(<div key="l-ao" className="absolute top-0 left-0 w-[2px] bg-[var(--color-key-white-lo)] opacity-80 pointer-events-none z-[5]" style={aoStyle} />);
         } else if (leftBlackNeighborState === 'active') {
-            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] bg-[var(--color-key-white-lo)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
+            bands.push(<div key="l-ao-a" className="absolute top-0 left-0 w-[1px] opacity-60 pointer-events-none z-[5]" style={{ ...aoStyle, backgroundColor: leftBlackNeighborColor || 'var(--color-key-white-lo)' }} />);
         }
         if (rightBlackNeighborState === 'idle') {
             bands.push(<div key="r-ao" className="absolute top-0 right-0 w-[2px] bg-[var(--color-key-white-lo)] opacity-80 pointer-events-none z-[5]" style={aoStyle} />);
         } else if (rightBlackNeighborState === 'active') {
-            bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] bg-[var(--color-key-white-lo)] opacity-60 pointer-events-none z-[5]" style={aoStyle} />);
+            bands.push(<div key="r-ao-a" className="absolute top-0 right-0 w-[1px] opacity-60 pointer-events-none z-[5]" style={{ ...aoStyle, backgroundColor: rightBlackNeighborColor || 'var(--color-key-white-lo)' }} />);
         }
         return bands;
     };
 
     const getClipPath = () => {
         if (isBlack || (cutLeft === 0 && cutRight === 0)) return undefined;
-        const cutH = "96px"; 
+        const cutH = "98px";
         return `polygon(${cutLeft}px 0, ${cutLeft}px ${cutH}, 0 ${cutH}, 0 100%, 100% 100%, 100% ${cutH}, calc(100% - ${cutRight}px) ${cutH}, calc(100% - ${cutRight}px) 0)`;
     };
     
@@ -151,9 +181,12 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
 
                 {/* Top highlight line */}
                 {!isActive && (
-                    <div className="absolute top-0 left-0 right-[1px] h-[1px] bg-[var(--color-key-white-hi)]" />
+                    <>
+                        <div className="absolute top-0 left-0 right-[1px] h-[1px] bg-[var(--color-key-white-hi)]" />
+                    </>
                 )}
 
+                {getSideIllumination()}
                 {label && (
                     <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
                         <span className="text-[10px] font-sans text-[var(--color-muted)] font-bold block">{label}</span>
