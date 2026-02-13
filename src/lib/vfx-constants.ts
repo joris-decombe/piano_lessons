@@ -63,3 +63,25 @@ export const THEME_COLOR_GRADES: Record<string, ThemeColorGrade> = {
     "16bit": { shadowTint: 'rgba(40, 10, 60, 0.08)',   highlightTint: 'rgba(255, 180, 100, 0.05)' },
     hibit:   { shadowTint: 'rgba(30, 10, 50, 0.10)',   highlightTint: 'rgba(255, 150, 200, 0.05)' },
 };
+
+// ---------------------------------------------------------------------------
+// Theme VFX Profile (bloom, chromatic aberration, scanlines, phosphor)
+// ---------------------------------------------------------------------------
+
+export interface ThemeVfxProfile {
+    bloomAlpha: number;           // bloom composite alpha (0 = off)
+    chromaticOffset: number;      // chromatic aberration pixel offset (0 = off)
+    chromaticAlpha: number;       // chromatic aberration alpha
+    scanlineAlpha: number;        // scanline darkness (0 = off)
+    phosphorColor: { r: number; g: number; b: number }; // afterglow color
+    phosphorDuration: number;     // afterglow duration in ms
+}
+
+export const THEME_VFX_PROFILES: Record<string, ThemeVfxProfile> = {
+    cool:    { bloomAlpha: 0.5,  chromaticOffset: 1, chromaticAlpha: 0.35, scanlineAlpha: 0.02,  phosphorColor: { r: 99, g: 102, b: 241 }, phosphorDuration: 350 },
+    warm:    { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.20, scanlineAlpha: 0.02,  phosphorColor: { r: 245, g: 158, b: 11 }, phosphorDuration: 400 },
+    mono:    { bloomAlpha: 0.5,  chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 34, g: 197, b: 94 },  phosphorDuration: 500 },
+    "8bit":  { bloomAlpha: 0.35, chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 229, g: 37, b: 33 },  phosphorDuration: 250 },
+    "16bit": { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.15, scanlineAlpha: 0.04,  phosphorColor: { r: 240, g: 128, b: 48 }, phosphorDuration: 300 },
+    hibit:   { bloomAlpha: 0.7,  chromaticOffset: 1, chromaticAlpha: 0.25, scanlineAlpha: 0.02,  phosphorColor: { r: 255, g: 97, b: 136 }, phosphorDuration: 400 },
+};

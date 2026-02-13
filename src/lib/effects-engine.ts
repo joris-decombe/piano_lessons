@@ -13,6 +13,7 @@ import {
     BLOOM_BURST_THRESHOLD,
     THEME_PARTICLE_BEHAVIORS,
     THEME_COLOR_GRADES,
+    THEME_VFX_PROFILES,
 } from "@/lib/vfx-constants";
 
 // ---------------------------------------------------------------------------
@@ -48,9 +49,6 @@ interface PhosphorTrace {
 // Constants
 // ---------------------------------------------------------------------------
 
-const PHOSPHOR_DURATION = 500; // ms
-const PHOSPHOR_COLOR = { r: 34, g: 197, b: 94 }; // Green-500
-
 const IMPACT_FLASH_DURATION = 150; // ms
 
 const DEBRIS_COOLDOWN = 250; // ms
@@ -76,7 +74,6 @@ const THEME_ATMOSPHERE: Record<string, string> = {
     hibit: "#ab9df2", // Lavender
 };
 
-const SCANLINE_THEMES = new Set(["8bit", "16bit", "mono"]);
 
 // ---------------------------------------------------------------------------
 // Module-level helpers
@@ -354,21 +351,21 @@ export class EffectsEngine {
             (f) => now - f.startTime < IMPACT_FLASH_DURATION,
         );
 
-        // --- Phosphor persistence tracking (Mono theme) ---
-        if (this.theme === "mono") {
-            for (const prevKey of prevKeys) {
-                if (!currentKeys.has(prevKey)) {
-                    this.phosphorTraces.push({
-                        midi: parseInt(prevKey),
-                        color: "#22c55e",
-                        startTime: now,
-                    });
-                }
+        // --- Phosphor persistence tracking (all themes) ---
+        const vfxProfile = THEME_VFX_PROFILES[this.theme] || THEME_VFX_PROFILES.cool;
+        const accentColor = THEME_ACCENTS[this.theme] || THEME_ACCENTS.cool;
+        for (const prevKey of prevKeys) {
+            if (!currentKeys.has(prevKey)) {
+                this.phosphorTraces.push({
+                    midi: parseInt(prevKey),
+                    color: accentColor,
+                    startTime: now,
+                });
             }
-            this.phosphorTraces = this.phosphorTraces.filter(
-                (t) => now - t.startTime < PHOSPHOR_DURATION,
-            );
         }
+        this.phosphorTraces = this.phosphorTraces.filter(
+            (t) => now - t.startTime < vfxProfile.phosphorDuration,
+        );
 
         // --- Clean up old note activation entries ---
         for (const [key, activationTime] of this.noteActivationTimes) {
@@ -418,24 +415,19 @@ export class EffectsEngine {
         // 2.5. Impact flash
         this.drawImpactFlash(ctx, time);
 
-        // 3. Phosphor persistence (Mono theme)
-        if (this.theme === "mono") {
-            this.drawPhosphor(ctx, time);
-        }
+        // 3. Phosphor persistence (all themes, theme-colored)
+        this.drawPhosphor(ctx, time);
 
-        // 4. Bloom pass — disabled for 8bit
-        const is8Bit = this.theme === "8bit";
-        if (!is8Bit && this.bloomCtx && (this.activeNotes.length > 0 || this.particles.activeBurstCount > BLOOM_BURST_THRESHOLD)) {
+        // 4. Bloom pass (all themes)
+        if (this.bloomCtx && (this.activeNotes.length > 0 || this.particles.activeBurstCount > BLOOM_BURST_THRESHOLD)) {
             this.applyBloom(ctx, canvas);
         }
 
         // 4.5. Color grading (after bloom, before scanlines)
         this.drawColorGrade(ctx, canvas);
 
-        // 5. Scanlines (after bloom pass)
-        if (SCANLINE_THEMES.has(this.theme)) {
-            this.drawScanlines(ctx, canvas);
-        }
+        // 5. Scanlines (all themes, per-theme intensity)
+        this.drawScanlines(ctx, canvas);
 
         this.rafId = requestAnimationFrame(this.loop);
     };
@@ -458,6 +450,7 @@ export class EffectsEngine {
     private applyBloom(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement): void {
         const bloomCtx = this.bloomCtx!;
         const bloomCanvas = this.bloomCanvas;
+        const profile = THEME_VFX_PROFILES[this.theme] || THEME_VFX_PROFILES.cool;
 
         bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
         bloomCtx.imageSmoothingEnabled = true;
@@ -467,18 +460,15 @@ export class EffectsEngine {
         ctx.globalCompositeOperation = "lighter";
         ctx.imageSmoothingEnabled = true;
 
-        const isCool = this.theme === "cool";
-        const isHiBit = this.theme === "hibit";
-
-        if (isCool) {
-            // Chromatic aberration: offset RGB channels by 1px
-            ctx.globalAlpha = 0.35;
-            ctx.drawImage(bloomCanvas, -1, 0, canvas.width, canvas.height); // Red-shifted left
-            ctx.drawImage(bloomCanvas, 1, 0, canvas.width, canvas.height); // Blue-shifted right
+        // Chromatic aberration (per-theme offset and intensity)
+        if (profile.chromaticOffset > 0) {
+            ctx.globalAlpha = profile.chromaticAlpha;
+            ctx.drawImage(bloomCanvas, -profile.chromaticOffset, 0, canvas.width, canvas.height);
+            ctx.drawImage(bloomCanvas, profile.chromaticOffset, 0, canvas.width, canvas.height);
         }
 
-        // Normal bloom composite — HiBit gets stronger bloom
-        ctx.globalAlpha = isHiBit ? 0.7 : 0.5;
+        // Bloom composite (per-theme intensity)
+        ctx.globalAlpha = profile.bloomAlpha;
         ctx.drawImage(bloomCanvas, 0, 0, canvas.width, canvas.height);
         ctx.restore();
     }
@@ -682,19 +672,22 @@ export class EffectsEngine {
         ctx.restore();
     }
 
-    /** Phosphor persistence afterglow (Mono theme only). */
+    /** Phosphor persistence afterglow (all themes, theme-colored). */
     private drawPhosphor(ctx: CanvasRenderingContext2D, now: number): void {
         const traces = this.phosphorTraces;
         if (traces.length === 0) return;
+
+        const profile = THEME_VFX_PROFILES[this.theme] || THEME_VFX_PROFILES.cool;
+        const phosphorColor = profile.phosphorColor;
 
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
 
         for (const t of traces) {
             const elapsed = now - t.startTime;
-            if (elapsed >= PHOSPHOR_DURATION) continue;
+            if (elapsed >= profile.phosphorDuration) continue;
 
-            const alpha = 0.3 * (1 - elapsed / PHOSPHOR_DURATION);
+            const alpha = 0.3 * (1 - elapsed / profile.phosphorDuration);
             const { left, width } = getKeyPosition(t.midi);
             const centerX = left + width / 2;
             const radius = 20;
@@ -709,11 +702,11 @@ export class EffectsEngine {
             );
             grad.addColorStop(
                 0,
-                `rgba(${PHOSPHOR_COLOR.r},${PHOSPHOR_COLOR.g},${PHOSPHOR_COLOR.b},${alpha})`,
+                `rgba(${phosphorColor.r},${phosphorColor.g},${phosphorColor.b},${alpha})`,
             );
             grad.addColorStop(
                 1,
-                `rgba(${PHOSPHOR_COLOR.r},${PHOSPHOR_COLOR.g},${PHOSPHOR_COLOR.b},0)`,
+                `rgba(${phosphorColor.r},${phosphorColor.g},${phosphorColor.b},0)`,
             );
 
             ctx.fillStyle = grad;
@@ -851,13 +844,16 @@ export class EffectsEngine {
         ctx.restore();
     }
 
-    /** Draw horizontal scanlines for retro themes (after bloom pass). */
+    /** Draw horizontal scanlines (all themes, per-theme intensity). */
     private drawScanlines(
         ctx: CanvasRenderingContext2D,
         canvas: HTMLCanvasElement,
     ): void {
+        const profile = THEME_VFX_PROFILES[this.theme] || THEME_VFX_PROFILES.cool;
+        if (profile.scanlineAlpha <= 0) return;
+
         ctx.save();
-        ctx.fillStyle = "rgba(0,0,0,0.04)";
+        ctx.fillStyle = `rgba(0,0,0,${profile.scanlineAlpha})`;
         for (let y = 0; y < canvas.height; y += 2) {
             ctx.fillRect(0, y, canvas.width, 1);
         }
