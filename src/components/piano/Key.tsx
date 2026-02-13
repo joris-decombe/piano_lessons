@@ -123,8 +123,6 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                     )}
                     {/* Subtle highlight on top edge */}
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-[var(--color-key-black-hi)] opacity-50" />
-                    {/* Specular pixel cluster */}
-                    <div className="absolute top-[1px] left-[2px] w-[2px] h-[1px] bg-[var(--color-key-black-hi)] opacity-60 pointer-events-none" />
                 </div>
             </div>
         );
@@ -185,8 +183,6 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                 {!isActive && (
                     <>
                         <div className="absolute top-0 left-0 right-[1px] h-[1px] bg-[var(--color-key-white-hi)]" />
-                        {/* Specular pixel cluster — wet highlight */}
-                        <div className="absolute top-[2px] left-[2px] w-[3px] h-[1px] bg-white opacity-40 pointer-events-none" />
                     </>
                 )}
 

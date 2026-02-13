@@ -65,8 +65,6 @@ The entire app follows the Dead Cells aesthetic: pixel art with rich textures, b
 - **Color grading:** Post-bloom multiply/screen compositing for biome-specific shadow/highlight tinting
 - **Theme-specific particles:** Embers (Warm), pixel debris (8-Bit), phosphor flicker (Mono), tuned bursts (others)
 - **Key side-illumination:** Active keys bleed colored light to inactive neighbors via inset shadows
-- **Cavity dithering:** Checkerboard pattern on keyboard cavity, theme-tinted
-- **Specular highlights:** Tiny pixel clusters on key surfaces
 
 ## Planned Effects — Implementation Status
 
@@ -91,8 +89,6 @@ The entire app follows the Dead Cells aesthetic: pixel art with rich textures, b
 11. **Theme-specific particles** ✅ (embers/pixel debris/phosphor flicker per theme)
 12. **Biome color grading** ✅ (multiply/screen shadow/highlight tinting)
 13. **Key side-illumination** ✅ (active keys bleed light to neighbors)
-14. **Cavity dithering** ✅ (checkerboard pattern, theme-tinted)
-15. **Specular highlights** ✅ (pixel clusters on key surfaces)
 
 ### Tier 4: Note Styles — FUTURE
 
@@ -155,10 +151,10 @@ All VFX run on every theme with per-theme tuning via `THEME_VFX_PROFILES` and `T
 
 ### Modified (across PRs)
 - `src/app/page.tsx` — Mounts `<EffectsCanvas>` and `<div class="waterfall-atmosphere">` in waterfall container
-- `src/app/globals.css` — Dead Cells note styling, rounded UI components, proximity glow, theme-specific overrides, scrolling grid, atmospheric backgrounds, cavity dither patterns
+- `src/app/globals.css` — Dead Cells note styling, rounded UI components, proximity glow, theme-specific overrides, scrolling grid, atmospheric backgrounds
 - `src/components/piano/Waterfall.tsx` — Theme-tinted octave guidelines via `--color-grid-line`
-- `src/components/piano/Key.tsx` — Side-illumination shadows, specular pixel highlights, tinted AO overlays
-- `src/components/piano/Keyboard.tsx` — Passes neighbor colors to Key, cavity dither class
+- `src/components/piano/Key.tsx` — Side-illumination overlays, tinted AO overlays
+- `src/components/piano/Keyboard.tsx` — Passes neighbor colors to Key
 - `CLAUDE.md` — Added `contain: paint` warning
 
 ### Future (Note Styles feature)

@@ -134,7 +134,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                     style={{ height: 'var(--spacing-key-h)', width: `${totalKeysWidth}px` }}
                 >
                     {/* Cavity (Behind Keys) - Void Color (z-0) */}
-                    <div className="w-full h-full bg-[var(--color-piano-void)] piano-cavity-dither absolute top-0 left-0 right-0 z-0" />
+                    <div className="w-full h-full bg-[var(--color-piano-void)] absolute top-0 left-0 right-0 z-0" />
 
                     {/* Keys (z-20/25) */}
                     {keysData.map((key) => {
