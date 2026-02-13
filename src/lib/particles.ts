@@ -41,6 +41,8 @@ const DEFAULT_GRAVITY = 120; // pixels per second^2 (downward)
 export class ParticleSystem {
     particles: Particle[];
     gravity: number;
+    /** Y position of the keyboard top edge (floor for bouncing particles). */
+    floorY = Infinity;
     private _activeCount = 0;
 
     constructor(gravity = DEFAULT_GRAVITY) {
@@ -149,6 +151,17 @@ export class ParticleSystem {
 
             p.x += p.vx * dt * parallax;
             p.y += p.vy * dt * parallax;
+
+            // Floor collision for physics-driven types (bounce off keyboard line)
+            if ((p.type === 'burst' || p.type === 'debris' || p.type === 'pixel_debris') &&
+                p.y > this.floorY && p.vy > 0) {
+                p.y = this.floorY;
+                p.vy = -p.vy * 0.4; // 40% energy retention
+                p.vx *= 0.8; // friction on bounce
+                if (Math.abs(p.vy) < 10) {
+                    p.life = 0; // expire micro-bounces
+                }
+            }
         }
     }
 

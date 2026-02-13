@@ -2,10 +2,6 @@
  * Constants for Dead Cells style VFX and Game Feel.
  */
 
-export const HITSTOP_DURATION = 0.035; // seconds
-export const HITSTOP_COOLDOWN = 200; // ms
-export const HITSTOP_VELOCITY_THRESHOLD = 0.8;
-
 export const PARTICLE_Z_MIN = 0;
 export const PARTICLE_Z_MAX = 2.0;
 export const PARTICLE_PLAY_PLANE = 1.0;
@@ -75,13 +71,14 @@ export interface ThemeVfxProfile {
     scanlineAlpha: number;        // scanline darkness (0 = off)
     phosphorColor: { r: number; g: number; b: number }; // afterglow color
     phosphorDuration: number;     // afterglow duration in ms
+    vignetteAlpha: number;        // vignette edge darkening (0 = off)
 }
 
 export const THEME_VFX_PROFILES: Record<string, ThemeVfxProfile> = {
-    cool:    { bloomAlpha: 0.5,  chromaticOffset: 1, chromaticAlpha: 0.35, scanlineAlpha: 0.03,  phosphorColor: { r: 99, g: 102, b: 241 }, phosphorDuration: 350 },
-    warm:    { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.20, scanlineAlpha: 0.03,  phosphorColor: { r: 245, g: 158, b: 11 }, phosphorDuration: 400 },
-    mono:    { bloomAlpha: 0.5,  chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 34, g: 197, b: 94 },  phosphorDuration: 500 },
-    "8bit":  { bloomAlpha: 0.35, chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 229, g: 37, b: 33 },  phosphorDuration: 250 },
-    "16bit": { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.15, scanlineAlpha: 0.04,  phosphorColor: { r: 240, g: 128, b: 48 }, phosphorDuration: 300 },
-    hibit:   { bloomAlpha: 0.7,  chromaticOffset: 1, chromaticAlpha: 0.25, scanlineAlpha: 0.03,  phosphorColor: { r: 255, g: 97, b: 136 }, phosphorDuration: 400 },
+    cool:    { bloomAlpha: 0.5,  chromaticOffset: 1, chromaticAlpha: 0.35, scanlineAlpha: 0.03,  phosphorColor: { r: 99, g: 102, b: 241 }, phosphorDuration: 350, vignetteAlpha: 0.4  },
+    warm:    { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.20, scanlineAlpha: 0.03,  phosphorColor: { r: 245, g: 158, b: 11 }, phosphorDuration: 400, vignetteAlpha: 0.35 },
+    mono:    { bloomAlpha: 0.5,  chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 34, g: 197, b: 94 },  phosphorDuration: 500, vignetteAlpha: 0.5  },
+    "8bit":  { bloomAlpha: 0.35, chromaticOffset: 0, chromaticAlpha: 0,    scanlineAlpha: 0.04,  phosphorColor: { r: 229, g: 37, b: 33 },  phosphorDuration: 250, vignetteAlpha: 0.3  },
+    "16bit": { bloomAlpha: 0.45, chromaticOffset: 1, chromaticAlpha: 0.15, scanlineAlpha: 0.04,  phosphorColor: { r: 240, g: 128, b: 48 }, phosphorDuration: 300, vignetteAlpha: 0.35 },
+    hibit:   { bloomAlpha: 0.7,  chromaticOffset: 1, chromaticAlpha: 0.25, scanlineAlpha: 0.03,  phosphorColor: { r: 255, g: 97, b: 136 }, phosphorDuration: 400, vignetteAlpha: 0.45 },
 };
