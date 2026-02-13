@@ -80,11 +80,9 @@ export class ParticleSystem {
             gravityMul = 1.0
         } = opts;
 
-        const baseAngle = type === 'debris' || type === 'pixel_debris'
-            ? Math.PI / 2
-            : type === 'ember'
-                ? -Math.PI / 2  // embers rise
-                : -Math.PI / 2;
+        const baseAngle = type === 'debris'
+            ? Math.PI / 2       // debris drips downward
+            : -Math.PI / 2;     // everything else bursts upward
 
         for (let i = 0; i < count; i++) {
             const p = this.acquire();

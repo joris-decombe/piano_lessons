@@ -37,29 +37,37 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
     
     // --- SHADOWS (Hard Pixel Art) ---
 
-    // White Key Internal Depth (Cast by neighbors) + Side Illumination
+    // White Key Internal Depth (Cast by neighbors)
     const getInternalShadows = () => {
-        if (isBlack) return "none";
+        if (isBlack || !isActive) return "none";
         const shadows = [];
-        if (isActive) {
-            // Depth shadows from inactive neighbors
-            if (!isLeftNeighborActive) shadows.push("var(--shadow-key-left)");
-            if (!isRightNeighborActive) shadows.push("var(--shadow-key-right)");
+        if (!isLeftNeighborActive) shadows.push("var(--shadow-key-left)");
+        if (!isRightNeighborActive) shadows.push("var(--shadow-key-right)");
+        return shadows.length > 0 ? shadows.join(", ") : "none";
+    };
+
+    // Side-illumination overlays (colored divs instead of box-shadow, works with var() colors)
+    const getSideIllumination = () => {
+        if (isBlack) return null;
+        const overlays = [];
+        if (isActive && activeColor) {
             // Self-illumination: light escapes to sides where neighbor is NOT active
-            if (activeColor) {
-                if (!isLeftNeighborActive) shadows.push(`inset 3px 0 0 0 ${activeColor}40`);
-                if (!isRightNeighborActive) shadows.push(`inset -3px 0 0 0 ${activeColor}40`);
+            if (!isLeftNeighborActive) {
+                overlays.push(<div key="si-l" className="absolute top-0 left-0 h-full w-[3px] opacity-25 pointer-events-none z-[2]" style={{ background: `linear-gradient(to right, ${activeColor}, transparent)` }} />);
             }
-        } else {
+            if (!isRightNeighborActive) {
+                overlays.push(<div key="si-r" className="absolute top-0 right-0 h-full w-[3px] opacity-25 pointer-events-none z-[2]" style={{ background: `linear-gradient(to left, ${activeColor}, transparent)` }} />);
+            }
+        } else if (!isActive) {
             // Neighbor-cast illumination: inactive key lit by active neighbors
             if (isLeftNeighborActive && leftNeighborColor) {
-                shadows.push(`inset 2px 0 0 0 ${leftNeighborColor}30`);
+                overlays.push(<div key="ni-l" className="absolute top-0 left-0 h-full w-[4px] opacity-20 pointer-events-none z-[2]" style={{ background: `linear-gradient(to right, ${leftNeighborColor}, transparent)` }} />);
             }
             if (isRightNeighborActive && rightNeighborColor) {
-                shadows.push(`inset -2px 0 0 0 ${rightNeighborColor}30`);
+                overlays.push(<div key="ni-r" className="absolute top-0 right-0 h-full w-[4px] opacity-20 pointer-events-none z-[2]" style={{ background: `linear-gradient(to left, ${rightNeighborColor}, transparent)` }} />);
             }
         }
-        return shadows.length > 0 ? shadows.join(", ") : "none";
+        return overlays;
     };
 
     // Black Key AO (Ambient Occlusion) on White Keys — tinted when active
@@ -182,6 +190,7 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                     </>
                 )}
 
+                {getSideIllumination()}
                 {label && (
                     <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
                         <span className="text-[10px] font-sans text-[var(--color-muted)] font-bold block">{label}</span>
