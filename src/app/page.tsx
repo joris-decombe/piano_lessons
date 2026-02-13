@@ -231,9 +231,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   });
 
   const [splitHands, setSplitHands] = useState(true);
-  const [leftColor, setLeftColor] = useState("var(--color-note-left)");
-  const [rightColor, setRightColor] = useState("var(--color-note-right)");
-  const [unifiedColor, setUnifiedColor] = useState("var(--color-note-unified)");
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
   const [showGrid, setShowGrid] = useState(true);
@@ -248,7 +245,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
   // Combine Active notes for visualization
   const coloredKeys = useMemo(() => {
-    const colors = { split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor };
+    const colors = {
+      split: splitHands,
+      left: "var(--color-note-left)",
+      right: "var(--color-note-right)",
+      unified: "var(--color-note-unified)"
+    };
     const splitSettings = { strategy: splitStrategy, splitPoint };
 
     return audio.activeNotes.map(activeNote => {
@@ -256,7 +258,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       const trackColor = getNoteColor(activeNote.track, midiNumber, colors, splitSettings);
       return { note: activeNote.note, color: trackColor, startTick: activeNote.startTick };
     });
-  }, [audio.activeNotes, splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint]);
+  }, [audio.activeNotes, splitHands, splitStrategy, splitPoint]);
 
   // Effects canvas data: active notes with MIDI numbers for key positioning
   const effectsNotes: EffectsNote[] = useMemo(() => {
@@ -271,13 +273,10 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   // Memoize settings objects to prevent Controls re-renders
   const visualSettings = useMemo(() => ({
     splitHands, setSplitHands,
-    leftColor, setLeftColor,
-    rightColor, setRightColor,
-    unifiedColor, setUnifiedColor,
     splitStrategy, setSplitStrategy,
     splitPoint, setSplitPoint,
     showGrid, setShowGrid
-  }), [splitHands, leftColor, rightColor, unifiedColor, splitStrategy, splitPoint, showGrid]);
+  }), [splitHands, splitStrategy, splitPoint, showGrid]);
 
   const songSettingsMemo = useMemo(() => ({
     songs: allSongs,
@@ -349,7 +348,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   currentTick={audio.currentTick}
                   isPlaying={audio.isPlaying}
                   playbackRate={audio.playbackRate}
-                  activeColors={{ split: splitHands, left: leftColor, right: rightColor, unified: unifiedColor }}
+                  activeColors={{
+                    split: splitHands,
+                    left: "var(--color-note-left)",
+                    right: "var(--color-note-right)",
+                    unified: "var(--color-note-unified)"
+                  }}
                   lookAheadTicks={audio.lookAheadTicks}
                   showGrid={showGrid}
                   containerHeight={waterfallHeight}

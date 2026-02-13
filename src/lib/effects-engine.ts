@@ -81,6 +81,17 @@ const THEME_ATMOSPHERE: Record<string, string> = {
 
 /** Parse a CSS color string to extract RGB values for glow rendering. */
 function parseColor(color: string): { r: number; g: number; b: number } | null {
+    // Handle CSS variables (e.g. var(--color-note-left))
+    if (color.startsWith("var(")) {
+        const varName = color.match(/var\((--[^)]+)\)/)?.[1];
+        if (varName && typeof window !== "undefined") {
+            const resolved = getComputedStyle(document.documentElement)
+                .getPropertyValue(varName)
+                .trim();
+            if (resolved) return parseColor(resolved);
+        }
+    }
+
     const hex = color.match(/^#([0-9a-f]{6})$/i);
     if (hex) {
         const v = parseInt(hex[1], 16);

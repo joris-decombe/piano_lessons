@@ -9,12 +9,6 @@ import { Timeline } from "./Timeline";
 interface VisualSettings {
     splitHands: boolean;
     setSplitHands: (val: boolean) => void;
-    leftColor: string;
-    setLeftColor: (val: string) => void;
-    rightColor: string;
-    setRightColor: (val: string) => void;
-    unifiedColor: string;
-    setUnifiedColor: (val: string) => void;
     splitStrategy: 'tracks' | 'point';
     setSplitStrategy: (val: 'tracks' | 'point') => void;
     splitPoint: number;
@@ -382,30 +376,8 @@ export const Controls = memo(function Controls({
                                                 </div>
                                             )}
                                         </div>
-
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className={`flex items-center gap-2 pixel-inset ${isTouch ? 'p-3' : 'p-2'}`}>
-                                                <div className={`${isTouch ? 'w-6 h-6' : 'w-4 h-4'} border-2 border-[var(--color-border)] overflow-hidden flex-shrink-0`}>
-                                                    <input type="color" aria-label="Left hand color" value={visualSettings.leftColor} onChange={(e) => visualSettings.setLeftColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
-                                                </div>
-                                                <span className="text-xs text-[var(--color-subtle)]">Left</span>
-                                            </div>
-                                            <div className={`flex items-center gap-2 pixel-inset ${isTouch ? 'p-3' : 'p-2'}`}>
-                                                <div className={`${isTouch ? 'w-6 h-6' : 'w-4 h-4'} border-2 border-[var(--color-border)] overflow-hidden flex-shrink-0`}>
-                                                    <input type="color" aria-label="Right hand color" value={visualSettings.rightColor} onChange={(e) => visualSettings.setRightColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
-                                                </div>
-                                                <span className="text-xs text-[var(--color-subtle)]">Right</span>
-                                            </div>
-                                        </div>
                                     </div>
-                                ) : (
-                                    <div className={`flex items-center gap-2 pixel-inset ${isTouch ? 'p-3' : 'p-2'}`}>
-                                        <div className={`${isTouch ? 'w-6 h-6' : 'w-4 h-4'} border-2 border-[var(--color-border)] overflow-hidden flex-shrink-0`}>
-                                            <input type="color" aria-label="Unified color" value={visualSettings.unifiedColor} onChange={(e) => visualSettings.setUnifiedColor(e.target.value)} className="w-[150%] h-[150%] -m-[25%] p-0 cursor-pointer border-none" />
-                                        </div>
-                                        <span className="text-xs text-[var(--color-subtle)]">Color</span>
-                                    </div>
-                                )}
+                                ) : null}
                             </div>
 
                             <div className="pixel-divider" />
