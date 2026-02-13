@@ -39,7 +39,9 @@ We can't generate true normal maps, but we can approximate the perceptual result
 - **Fake Normal Mapping:** Static directional gradients on note surfaces that simulate a consistent top-left light source. This creates the illusion of volume on flat rectangles.
 - **Dynamic Side-Illumination:** Active keys bleed colored light to inactive neighbors via gradient overlay divs (3-4px wide, 20-25% opacity). Active keys also emit self-illumination on edges where no neighbor is active. Black key AO overlays tint to the active key's color.
 - **Grunge and Texture:**
-    - ~~Dithering~~ and ~~specular highlights~~ were implemented but removed — invisible at the rendered pixel scale. The keyboard cavity is almost entirely hidden behind keys, and white-on-white specular pixels had zero contrast.
+    - Pixel dithering on UI panels via `background-image` checkerboard layers with per-theme tinting (mono green, warm amber, 8bit stronger white).
+    - Specular highlights on black keys (3x1px glint at top-left on idle keys) and panel top edges (inset `box-shadow`).
+    - ~~Keyboard cavity dithering~~ — removed, invisible at rendered scale (cavity hidden behind keys).
 
 ## 5. Color Theory and Biome Identity
 
@@ -56,15 +58,15 @@ We can't generate true normal maps, but we can approximate the perceptual result
 - **Bloom (Glow):** The most dominant effect in *Dead Cells*. Light sources and saturated elements are pushed past 100% brightness, bleeding color into surrounding pixels. This creates the signature "neon against dark stone" look. Bloom runs on all themes with per-theme intensity via `THEME_VFX_PROFILES.bloomAlpha` (0.35 for 8-Bit to 0.70 for Hi-Bit). Quarter-resolution offscreen canvas with additive compositing.
 - **Color Grading / LUTs:** Each theme applies biome-specific color grading via `THEME_COLOR_GRADES` — multiply compositing for shadow tints (teal-blue, deep brown, dark green, etc.) and screen compositing for highlight tints. Applied after bloom, before scanlines.
 - **Chromatic Aberration:** Per-theme RGB channel offset on the bloom layer. Cool, Warm, 16-Bit, and Hi-Bit get 1px offset at varying alpha. Mono and 8-Bit have no chromatic offset (matches their aesthetic). Configured via `THEME_VFX_PROFILES`.
-- **Vignetting:** Subtly darkened screen corners draw the eye to center. Currently approximated by fog gradients and atmospheric backgrounds. A dedicated pass remains a Phase 3 option.
+- **Vignetting:** Cinematic radial gradient overlay (`radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0, alpha) 100%)`) with per-theme intensity via `--vignette-alpha` CSS custom property. Placed at `z-index: 9990`, `pointer-events: none`. Mono strongest (0.5), 8bit lightest (0.3).
 
 ## 7. "The Juice" (Game Feel)
 
 **Why:** In *Dead Cells*, visuals are tied directly to tactile feedback. The post-processing and animation systems are constantly hijacked to emphasize power and impact. Without juice, the same action feels weak.
 
-- **Hitstop:** Landing a critical hit freezes *all* visual systems — animation, particles, everything — for a fraction of a second. The momentary stillness simulates immense friction and makes the impact register. Audio continues uninterrupted, creating contrast between the frozen image and the ongoing sound.
-- **Screen Shake & Frame Distortion:** Heavy impacts physically shake the camera and briefly distort frame rendering. This breaks the fourth wall — the impact was so hard it shook the "camera."
-- **Physics-Driven Particles:** Sparks and debris are not animations — they are physics objects that bounce off floors and walls. Anchoring particles to the physical geometry of the keyboard makes the chaos feel grounded rather than decorative.
+- ~~**Hitstop:**~~ Implemented (35ms procedural freeze) but removed — freezing the visual timeline in a music game created audio-visual desynchronization that conflicted with the core gameplay feel.
+- ~~**Screen Shake & Frame Distortion:**~~ Implemented (decaying sinusoidal displacement triggered after hitstop) but removed — shaking the falling notes and keyboard was too distracting for a piano practice tool.
+- **Physics-Driven Particles:** Sparks and debris are not animations — they are physics objects that bounce off floors and walls. Burst, debris, and pixel_debris particles collide with the keyboard line (`floorY`), bouncing with 40% energy retention and 80% friction. Micro-bounces (velocity < 10px/s) expire immediately to prevent infinite settling.
 
 ---
 
@@ -74,7 +76,6 @@ We can't generate true normal maps, but we can approximate the perceptual result
 - [x] Volumetric God Rays with per-theme atmosphere colors and animated shimmer.
 - [x] Multi-depth suspended particulate matter (spores) with parallax-scaled physics.
 - [x] 6-plane parallax composition with fog sheets and foreground occlusion.
-- [x] Procedural hitstop — 35ms visual freeze (including particles) on high-velocity impacts.
 - [x] Fake normal mapping on waterfall notes (static 135-degree directional gradient + specular cluster).
 - [x] Migrated rendering to imperative engine class to bypass React Compiler instability.
 - [x] Unified CSS scroll animation mechanism for all parallax layers.
@@ -86,24 +87,26 @@ We can't generate true normal maps, but we can approximate the perceptual result
 - [x] All VFX enabled on all themes with per-theme tuning via `THEME_VFX_PROFILES` (bloom, chromatic aberration, scanlines, phosphor persistence).
 - [x] Black key AO tinted by active neighbor color.
 - [x] White key cutout depth aligned with black key bottom edge (98px).
-- ~~Pixel dithering and specular highlights~~ — removed, invisible at rendered scale.
+- [x] Pixel dithering on UI panels (background-image checkerboard, per-theme tinting).
+- [x] Specular highlights on black keys (3x1px glint) and panel top edges (box-shadow).
 
-### Phase 3: Post-Processing & Juice — ⏳ PLANNED
+### Phase 3: Post-Processing & Juice — ✅ COMPLETED
 - [x] Stronger bloom with per-theme intensity tuning (via `THEME_VFX_PROFILES.bloomAlpha`).
 - [x] Chromatic aberration across all applicable themes (Cool, Warm, 16-Bit, Hi-Bit — per-theme offset/alpha).
 - [x] CRT scanlines on all themes (per-theme alpha via `THEME_VFX_PROFILES.scanlineAlpha`).
 - [x] Phosphor persistence on all themes (accent-colored, per-theme duration).
-- [ ] Dedicated vignette pass (currently approximated by fog gradients).
-- [ ] Physics-driven particles that collide with keyboard geometry.
-- [ ] Screen shake and frame distortion on heavy impacts.
+- [x] Dedicated vignette overlay with per-theme intensity (`--vignette-alpha` CSS variable).
+- [x] Physics-driven particles that collide with keyboard geometry (bounce with energy loss).
+- ~~Screen shake~~ — removed, too distracting for piano practice.
+- ~~Hitstop~~ — removed, audio-visual desync conflicts with musical game feel.
 
 ---
 
 ## Challenges & Mitigations
 
-### 1. Audio-Visual Desynchronization (Hitstop)
-- **Challenge:** Freezing the visual timeline while audio continues creates cumulative drift. If hitstop fires too often, the waterfall falls behind the music permanently.
-- **Mitigation:** Gated triggers — hitstop only fires on high-velocity notes (>0.8) or chords, with a 200ms cooldown and 35ms duration. This bounds worst-case time dilation to 17.5% (35ms per 200ms), but in practice dense passages rarely sustain continuous high-velocity triggers. The hitstop freezes the audio hook's sync loop, the particle system, and ambient spore emission simultaneously, ensuring all visual systems stay in lockstep.
+### 1. Audio-Visual Desynchronization (Hitstop) — RESOLVED
+- **Challenge:** Freezing the visual timeline while audio continues creates cumulative drift. In dense musical passages, the waterfall falls behind the music.
+- **Resolution:** Hitstop was removed entirely. The technique works well in combat games where pauses emphasize impact, but in a music game, even small audio-visual drift degrades the core experience.
 
 ### 2. React Compiler Instability
 - **Challenge:** The React Compiler generates internal dependency arrays at compile time. Adding new variables, control flow, or hook references inside effect/callback bodies changes the array size, causing a runtime crash: *"The final argument passed to useEffect changed size between renders."*
@@ -125,6 +128,6 @@ We can't generate true normal maps, but we can approximate the perceptual result
 - **Challenge:** Active note colors are CSS variable strings (e.g. `var(--color-note-left)`). Appending hex opacity suffixes like `${color}80` produces invalid CSS (`var(--color-note-left)80`), silently breaking `box-shadow` and `backgroundColor` styles.
 - **Mitigation:** Use gradient overlay `<div>` elements with opacity classes instead of `box-shadow` for color effects that reference CSS variable colors. This pattern is used for key side-illumination.
 
-### 7. Sub-Pixel-Scale Effects
-- **Challenge:** Some effects designed on paper (keyboard cavity dithering, 3x1px specular highlights on keys) are invisible at the rendered scale because the target surfaces are too small or the contrast is too low (white-on-white).
-- **Mitigation:** Prototyped and removed. Not every *Dead Cells* technique translates to our scale. The keyboard cavity is almost entirely hidden behind keys, and specular highlights need a darker surface to register.
+### 7. Sub-Pixel-Scale Effects — PARTIALLY RESOLVED
+- **Challenge:** Some effects designed on paper are invisible at the rendered scale because the target surfaces are too small or the contrast is too low.
+- **Resolution:** Keyboard cavity dithering was removed (hidden behind keys). But dithering on `.pixel-panel` (dark mid-tone surfaces) and specular highlights on black keys (dark surface = good contrast) are visible and effective. The lesson: target surfaces with adequate contrast.
