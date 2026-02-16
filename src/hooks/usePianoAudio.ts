@@ -44,7 +44,7 @@ interface NoteEvent {
 export interface SongSource {
     url?: string;
     abc?: string;
-    type: 'midi' | 'abc';
+    type: 'midi' | 'abc' | 'musicxml';
 }
 
 export interface PianoAudioSettings {
@@ -72,6 +72,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const samplerRef = useRef<Tone.Sampler | null>(null);
     const noteTimelineRef = useRef<Map<number, { note: string; type: "start" | "stop"; track: number; velocity: number }[]>>(new Map());
     const timelineKeysRef = useRef<number[]>([]); // Cache sorted keys
+    const handIndexRef = useRef<number[]>([]); // MIDI track → hand index
     const activeNotesRef = useRef<Map<string, ActiveNote>>(new Map());
     const lastProcessedTickRef = useRef(0);
     const [playbackRate, setPlaybackRate] = useState(initialPlaybackRate ?? 1);
@@ -191,6 +192,32 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             if (source.type === 'abc' && source.abc) {
                 const { abcToMidiBuffer } = await import('@/lib/abc-loader');
                 arrayBuffer = abcToMidiBuffer(source.abc);
+            } else if (source.type === 'musicxml' && source.url) {
+                const response = await fetch(source.url);
+                if (!response.ok) {
+                    console.error(`Failed to fetch MusicXML: ${response.status} ${response.statusText}`);
+                    return;
+                }
+                const text = await response.text();
+                const { MusicXMLParser } = await import('@/lib/musicxml/parser');
+                const { MIDIGenerator } = await import('@/lib/musicxml/midi-generator');
+                try {
+                    const parser = new MusicXMLParser();
+                    const score = parser.parse(text);
+                    const generator = new MIDIGenerator();
+                    const midiBase64 = generator.generate(score);
+
+                    // Convert base64 to Uint8Array
+                    const binaryString = atob(midiBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    arrayBuffer = bytes;
+                } catch (e) {
+                    console.error('Failed to parse MusicXML:', e);
+                    return;
+                }
             } else if (source.type === 'midi' && source.url) {
                 const response = await fetch(source.url);
                 arrayBuffer = await response.arrayBuffer();
@@ -253,22 +280,29 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             }, notes).start(0);
 
             // 4. Pre-compute Note Timeline for efficient active note lookup
+            // Map MIDI track indices to hand indices (staff-aware for MusicXML)
+            const handIndex = midi.tracks.map((t, i) => {
+                const m = t.name.match(/-staff(\d+)/);
+                return m ? parseInt(m[1]) - 1 : i;
+            });
             const timeline = new Map<number, { note: string, type: 'start' | 'stop', track: number, velocity: number }[]>();
             midi.tracks.forEach((track, trackIndex) => {
+                const hand = handIndex[trackIndex];
                 track.notes.forEach(note => {
                     const startTick = note.ticks;
                     const endTick = startTick + note.durationTicks;
 
                     // Add note start event
                     if (!timeline.has(startTick)) timeline.set(startTick, []);
-                    timeline.get(startTick)!.push({ note: note.name, type: 'start', track: trackIndex, velocity: note.velocity });
+                    timeline.get(startTick)!.push({ note: note.name, type: 'start', track: hand, velocity: note.velocity });
 
                     // Add note stop event
                     if (!timeline.has(endTick)) timeline.set(endTick, []);
-                    timeline.get(endTick)!.push({ note: note.name, type: 'stop', track: trackIndex, velocity: 0 });
+                    timeline.get(endTick)!.push({ note: note.name, type: 'stop', track: hand, velocity: 0 });
                 });
             });
             noteTimelineRef.current = timeline;
+            handIndexRef.current = handIndex;
 
             // Cache sorted keys for seek optimization
             timelineKeysRef.current = Array.from(timeline.keys()).sort((a, b) => a - b);
@@ -432,7 +466,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                             for (let i = startIdx; i < track.notes.length; i++) {
                                 const note = track.notes[i];
                                 if (note.ticks > previewEndOfWindow) break;
-                                newPreviewNotes.push({ note: note.name, track: trackIndex });
+                                newPreviewNotes.push({ note: note.name, track: handIndexRef.current[trackIndex] ?? trackIndex });
                             }
                         }
                     });
