@@ -35,7 +35,7 @@ npm run screenshots  # Generate UI screenshots (requires dev server running)
 
 - **MIDI**: Parsed directly via `@tonejs/midi`
 - **ABC notation**: Converted to MIDI buffer via `src/lib/abc-loader.ts`
-- **MusicXML**: Client-side parsing (`src/lib/musicxml/parser.ts`) then MIDI generation (`src/lib/musicxml/midi-generator.ts`)
+- **MusicXML**: Client-side parsing (`src/lib/musicxml/parser.ts`) then MIDI generation (`src/lib/musicxml/midi-generator.ts`). The parser uses `fast-xml-parser` with `preserveOrder: true` to maintain XML document order — critical for `<backup>`/`<forward>` elements that control multi-voice/grand-staff timing. Notes are split into separate tracks by `<staff>` element (staff 1 = right hand, staff 2 = left hand). The MIDI generator may further split each staff into multiple MIDI tracks (non-overlapping layers for midi-writer-js), so hand color assignment uses track names (`-staff1`, `-staff2`) rather than raw track indices.
 
 ### Theme System
 
@@ -56,6 +56,8 @@ Local `useState` for UI state, refs for mutable Tone.js references, `useSyncExte
 - **VFX constants are data-driven**: All theme-specific VFX tuning lives in `src/lib/vfx-constants.ts` via `THEME_VFX_PROFILES`, `THEME_PARTICLE_BEHAVIORS`, and `THEME_COLOR_GRADES`. Per-theme vignette intensity is in CSS via `--vignette-alpha`. Do NOT hardcode theme gates (e.g. `if (theme === '8bit')`) in the effects engine — use the config tables.
 - **`.pixel-panel` must not set `position: relative` in CSS**: The settings popover and other panels use Tailwind's `absolute` class for positioning. Un-layered CSS (`position: relative`) overrides Tailwind utilities, breaking layout. Dithering uses `background-image` layers instead of pseudo-elements to avoid needing positioning.
 - **Sub-pixel-scale effects need dark surfaces**: Effects smaller than ~4px need adequate contrast to be visible. Specular highlights work on black keys (dark surface) but not white keys. Dithering works on `.pixel-panel` (dark mid-tone) but not on the keyboard cavity (hidden behind keys).
+- **MusicXML parser requires `preserveOrder: true`**: Without it, `fast-xml-parser` groups same-named elements by tag and loses document order, silently dropping `<backup>`/`<forward>` elements. This makes all multi-voice/grand-staff piano pieces play with completely wrong timing. The `preserveOrder` output format is verbose (ordered arrays instead of grouped objects) — use the helper functions (`getVal`, `getChild`, `getAllChildren`, `getAttr`, `tagName`) in `parser.ts`.
+- **Hand color uses track names, not indices**: The MIDI generator splits parsed tracks into non-overlapping layers, creating multiple MIDI tracks per staff. Color assignment (right/left hand) must use the `-staff1`/`-staff2` suffix in track names, not raw `trackIndex`. Both `Waterfall.tsx` and `usePianoAudio.ts` extract staff number via `/-staff(\d+)/` regex, falling back to track index for regular MIDI files.
 - **Git workflow**: Never amend commits — always fix forward. This is a multi-PR plan; preserve history across PRs.
 - **Path alias**: `@/*` maps to `./src/*`
 - **Playwright baseURL**: `http://localhost:3000/piano_lessons`

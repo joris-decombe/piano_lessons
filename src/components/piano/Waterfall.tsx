@@ -38,9 +38,19 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
             unified: "var(--color-note-unified)" 
         };
 
+        // Build a hand index per MIDI track: tracks from the same MusicXML staff
+        // share the same hand color, even when split into multiple MIDI layers.
+        // Track names like "P1-staff1-0", "P1-staff2" encode the staff number.
+        // For regular MIDI files (no staff info), fall back to track index.
+        const handIndexByTrack: number[] = midi.tracks.map((track, trackIndex) => {
+            const staffMatch = track.name.match(/-staff(\d+)/);
+            if (staffMatch) return parseInt(staffMatch[1]) - 1; // staff1→0, staff2→1
+            return trackIndex;
+        });
+
         midi.tracks.forEach((track, trackIndex) => {
             if (track.notes.length === 0 || track.instrument.percussion) return;
-            const noteColor = getColorByTrack(trackIndex, colors);
+            const noteColor = getColorByTrack(handIndexByTrack[trackIndex], colors);
 
             track.notes.forEach(note => {
                 if (note.durationTicks > maxDur) maxDur = note.durationTicks;
@@ -103,7 +113,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                     : 0;
 
                 active.push({
-                    id: `${note.name}-${note.ticks}`,
+                    id: `${note.name}-${note.ticks}-${i}`,
                     left,
                     width,
                     bottom: bottomPx,

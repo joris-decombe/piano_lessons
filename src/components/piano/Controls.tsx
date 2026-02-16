@@ -23,7 +23,7 @@ interface Song {
     artist: string;
     url?: string;
     abc?: string;
-    type: 'midi' | 'abc';
+    type: 'midi' | 'abc' | 'musicxml';
     difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 

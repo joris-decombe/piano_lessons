@@ -14,19 +14,19 @@ test.describe('Looping Functionality', () => {
     test('enables and disables loop mode', async ({ page }) => {
         const loopButton = page.getByLabel('Toggle Loop');
 
-        // Initial state: Not looping
-        await expect(loopButton).not.toHaveClass(/text-indigo-400/);
+        // Initial state: Not looping (no pixel-btn-primary)
+        await expect(loopButton).not.toHaveClass(/pixel-btn-primary/);
 
         // Enable Loop
         await loopButton.click();
-        await expect(loopButton).toHaveClass(/text-indigo-400/);
+        await expect(loopButton).toHaveClass(/pixel-btn-primary/);
 
         // Stabilize
         await page.waitForTimeout(100);
 
         // Disable Loop
         await loopButton.click();
-        await expect(loopButton).not.toHaveClass(/text-indigo-400/);
+        await expect(loopButton).not.toHaveClass(/pixel-btn-primary/);
     });
 
     test('resets loop state when returning to menu', async ({ page }) => {
@@ -37,7 +37,7 @@ test.describe('Looping Functionality', () => {
 
         // Enable Loop
         await loopButton.click();
-        await expect(loopButton).toHaveClass(/text-indigo-400/);
+        await expect(loopButton).toHaveClass(/pixel-btn-primary/);
 
         // Go back to menu
         await page.getByLabel('Return to Song List').click();
@@ -47,7 +47,7 @@ test.describe('Looping Functionality', () => {
         await page.getByTestId('song-gnossienne1').click();
 
         // Verify loop is disabled
-        await expect(page.getByLabel('Toggle Loop')).not.toHaveClass(/text-indigo-400/);
+        await expect(page.getByLabel('Toggle Loop')).not.toHaveClass(/pixel-btn-primary/);
     });
 
     test('resets time to 0:00 when returning to menu', async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('Looping Functionality', () => {
 
         // Play for a bit
         await page.getByTestId('play-button').click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
         await page.getByTestId('play-button').click(); // Pause
 
         const timeDisplay = page.getByTestId('current-time');

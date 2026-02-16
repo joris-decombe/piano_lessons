@@ -1,169 +1,262 @@
 import { XMLParser } from 'fast-xml-parser';
 import { ParsedScore, ParsedTrack, NoteEvent } from './types';
 
+// With preserveOrder: true, each element becomes an object with a single tag key
+// whose value is an array of child elements. Attributes live under `:@`.
+// Text content appears as { '#text': value }.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type OrderedElement = Record<string, any>;
+
+/** Extract the tag name from an ordered element (the first key that isn't ':@') */
+function tagName(el: OrderedElement): string {
+    for (const key of Object.keys(el)) {
+        if (key !== ':@') return key;
+    }
+    return '';
+}
+
+/** Get the text value of a child element by tag name */
+function getVal(children: OrderedElement[], tag: string): string | undefined {
+    for (const child of children) {
+        if (tag in child) {
+            const inner = child[tag];
+            // Leaf elements: [{ '#text': value }]
+            if (inner.length === 1 && '#text' in inner[0]) {
+                return String(inner[0]['#text']);
+            }
+            // Empty element — exists but has no text
+            return '';
+        }
+    }
+    return undefined;
+}
+
+/** Get the child elements array for a given tag */
+function getChild(children: OrderedElement[], tag: string): OrderedElement[] | undefined {
+    for (const child of children) {
+        if (tag in child) {
+            return child[tag];
+        }
+    }
+    return undefined;
+}
+
+/** Get all children matching a tag (for repeated elements like multiple <note>) */
+function getAllChildren(children: OrderedElement[], tag: string): OrderedElement[][] {
+    const results: OrderedElement[][] = [];
+    for (const child of children) {
+        if (tag in child) {
+            results.push(child[tag]);
+        }
+    }
+    return results;
+}
+
+/** Get an attribute value from an element's :@ object */
+function getAttr(el: OrderedElement, attr: string): string | undefined {
+    const attrs = el[':@'];
+    if (!attrs) return undefined;
+    return attrs[`@_${attr}`];
+}
+
 export class MusicXMLParser {
     private parser: XMLParser;
 
     constructor() {
         this.parser = new XMLParser({
             ignoreAttributes: false,
-            attributeNamePrefix: "@_"
+            attributeNamePrefix: "@_",
+            preserveOrder: true,
         });
     }
 
     parse(xmlContent: string): ParsedScore {
-        const jsonObj = this.parser.parse(xmlContent);
+        const ordered: OrderedElement[] = this.parser.parse(xmlContent);
 
-        // Handle both 'score-partwise' and 'score-timewise' (though partwise is standard)
-        const scorePartwise = jsonObj['score-partwise'];
-        if (!scorePartwise) {
+        // Find the score-partwise element (skip processing instructions, DOCTYPE, etc.)
+        const scoreEl = ordered.find(el => 'score-partwise' in el);
+        if (!scoreEl) {
             throw new Error("Invalid MusicXML: Missing score-partwise element");
         }
+        const scoreChildren = scoreEl['score-partwise'];
 
-        const title = scorePartwise['work']?.['work-title'] || "Untitled";
+        // Extract title from work/work-title
+        const workChildren = getChild(scoreChildren, 'work');
+        const title = (workChildren && getVal(workChildren, 'work-title')) || "Untitled";
 
-        // Basic metadata extraction (simplified)
-        // TODO: Extract global tempo and time signature from the first measure of the first part if possible
-        // Defaulting for now
+        // Defaults
         let tempo = 120;
         let timeSignature: [number, number] = [4, 4];
 
-        const partList = scorePartwise['part-list']; // Define instruments/parts
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const _partList = partList;
-
-        const parts = Array.isArray(scorePartwise['part'])
-            ? scorePartwise['part']
-            : [scorePartwise['part']];
-
+        // Find all <part> elements
+        const partElements = getAllChildren(scoreChildren, 'part');
         const tracks: ParsedTrack[] = [];
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        parts.forEach((part: any) => {
-            const partId = part['@_id'];
-            // Find part name from part-list if needed
+        for (const partChildren of partElements) {
+            // The part element itself is the parent — find its :@ for the id
+            const partEl = scoreChildren.find((el: OrderedElement) => 'part' in el && el['part'] === partChildren);
+            const partId = partEl ? getAttr(partEl, 'id') || 'P1' : 'P1';
 
-            const events: NoteEvent[] = [];
+            // Collect events per staff for proper hand separation
+            // Staff 1 = treble (right hand) → track 0, Staff 2 = bass (left hand) → track 1
+            const eventsByStaff = new Map<number, NoteEvent[]>();
+            // Track the last event pushed per staff for chord lookback
+            const lastEventByStaff = new Map<number, NoteEvent>();
             let currentTick = 0;
-            let divisions = 24; // Default, usually updated by <divisions> in measure
+            let divisions = 24;
+            let staveCount = 1; // Track how many staves this part has
 
-            const measures = Array.isArray(part['measure'])
-                ? part['measure']
-                : [part['measure']];
+            // Find all <measure> elements within this part
+            const measureElements = getAllChildren(partChildren, 'measure');
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            measures.forEach((measure: any) => {
-                // Update properties if attributes exist
-                if (measure['attributes']) {
-                    const attrs = measure['attributes'];
-                    if (attrs['divisions']) {
-                        divisions = parseInt(attrs['divisions']);
-                    }
-                    if (attrs['time']) {
-                        // Simplify: take first time signature found
-                        timeSignature = [
-                            parseInt(attrs['time']['beats']),
-                            parseInt(attrs['time']['beat-type'])
-                        ];
-                    }
-                    // Tempo is typically in <direction><sound tempo="x"/> but simplified here
-                }
+            for (const measureChildren of measureElements) {
+                // Iterate in document order through measure children
+                for (const child of measureChildren) {
+                    const tag = tagName(child);
 
-                // Look for tempo in direction
-                if (measure['direction']) {
-                    const dirs = Array.isArray(measure['direction']) ? measure['direction'] : [measure['direction']];
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    dirs.forEach((d: any) => {
-                        if (d['sound'] && d['sound']['@_tempo']) {
-                            tempo = parseFloat(d['sound']['@_tempo']);
+                    if (tag === 'attributes') {
+                        const attrChildren = child['attributes'];
+                        const divVal = getVal(attrChildren, 'divisions');
+                        if (divVal) {
+                            divisions = parseInt(divVal);
                         }
-                    });
-                }
+                        const timeChildren = getChild(attrChildren, 'time');
+                        if (timeChildren) {
+                            const beats = getVal(timeChildren, 'beats');
+                            const beatType = getVal(timeChildren, 'beat-type');
+                            if (beats && beatType) {
+                                timeSignature = [parseInt(beats), parseInt(beatType)];
+                            }
+                        }
+                        const stavesVal = getVal(attrChildren, 'staves');
+                        if (stavesVal) {
+                            staveCount = parseInt(stavesVal);
+                        }
+                    } else if (tag === 'direction') {
+                        const dirChildren = child['direction'];
+                        // Look for <sound tempo="..."/>
+                        const soundEl = dirChildren.find((el: OrderedElement) => 'sound' in el);
+                        if (soundEl) {
+                            const tempoAttr = getAttr(soundEl, 'tempo');
+                            if (tempoAttr) {
+                                tempo = parseFloat(tempoAttr);
+                            }
+                        }
+                    } else if (tag === 'note') {
+                        const noteChildren = child['note'];
 
-
-                const notes = measure['note']
-                    ? (Array.isArray(measure['note']) ? measure['note'] : [measure['note']])
-                    : [];
-
-                // Simple cursor for this measure (chords share start time)
-
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                notes.forEach((note: any) => {
-                    // Calculate duration in ticks
-                    // MIDI standard is usually 128 ticks per quarter.
-                    // MusicXML 'duration' is based on 'divisions' (quarters).
-                    // We need to normalize.
-                    // Let's normalize everything to 128 ticks per quarter note (PPQ).
-
-                    const xmlDuration = parseInt(note['duration'] || '0');
-                    const isRest = note['rest'] !== undefined;
-                    const isChord = note['chord'] !== undefined;
-
-                    // Duration in standardized ticks (128 PPQ)
-                    // ticks = (xmlDuration / divisions) * 128
-                    const durationTicks = Math.round((xmlDuration / divisions) * 128);
-
-                    if (!isChord) {
-                        // Advance cursor only if NOT a chord
-                        // But wait, if it's the first note of a chord, we DO advance, 
-                        // but subsequent chord notes reuse the OLD cursor?
-                        // Actually, standard logic:
-                        // - Non-chord note: starts at current, advances current by duration
-                        // - Chord note: starts at (current - previous_duration), advances (usually same as prev)?
-                        // Simplified: Track measure cursor.
-                        // But for simplicity in this MVP: 
-                        // If chord, use same startTick as previous note.
-                        // If not chord, startTick = currentTick.
-                    }
-
-                    let startTick = currentTick;
-                    if (isChord && events.length > 0) {
-                        // Use start tick of previous event
-                        startTick = events[events.length - 1].startTick;
-                    }
-
-                    if (!isRest) {
-                        // Extract Pitch
-                        let pitch = "C4";
-                        if (note['pitch']) {
-                            const step = note['pitch']['step'];
-                            const octave = note['pitch']['octave'];
-                            const alter = parseInt(note['pitch']['alter'] || '0');
-
-                            let accidental = "";
-                            if (alter === 1) accidental = "#";
-                            if (alter === -1) accidental = "b"; // midi-writer-js might prefer 'b' or flat handling
-                            // Standard notation often uses #. Let's stick to C#4 style.
-
-                            pitch = `${step}${accidental}${octave}`;
+                        // Skip print-object="no" notes
+                        if (getAttr(child, 'print-object') === 'no') {
+                            // Still advance cursor for non-chord, non-grace notes
+                            const isChord = getChild(noteChildren, 'chord') !== undefined;
+                            const isGrace = getChild(noteChildren, 'grace') !== undefined;
+                            if (!isChord && !isGrace) {
+                                const xmlDuration = parseInt(getVal(noteChildren, 'duration') || '0');
+                                currentTick += Math.round((xmlDuration / divisions) * 128);
+                            }
+                            continue;
                         }
 
-                        events.push({
-                            pitch,
-                            duration: 'T' + durationTicks, // MIDI Writer specific format for ticks
-                            startTick,
-                            durationTicks,
-                            velocity: 80 // Default
-                        });
-                    }
+                        // Grace notes have no duration — skip them entirely
+                        const isGrace = getChild(noteChildren, 'grace') !== undefined;
+                        if (isGrace) {
+                            continue;
+                        }
 
-                    if (!isChord) {
+                        const xmlDuration = parseInt(getVal(noteChildren, 'duration') || '0');
+                        const isRest = getChild(noteChildren, 'rest') !== undefined;
+                        const isChord = getChild(noteChildren, 'chord') !== undefined;
+
+                        const durationTicks = Math.round((xmlDuration / divisions) * 128);
+
+                        // Determine which staff this note belongs to (default staff 1)
+                        const staffVal = getVal(noteChildren, 'staff');
+                        const staff = staffVal ? parseInt(staffVal) : 1;
+
+                        if (!eventsByStaff.has(staff)) {
+                            eventsByStaff.set(staff, []);
+                        }
+                        const staffEvents = eventsByStaff.get(staff)!;
+
+                        let startTick = currentTick;
+                        if (isChord) {
+                            const lastEvent = lastEventByStaff.get(staff);
+                            if (lastEvent) {
+                                startTick = lastEvent.startTick;
+                            }
+                        }
+
+                        if (!isRest) {
+                            const pitchChildren = getChild(noteChildren, 'pitch');
+                            if (pitchChildren) {
+                                const step = getVal(pitchChildren, 'step') || 'C';
+                                const octave = getVal(pitchChildren, 'octave') || '4';
+                                const alterVal = getVal(pitchChildren, 'alter');
+                                const alter = alterVal ? parseInt(alterVal) : 0;
+
+                                let accidental = '';
+                                if (alter === 1) accidental = '#';
+                                else if (alter === -1) accidental = 'b';
+                                else if (alter === 2) accidental = '##';
+                                else if (alter === -2) accidental = 'bb';
+
+                                const pitch = `${step}${accidental}${octave}`;
+
+                                const event: NoteEvent = {
+                                    pitch,
+                                    duration: 'T' + durationTicks,
+                                    startTick,
+                                    durationTicks,
+                                    velocity: 80,
+                                };
+                                staffEvents.push(event);
+                                lastEventByStaff.set(staff, event);
+                            }
+                        }
+
+                        if (!isChord) {
+                            currentTick += durationTicks;
+                        }
+                    } else if (tag === 'backup') {
+                        const backupChildren = child['backup'];
+                        const xmlDuration = parseInt(getVal(backupChildren, 'duration') || '0');
+                        const durationTicks = Math.round((xmlDuration / divisions) * 128);
+                        currentTick -= durationTicks;
+                    } else if (tag === 'forward') {
+                        const forwardChildren = child['forward'];
+                        const xmlDuration = parseInt(getVal(forwardChildren, 'duration') || '0');
+                        const durationTicks = Math.round((xmlDuration / divisions) * 128);
                         currentTick += durationTicks;
                     }
-                });
-            });
+                }
+            }
 
-            tracks.push({
-                id: partId,
-                events
-            });
-        });
+            // Create one track per staff for multi-staff parts (piano = 2 staves)
+            // Staff 1 (treble/right) first so it gets trackIndex 0 → right hand color
+            if (staveCount > 1) {
+                const staffNumbers = Array.from(eventsByStaff.keys()).sort((a, b) => a - b);
+                for (const staffNum of staffNumbers) {
+                    tracks.push({
+                        id: staffNumbers.length > 1 ? `${partId}-staff${staffNum}` : partId,
+                        events: eventsByStaff.get(staffNum) || [],
+                    });
+                }
+            } else {
+                // Single-staff part: all events in one track
+                const allEvents = Array.from(eventsByStaff.values()).flat();
+                allEvents.sort((a, b) => a.startTick - b.startTick);
+                tracks.push({
+                    id: partId,
+                    events: allEvents,
+                });
+            }
+        }
 
         return {
             title,
             tempo,
             timeSignature,
-            tracks
+            tracks,
         };
     }
 }

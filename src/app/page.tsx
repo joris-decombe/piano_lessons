@@ -29,7 +29,7 @@ interface Song {
   artist: string;
   url?: string;
   abc?: string;
-  type: 'midi' | 'abc';
+  type: 'midi' | 'abc' | 'musicxml';
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 
@@ -104,6 +104,8 @@ function saveSongPosition(songId: string, tick: number) {
 }
 
 const defaultSongs: Song[] = [
+  { id: 'clair_de_lune', title: 'Clair de Lune', artist: 'Claude Debussy', url: `${BASE_PATH}/scores/clair_de_lune.xml`, type: 'musicxml', difficulty: 'advanced' },
+  { id: 'arabesque_1', title: 'Arabesque No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/scores/arabesque_1.xml`, type: 'musicxml', difficulty: 'advanced' },
   { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi', difficulty: 'advanced' },
   { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi', difficulty: 'beginner' },
   {
@@ -430,6 +432,8 @@ export default function Home() {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
   const [durations, setDurations] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<'all' | 'beginner' | 'intermediate' | 'advanced' | 'uploads'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'default' | 'title' | 'artist' | 'difficulty' | 'duration'>('default');
   const { theme, setTheme } = useTheme();
 
   // Load persistence
@@ -479,6 +483,18 @@ export default function Home() {
           } else if (song.type === 'abc' && song.abc) {
             const midiBuffer = abcToMidiBuffer(song.abc);
             const midi = new Midi(midiBuffer);
+            results[song.id] = midi.duration;
+          } else if (song.type === 'musicxml' && song.url) {
+            const res = await fetch(song.url);
+            const text = await res.text();
+            const parser = new MusicXMLParser();
+            const score = parser.parse(text);
+            const generator = new MIDIGenerator();
+            const midiBase64 = generator.generate(score);
+            const binary = atob(midiBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const midi = new Midi(bytes.buffer);
             results[song.id] = midi.duration;
           }
         } catch (e) {
@@ -590,10 +606,25 @@ export default function Home() {
   const showTabs = allSongs.length > 4;
 
   const filteredSongs = useMemo(() => {
-    if (activeTab === 'all') return allSongs;
-    if (activeTab === 'uploads') return allSongs.filter(s => s.id.startsWith('upload-'));
-    return allSongs.filter(s => s.difficulty === activeTab);
-  }, [allSongs, activeTab]);
+    let songs = allSongs;
+    if (activeTab === 'uploads') songs = songs.filter(s => s.id.startsWith('upload-'));
+    else if (activeTab !== 'all') songs = songs.filter(s => s.difficulty === activeTab);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      songs = songs.filter(s => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
+    }
+    if (sortBy !== 'default') {
+      const diffOrder: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+      songs = [...songs].sort((a, b) => {
+        if (sortBy === 'title') return a.title.localeCompare(b.title);
+        if (sortBy === 'artist') return a.artist.localeCompare(b.artist);
+        if (sortBy === 'difficulty') return (diffOrder[a.difficulty ?? ''] ?? 9) - (diffOrder[b.difficulty ?? ''] ?? 9);
+        if (sortBy === 'duration') return (durations[a.id] ?? Infinity) - (durations[b.id] ?? Infinity);
+        return 0;
+      });
+    }
+    return songs;
+  }, [allSongs, activeTab, searchQuery, sortBy, durations]);
 
   return (
     <>
@@ -706,108 +737,120 @@ export default function Home() {
               </motion.button>
             )}
 
-            {/* Category Tabs - only when >4 songs */}
-            {showTabs && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.12 }}
-                className="z-10 w-full max-w-4xl px-4 mb-4 overflow-x-auto"
-              >
-                <div className="flex gap-1 min-w-max">
-                  {([
-                    { key: 'all', label: 'All' },
-                    { key: 'beginner', label: 'Beginner' },
-                    { key: 'intermediate', label: 'Intermediate' },
-                    { key: 'advanced', label: 'Advanced' },
-                    { key: 'uploads', label: 'My Uploads' },
-                  ] as const).map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key)}
-                      className={`px-3 py-2 text-xs font-bold uppercase tracking-tight ${activeTab === tab.key ? 'pixel-btn-primary' : 'pixel-btn'}`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+            {/* Song list container */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.12 }}
+              className="z-10 w-full max-w-2xl px-4 flex flex-col"
+              style={{ maxHeight: 'min(60vh, 480px)' }}
+            >
+              {/* Search + sort + filter bar */}
+              <div className="flex gap-2 mb-3 items-center">
+                <div className="relative flex-1">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pixel-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search songs..."
+                    className="w-full pl-9 pr-3 py-2 text-sm pixel-panel bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent-primary)]"
+                  />
                 </div>
-              </motion.div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 z-10 w-full max-w-4xl px-4 pl-8">
-              {filteredSongs.length === 0 && (
-                <div className="col-span-full text-center py-8 pixel-text-muted">
-                  No songs match this filter
-                </div>
-              )}
-              {filteredSongs.map((song, index) => (
-                <motion.button
-                  key={song.id}
-                  data-testid={`song-${song.id}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.15 + index * 0.08 }}
-                  onMouseEnter={playHoverSound}
-                  onClick={() => { playSelectSound(); selectSong(song); }}
-                  className={`group relative flex flex-col items-start p-6 pl-8 hover:scale-[1.02] text-left ${isFirstTimer && song.id === 'twinkle' ? 'pixel-btn-primary pulse-border' : 'pixel-btn'}`}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="px-2 py-2 text-[10px] font-bold uppercase tracking-tight pixel-btn bg-transparent text-[var(--color-text)] cursor-pointer shrink-0"
                 >
-                  {/* RPG cursor */}
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pixel-text-accent text-sm cursor-bounce transition-opacity">▶</span>
-                  {isFirstTimer && song.id === 'twinkle' && (
-                    <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-tight px-2 py-1 bg-[var(--color-void)] text-[var(--color-accent-primary)]">
-                      [RECOMMENDED]
-                    </span>
-                  )}
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-2xl font-bold text-[var(--color-text-bright)] uppercase tracking-tighter">{song.title}</h3>
-                    {song.difficulty && (
-                      <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-tight" style={{ color: DIFFICULTY_COLORS[song.difficulty] }}>
-                        <span className="inline-block w-2 h-2" style={{ backgroundColor: DIFFICULTY_COLORS[song.difficulty] }} />
-                        {song.difficulty}
-                      </span>
-                    )}
+                  <option value="default">Order</option>
+                  <option value="title">Title</option>
+                  <option value="artist">Artist</option>
+                  <option value="difficulty">Level</option>
+                  <option value="duration">Length</option>
+                </select>
+                {showTabs && (
+                  <div className="flex gap-1 shrink-0 overflow-x-auto">
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: 'beginner', label: 'Bgn' },
+                      { key: 'intermediate', label: 'Int' },
+                      { key: 'advanced', label: 'Adv' },
+                      { key: 'uploads', label: 'Mine' },
+                    ] as const).map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`px-2 py-2 text-[10px] font-bold uppercase tracking-tight ${activeTab === tab.key ? 'pixel-btn-primary' : 'pixel-btn'}`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
                   </div>
-                  <p className="pixel-text-subtle font-medium">{song.artist}</p>
-                  {durations[song.id] != null && (
-                    <p className="pixel-text-muted text-xs mt-1">~{Math.ceil(durations[song.id] / 60)} min</p>
-                  )}
+                )}
+              </div>
 
-                  <div className="mt-auto pt-4 flex items-center pixel-text-accent text-sm font-bold">
-                    <span>Start Lesson</span>
-                    <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
+              {/* Scrollable song list */}
+              <div className="overflow-y-auto flex-1 min-h-0 pixel-panel p-1">
+                {filteredSongs.length === 0 && (
+                  <div className="text-center py-6 pixel-text-muted text-sm">
+                    No songs match this filter
                   </div>
-                </motion.button>
-              ))}
+                )}
+                {filteredSongs.map((song, index) => (
+                  <motion.button
+                    key={song.id}
+                    data-testid={`song-${song.id}`}
+                    initial={index < 8 ? { opacity: 0, x: -10 } : false}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2, delay: Math.min(index, 6) * 0.05 }}
+                    onMouseEnter={playHoverSound}
+                    onClick={() => { playSelectSound(); selectSong(song); }}
+                    className={`group relative w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-ui-active)] transition-colors ${isFirstTimer && song.id === 'twinkle' ? 'bg-[var(--color-ui-active)]' : ''}`}
+                  >
+                    {/* RPG cursor */}
+                    <span className="w-4 shrink-0 opacity-0 group-hover:opacity-100 pixel-text-accent text-xs cursor-bounce transition-opacity">▶</span>
 
-              {/* Upload New Song Card */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.15 + allSongs.length * 0.08 }}
-                className="group relative flex flex-col items-start p-6 pixel-panel border-dashed hover:pixel-inset transition-all hover:scale-[1.02] text-left"
-              >
-                <div className="flex w-full justify-between items-start">
-                  <h3 className="text-2xl font-bold text-[var(--color-text-bright)] mb-1 uppercase tracking-tighter">Add New Song</h3>
-                  <button onClick={(e) => { e.stopPropagation(); setIsHelpOpen(true); }} className="pixel-text-muted hover:pixel-text-accent transition-colors">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {/* Song info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[var(--color-text-bright)] uppercase tracking-tighter truncate">{song.title}</span>
+                        {isFirstTimer && song.id === 'twinkle' && (
+                          <span className="shrink-0 text-[9px] font-bold uppercase tracking-tight px-1.5 py-0.5 bg-[var(--color-accent-primary)] text-[var(--color-void)]">START HERE</span>
+                        )}
+                      </div>
+                      <span className="text-xs pixel-text-subtle truncate block">{song.artist}</span>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      {durations[song.id] != null && (
+                        <span className="text-[10px] pixel-text-muted tabular-nums">~{Math.ceil(durations[song.id] / 60)}m</span>
+                      )}
+                      {song.difficulty && (
+                        <span className="inline-block w-2 h-2 shrink-0" style={{ backgroundColor: DIFFICULTY_COLORS[song.difficulty] }} title={song.difficulty} />
+                      )}
+                    </div>
+                  </motion.button>
+                ))}
+
+                {/* Upload row */}
+                <div className="flex items-center gap-3 px-4 py-3 border-t border-[var(--color-ui-active)]">
+                  <span className="w-4 shrink-0 pixel-text-muted text-xs">+</span>
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer group">
+                    <span className="text-sm font-bold pixel-text-accent uppercase tracking-tighter group-hover:pixel-text-bright transition-colors">Import MusicXML</span>
+                    <input
+                      type="file"
+                      accept=".xml,.musicxml"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <button onClick={() => setIsHelpOpen(true)} className="pixel-text-muted hover:pixel-text-accent transition-colors" title="About MusicXML">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </button>
                 </div>
-                <p className="pixel-text-subtle font-medium">Import MusicXML files</p>
-
-                <label className="mt-6 flex items-center pixel-text-accent text-sm font-bold cursor-pointer hover:pixel-text-bright">
-                  <span>Select .xml / .musicxml</span>
-                  <input
-                    type="file"
-                    accept=".xml,.musicxml"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                </label>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
 
             {/* Keyboard shortcuts hint */}
             <motion.div
