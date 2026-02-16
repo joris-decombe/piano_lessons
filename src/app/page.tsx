@@ -433,6 +433,7 @@ export default function Home() {
   const [durations, setDurations] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<'all' | 'beginner' | 'intermediate' | 'advanced' | 'uploads'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'default' | 'title' | 'artist' | 'difficulty' | 'duration'>('default');
   const { theme, setTheme } = useTheme();
 
   // Load persistence
@@ -482,6 +483,18 @@ export default function Home() {
           } else if (song.type === 'abc' && song.abc) {
             const midiBuffer = abcToMidiBuffer(song.abc);
             const midi = new Midi(midiBuffer);
+            results[song.id] = midi.duration;
+          } else if (song.type === 'musicxml' && song.url) {
+            const res = await fetch(song.url);
+            const text = await res.text();
+            const parser = new MusicXMLParser();
+            const score = parser.parse(text);
+            const generator = new MIDIGenerator();
+            const midiBase64 = generator.generate(score);
+            const binary = atob(midiBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const midi = new Midi(bytes.buffer);
             results[song.id] = midi.duration;
           }
         } catch (e) {
@@ -600,8 +613,18 @@ export default function Home() {
       const q = searchQuery.toLowerCase();
       songs = songs.filter(s => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
     }
+    if (sortBy !== 'default') {
+      const diffOrder: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+      songs = [...songs].sort((a, b) => {
+        if (sortBy === 'title') return a.title.localeCompare(b.title);
+        if (sortBy === 'artist') return a.artist.localeCompare(b.artist);
+        if (sortBy === 'difficulty') return (diffOrder[a.difficulty ?? ''] ?? 9) - (diffOrder[b.difficulty ?? ''] ?? 9);
+        if (sortBy === 'duration') return (durations[a.id] ?? Infinity) - (durations[b.id] ?? Infinity);
+        return 0;
+      });
+    }
     return songs;
-  }, [allSongs, activeTab, searchQuery]);
+  }, [allSongs, activeTab, searchQuery, sortBy, durations]);
 
   return (
     <>
@@ -722,7 +745,7 @@ export default function Home() {
               className="z-10 w-full max-w-2xl px-4 flex flex-col"
               style={{ maxHeight: 'min(60vh, 480px)' }}
             >
-              {/* Search + filter bar */}
+              {/* Search + sort + filter bar */}
               <div className="flex gap-2 mb-3 items-center">
                 <div className="relative flex-1">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pixel-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -734,6 +757,17 @@ export default function Home() {
                     className="w-full pl-9 pr-3 py-2 text-sm pixel-panel bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent-primary)]"
                   />
                 </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="px-2 py-2 text-[10px] font-bold uppercase tracking-tight pixel-btn bg-transparent text-[var(--color-text)] cursor-pointer shrink-0"
+                >
+                  <option value="default">Order</option>
+                  <option value="title">Title</option>
+                  <option value="artist">Artist</option>
+                  <option value="difficulty">Level</option>
+                  <option value="duration">Length</option>
+                </select>
                 {showTabs && (
                   <div className="flex gap-1 shrink-0 overflow-x-auto">
                     {([
