@@ -648,7 +648,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="flex h-screen w-full flex-col items-center justify-center bg-[var(--color-void)] text-[var(--color-text)] p-8 relative overflow-y-auto crt-effect"
+            className="flex h-screen w-full flex-col items-center bg-[var(--color-void)] text-[var(--color-text)] p-8 pt-[max(2rem,8vh)] relative overflow-y-auto crt-effect"
             data-theme={theme}
           >
             {/* Settings Gear - Theme Popover */}

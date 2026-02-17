@@ -41,6 +41,9 @@ async function setThemeAndReload(page, theme) {
   }
   await page.evaluate((t) => {
     localStorage.setItem('piano_lessons_theme', t);
+    // Pre-dismiss iOS hint overlays so they don't appear on screenshots
+    localStorage.setItem('silent_mode_hint_dismissed', 'true');
+    localStorage.setItem('pwa_hint_dismissed', 'true');
   }, theme);
   await page.goto(baseURL);
   await page.waitForLoadState('networkidle');
@@ -113,17 +116,6 @@ async function takeScreenshots() {
         await setThemeAndReload(page, 'hibit');
         await page.screenshot({ path: path.join(screenshotDir, `landing${config.suffix}.png`) });
       }
-
-      // Dismiss iOS hint overlays by pre-setting localStorage and hiding via CSS
-      await page.evaluate(() => {
-        localStorage.setItem('silent_mode_hint_dismissed', 'true');
-        localStorage.setItem('pwa_hint_dismissed', 'true');
-      });
-      await page.reload();
-      await page.waitForLoadState('networkidle');
-      await hideDevTools(page);
-      // Also force-hide any remaining fixed overlays
-      await page.addStyleTag({ content: '.fixed.bottom-20, .fixed.bottom-4 { display: none !important; }' });
 
       // 2. Player View
       console.log(`  - Player view (${config.name})...`);
