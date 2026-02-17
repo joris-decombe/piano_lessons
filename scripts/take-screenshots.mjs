@@ -41,6 +41,9 @@ async function setThemeAndReload(page, theme) {
   }
   await page.evaluate((t) => {
     localStorage.setItem('piano_lessons_theme', t);
+    // Pre-dismiss iOS hint overlays so they don't appear on screenshots
+    localStorage.setItem('silent_mode_hint_dismissed', 'true');
+    localStorage.setItem('pwa_hint_dismissed', 'true');
   }, theme);
   await page.goto(baseURL);
   await page.waitForLoadState('networkidle');
@@ -109,6 +112,7 @@ async function takeScreenshots() {
         await setThemeAndReload(page, 'hibit');
       } else {
         // Just one landing screenshot for mobile (using default hibit)
+        await page.evaluate(() => localStorage.clear());
         await setThemeAndReload(page, 'hibit');
         await page.screenshot({ path: path.join(screenshotDir, `landing${config.suffix}.png`) });
       }
