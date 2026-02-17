@@ -109,9 +109,21 @@ async function takeScreenshots() {
         await setThemeAndReload(page, 'hibit');
       } else {
         // Just one landing screenshot for mobile (using default hibit)
+        await page.evaluate(() => localStorage.clear());
         await setThemeAndReload(page, 'hibit');
         await page.screenshot({ path: path.join(screenshotDir, `landing${config.suffix}.png`) });
       }
+
+      // Dismiss iOS hint overlays by pre-setting localStorage and hiding via CSS
+      await page.evaluate(() => {
+        localStorage.setItem('silent_mode_hint_dismissed', 'true');
+        localStorage.setItem('pwa_hint_dismissed', 'true');
+      });
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+      await hideDevTools(page);
+      // Also force-hide any remaining fixed overlays
+      await page.addStyleTag({ content: '.fixed.bottom-20, .fixed.bottom-4 { display: none !important; }' });
 
       // 2. Player View
       console.log(`  - Player view (${config.name})...`);

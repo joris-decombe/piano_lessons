@@ -104,26 +104,21 @@ function saveSongPosition(songId: string, tick: number) {
 }
 
 const defaultSongs: Song[] = [
+  // Beginner
+  { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi', difficulty: 'beginner' },
+  { id: 'ode_to_joy', title: 'Ode to Joy', artist: 'Beethoven', url: `${BASE_PATH}/scores/ode_to_joy.xml`, type: 'musicxml', difficulty: 'beginner' },
+  { id: 'minuet_in_g', title: 'Minuet in G Major', artist: 'J.S. Bach', url: `${BASE_PATH}/scores/minuet_in_g.xml`, type: 'musicxml', difficulty: 'beginner' },
+  { id: 'fur_elise_easy', title: 'Für Elise (Easy)', artist: 'Beethoven', url: `${BASE_PATH}/scores/fur_elise_easy.xml`, type: 'musicxml', difficulty: 'beginner' },
+  { id: 'prelude_c_major', title: 'Prelude in C Major', artist: 'J.S. Bach', url: `${BASE_PATH}/scores/prelude_c_major.xml`, type: 'musicxml', difficulty: 'beginner' },
+  // Intermediate
+  { id: 'gymnopedie_1', title: 'Gymnopédie No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/scores/gymnopedie_1.xml`, type: 'musicxml', difficulty: 'intermediate' },
+  { id: 'moonlight_sonata_1', title: 'Moonlight Sonata (1st mvt)', artist: 'Beethoven', url: `${BASE_PATH}/scores/moonlight_sonata_1.xml`, type: 'musicxml', difficulty: 'intermediate' },
+  { id: 'maple_leaf_rag', title: 'Maple Leaf Rag', artist: 'Scott Joplin', url: `${BASE_PATH}/scores/maple_leaf_rag.xml`, type: 'musicxml', difficulty: 'intermediate' },
+  { id: 'nocturne_op9_no2', title: 'Nocturne Op. 9 No. 2', artist: 'Chopin', url: `${BASE_PATH}/scores/nocturne_op9_no2.xml`, type: 'musicxml', difficulty: 'intermediate' },
+  // Advanced
   { id: 'clair_de_lune', title: 'Clair de Lune', artist: 'Claude Debussy', url: `${BASE_PATH}/scores/clair_de_lune.xml`, type: 'musicxml', difficulty: 'advanced' },
   { id: 'arabesque_1', title: 'Arabesque No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/scores/arabesque_1.xml`, type: 'musicxml', difficulty: 'advanced' },
   { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi', difficulty: 'advanced' },
-  { id: 'twinkle', title: 'Twinkle Twinkle Little Star', artist: 'Traditional (Clean Piano)', url: `${BASE_PATH}/twinkle.mid`, type: 'midi', difficulty: 'beginner' },
-  {
-    id: 'ode_abc',
-    title: 'Ode to Joy (ABC)',
-    artist: 'Beethoven (Live Generated)',
-    type: 'abc',
-    difficulty: 'intermediate',
-    abc: `T: Ode to Joy
-M: 4/4
-L: 1/4
-Q: 1/4=120
-K: C
-E E F G | G F E D | C C D E | E3/2 D/2 D2 |
-E E F G | G F E D | C C D E | D3/2 C/2 C2 |
-D D E C | D E/2F/2 E C | D E/2F/2 E D | C D G,2 |
-E E F G | G F E D | C C D E | D3/2 C/2 C2 |`
-  }
 ];
 
 function HelpModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {

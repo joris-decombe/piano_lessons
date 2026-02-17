@@ -81,5 +81,13 @@ The following MusicXML scores are bundled with the application. The underlying c
 |---|---|---|
 | Clair de Lune | Claude Debussy | [MuseScore community](https://musescore.com) — exported via MuseScore 2.3.2 |
 | Arabesque No. 1 | Claude Debussy | [MuseScore user 19710](https://musescore.com/user/19710/scores/55396) — exported via MuseScore 3.5.2 |
+| Minuet in G Major (BWV Anh. 114) | J.S. Bach | [musetrainer/library](https://github.com/musetrainer/library) |
+| Für Elise (Easy Piano) | Beethoven | [musetrainer/library](https://github.com/musetrainer/library) |
+| Prelude in C Major (BWV 846) | J.S. Bach | [musetrainer/library](https://github.com/musetrainer/library) |
+| Ode to Joy (Easy variation) | Beethoven | [musetrainer/library](https://github.com/musetrainer/library) |
+| Gymnopédie No. 1 | Erik Satie | [musetrainer/library](https://github.com/musetrainer/library) |
+| Moonlight Sonata (1st mvt) | Beethoven | [musetrainer/library](https://github.com/musetrainer/library) |
+| Maple Leaf Rag | Scott Joplin | [musetrainer/library](https://github.com/musetrainer/library) |
+| Nocturne Op. 9 No. 2 | Chopin | [musetrainer/library](https://github.com/musetrainer/library) |
 
-Thank you to the MuseScore community for making these transcriptions freely available.
+Thank you to the MuseScore community and the [musetrainer/library](https://github.com/musetrainer/library) contributors for making these transcriptions freely available.
