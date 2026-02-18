@@ -176,7 +176,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     C8: "C8.mp3",
                 },
                 release: 1,
-                baseUrl: "https://tonejs.github.io/audio/salamander/",
+                baseUrl: "/piano_lessons/salamander/",
             }).toDestination();
 
             await Tone.loaded();

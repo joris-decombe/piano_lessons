@@ -442,21 +442,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   );
 }
 
-/** Fire-and-forget prefetch of Salamander piano samples to warm the HTTP cache.
- *  Called on landing page mount so the audio is ready before the user picks a song.
- */
-function prefetchAudioSamples() {
-  const baseUrl = 'https://tonejs.github.io/audio/salamander/';
-  const files = [
-    'A0.mp3', 'C1.mp3', 'Ds1.mp3', 'Fs1.mp3', 'A1.mp3', 'C2.mp3',
-    'Ds2.mp3', 'Fs2.mp3', 'A2.mp3', 'C3.mp3', 'Ds3.mp3', 'Fs3.mp3',
-    'A3.mp3', 'C4.mp3', 'Ds4.mp3', 'Fs4.mp3', 'A4.mp3', 'C5.mp3',
-    'Ds5.mp3', 'Fs5.mp3', 'A5.mp3', 'C6.mp3', 'Ds6.mp3', 'Fs6.mp3',
-    'A6.mp3', 'C7.mp3', 'Ds7.mp3', 'Fs7.mp3', 'A7.mp3', 'C8.mp3',
-  ];
-  files.forEach(f => fetch(`${baseUrl}${f}`).catch(() => {}));
-}
-
 export default function Home() {
   const [allSongs, setAllSongs] = useState<Song[]>(defaultSongs);
   const [currentSong, setCurrentSong] = useState<Song>(defaultSongs[0]);
@@ -473,9 +458,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'default' | 'title' | 'artist' | 'difficulty' | 'duration'>('default');
   const { theme, setTheme } = useTheme();
-
-  // Warm browser HTTP cache with audio samples while user browses the song list
-  useEffect(() => { prefetchAudioSamples(); }, []);
 
   // Load persistence
   useEffect(() => {
