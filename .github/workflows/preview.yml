@@ -2,7 +2,7 @@ name: PR Preview (Cloudflare Pages)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
 
 # Only one preview deployment per PR at a time; cancel in-flight if a new push arrives.
 concurrency:
@@ -10,7 +10,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Cloudflare Pages preview branch
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: pr-${{ github.event.number }}
+        run: |
+          # Fetch all deployment IDs for this PR's branch
+          IDS=$(curl -s \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/piano-lessons/deployments?branch=${BRANCH}" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            | jq -r '.result[].id // empty')
+          for ID in $IDS; do
+            curl -s -X DELETE \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/piano-lessons/deployments/${ID}?force=true" \
+              -H "Authorization: Bearer ${CF_API_TOKEN}"
+            echo "Deleted deployment $ID"
+          done
+
   deploy-preview:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
       contents: read
