@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Piano Lessons is an interactive web app for learning piano via a "Guitar Hero" style falling-notes waterfall synchronized with audio playback. It uses Next.js 16 with static export, deployed to GitHub Pages.
+Piano Lessons is an interactive web app for learning piano via a "Guitar Hero" style falling-notes waterfall synchronized with audio playback. It uses Next.js 16 with static export, deployed to GitHub Pages. PR preview deployments run on Cloudflare Pages (branch `pr-<N>`) and are cleaned up automatically on PR close.
 
 ## Commands
 
@@ -48,6 +48,7 @@ Local `useState` for UI state, refs for mutable Tone.js references, `useSyncExte
 ## Critical Configuration
 
 - **basePath**: `/piano_lessons` in `next.config.ts` — all local URLs must include this prefix
+- **`NEXT_PUBLIC_BASE_PATH` env var**: overrides the basePath for asset URLs at build time. Set to `''` (empty string) in the Cloudflare Pages preview build so assets resolve from the root. Leave unset for the normal GitHub Pages build.
 - **Static export**: `output: "export"` — no server-side features (no API routes, no SSR)
 - **React Compiler**: Enabled (`reactCompiler: true`) — automatic memoization via `babel-plugin-react-compiler`. **WARNING:** The compiler (Turbopack/SWC) generates internal dependency arrays for `useEffect`/`useCallback` at compile time. Any code change that alters the compiler's dependency analysis (adding new local variables, `for` loops, or function calls inside effect/callback bodies) can change the internal array size, causing the runtime error: _"The final argument passed to useEffect changed size between renders."_ The `"use no memo"` opt-out directive is **not recognized** by this Turbopack integration. Safe changes: modifying numeric literals and math formulas using only already-captured variables. Unsafe: adding new control flow, new `useRef` hooks, or referencing new variables inside effects. For complex changes to `EffectsCanvas.tsx`, consider migrating to the imperative `EffectsEngine` class (`src/lib/effects-engine.ts`) which bypasses the compiler entirely.
 - **CSS `contain: paint` clips `box-shadow`**: Waterfall notes (`.waterfall-note`) use `contain: layout style` — do NOT add `paint` containment. `contain: paint` clips all outer `box-shadow` overflow, making glow effects completely invisible. This was a long-standing silent bug that hid every visual change to note styling.

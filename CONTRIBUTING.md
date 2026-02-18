@@ -10,7 +10,7 @@ npm install
 
 # Start development server
 npm run dev
-# App runs at http://localhost:3000
+# App runs at http://localhost:3000/piano_lessons
 
 # Build for production
 npm run build
@@ -63,13 +63,13 @@ This will:
 - New visual features (e.g., new color themes)
 - Major layout updates
 
-66: ## Pull Request Workflow
-67: 
-68: 1. **Fork & Branch:** Create a feature branch from `main`.
-69: 2. **Implement:** Write clean, typed code.
-70: 3. **Test:** Ensure `npm run build` and `npm run lint` pass locally.
-71: 4. **Verify Pipelines:** Push your branch and **WAIT** for the CI pipeline to pass on your fork/branch. Fix any deployment or build errors *before* opening a PR or marking it as ready for review.
-72: 5. **Submit:** Open a PR describing your changes.
+## Pull Request Workflow
+
+1. **Fork & Branch:** Create a feature branch from `main`.
+2. **Implement:** Write clean, typed code.
+3. **Test:** Ensure `npm run build` and `npm run lint` pass locally.
+4. **Verify Pipelines:** Push your branch and **WAIT** for the CI pipeline to pass. Fix any build or lint errors *before* opening a PR or marking it as ready for review.
+5. **Submit:** Open a PR describing your changes. A Cloudflare Pages preview URL will be automatically posted as a comment so you can verify the live build before merging.
 
 ## Code Style
 
