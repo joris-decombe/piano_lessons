@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-02-18
+
+### Added
+- VFX Phase 2: per-theme lighting, texture & colour identity with data-driven profiles (`THEME_VFX_PROFILES`, `THEME_PARTICLE_BEHAVIORS`, `THEME_COLOR_GRADES` in `vfx-constants.ts`)
+- VFX Phase 3: post-processing & juice — fullscreen vignette, ordered dithering on panels, specular highlights on black keys, and particle physics (gravity, drag, spin)
+- Loading overlay with audio prefetch on song select to eliminate the "notes appear late" delay on first play
+- Salamander Grand Piano samples bundled locally — no external CDN dependency at runtime
+- Self-hosted fonts via `@fontsource` — eliminates Google Fonts network request
+- 8 new beginner/intermediate scores in MusicXML format (Beethoven, Bach, Mozart, Chopin, and more)
+- MusicXML duration pre-computation with a sort dropdown on the song list (by title / duration)
+- PR preview deployments via Cloudflare Pages: preview URL auto-posted as a PR comment, deployment cleaned up on PR close
+
+### Fixed
+- MusicXML multi-voice / grand-staff timing: switched parser to `preserveOrder: true` so `<backup>`/`<forward>` elements are processed in document order — fixes completely wrong note timing on all grand-staff pieces
+- MusicXML staff-aware hand colouring: uses `-staff1`/`-staff2` track-name suffix instead of raw track index, so right/left hand colours survive MIDI layer splitting
+- VFX particles not triggering on consecutive notes of the same pitch
+- White key cutout depth (`cutH`) misaligned with black key bottom edge — exposed white key edges below black keys
+- iPhone / iPad keyboard centering regression and missing first note on load
+- Landing page vertical alignment and iOS install-hint overlay positioning in screenshots
+
+### Changed
+- CSP header tightened: fonts and piano samples now served from same origin, removing external CDN entries from `connect-src` / `font-src`
+- Hand colour pickers removed from Settings — note colours are now fully defined by the active theme
+
 ## [0.5.0]
 
 ### Added
