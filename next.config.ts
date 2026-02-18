@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
-  basePath: "/piano_lessons",
+  // Default to /piano_lessons for GitHub Pages; override with NEXT_PUBLIC_BASE_PATH='' for Cloudflare Pages previews.
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? "/piano_lessons",
   images: {
     unoptimized: true,
   },

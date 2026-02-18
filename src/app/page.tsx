@@ -20,7 +20,7 @@ import { playHoverSound, playSelectSound } from "@/lib/menu-sounds";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 
-const BASE_PATH = '/piano_lessons';
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '/piano_lessons';
 
 // Song Management
 interface Song {
@@ -410,6 +410,34 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         />
       </footer>
       <HelpModal isOpen={false} onClose={() => { }} />
+
+      {/* Loading overlay — covers blank piano while audio/MIDI initializes */}
+      <AnimatePresence>
+        {!audio.isLoaded && (
+          <motion.div
+            key="piano-loading"
+            className="absolute inset-0 z-[80] flex flex-col items-center justify-center bg-[var(--color-void)]"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="text-center space-y-3 px-6 max-w-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[var(--color-accent-primary)] animate-pulse">
+                Now Loading
+              </p>
+              <h2 className="text-xl font-bold text-[var(--color-text-bright)] uppercase tracking-tighter leading-tight">
+                {song.title}
+              </h2>
+              <p className="text-xs pixel-text-muted">{song.artist}</p>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="w-1.5 h-1.5 bg-[var(--color-accent-primary)] animate-pulse" />
+                <div className="w-1.5 h-1.5 bg-[var(--color-accent-primary)] animate-pulse [animation-delay:200ms]" />
+                <div className="w-1.5 h-1.5 bg-[var(--color-accent-primary)] animate-pulse [animation-delay:400ms]" />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div >
   );
 }

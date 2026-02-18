@@ -11,6 +11,8 @@
     "screenshots": "node scripts/take-screenshots.mjs"
   },
   "dependencies": {
+    "@fontsource/pixelify-sans": "^5.2.7",
+    "@fontsource/press-start-2p": "^5.2.7",
     "@tonejs/midi": "^2.0.28",
     "abcjs": "^6.6.0",
     "clsx": "^2.1.1",
