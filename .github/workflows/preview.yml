@@ -1,0 +1,45 @@
+name: PR Preview (Cloudflare Pages)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Only one preview deployment per PR at a time; cancel in-flight if a new push arrives.
+concurrency:
+  group: preview-pr-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write   # lets Cloudflare post deployment status to the PR
+      pull-requests: write # lets the action comment the preview URL if needed
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (no basePath — Cloudflare serves from root)
+        run: npm run build
+        env:
+          NEXT_BASE_PATH: ''
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: piano-lessons
+          directory: out
+          # Posts a GitHub deployment status (visible on the PR) with the preview URL.
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: pr-${{ github.event.number }}
