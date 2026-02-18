@@ -39,6 +39,7 @@ jobs:
       contents: read
       deployments: write   # lets Cloudflare post deployment status to the PR
       pull-requests: write # lets the action comment the preview URL if needed
+      issues: write        # needed for issues.createComment / updateComment API
 
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +58,7 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: ''
 
       - name: Deploy to Cloudflare Pages
+        id: cf-deploy
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -66,3 +68,37 @@ jobs:
           # Posts a GitHub deployment status (visible on the PR) with the preview URL.
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: pr-${{ github.event.number }}
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- cf-preview -->';
+            const body = `${marker}
+            ### Preview deployed
+            | | |
+            |---|---|
+            | **URL** | ${{ steps.cf-deploy.outputs.alias }} |
+            | **Commit** | ${{ github.sha }} |`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
