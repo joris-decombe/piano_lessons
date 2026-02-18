@@ -31,7 +31,7 @@ jobs:
       - name: Build (no basePath — Cloudflare serves from root)
         run: npm run build
         env:
-          NEXT_BASE_PATH: ''
+          NEXT_PUBLIC_BASE_PATH: ''
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1

@@ -20,7 +20,7 @@ import { playHoverSound, playSelectSound } from "@/lib/menu-sounds";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 
-const BASE_PATH = '/piano_lessons';
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? '/piano_lessons';
 
 // Song Management
 interface Song {
