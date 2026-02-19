@@ -16,7 +16,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { EffectsCanvas, EffectsNote } from "@/components/piano/EffectsCanvas";
 import { abcToMidiBuffer } from "@/lib/abc-loader";
-import { playHoverSound, playSelectSound } from "@/lib/menu-sounds";
+import { playHoverSound, playSelectSound, warmUpAudio } from "@/lib/menu-sounds";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 
@@ -603,6 +603,9 @@ export default function Home() {
       setTimeout(() => setShowSilentModeHint(true), 0);
     }
   }, []);
+
+  // Unlock AudioContext on first user activation so hover sounds work immediately after
+  useEffect(() => { warmUpAudio(); }, []);
 
   const selectSong = useCallback(async (song: Song) => {
     try {
