@@ -1,0 +1,2 @@
+Contact: https://github.com/joris-decombe/piano_lessons/issues
+Preferred-Languages: en, fr

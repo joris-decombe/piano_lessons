@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://joris-decombe.github.io/piano_lessons/sitemap.xml
