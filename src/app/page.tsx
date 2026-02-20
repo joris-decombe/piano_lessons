@@ -190,13 +190,15 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, []);
 
   // Dynamic LookAhead calculation based on Height (Constant Speed)
-  // Target: 180px per second.
-  const lookAheadTime = useMemo(() => {
+  // Target: 180px per second. User can override via settings.
+  const [lookAheadOverride, setLookAheadOverride] = useState<number | null>(null);
+  const autoLookAheadTime = useMemo(() => {
     if (waterfallHeight > 0) {
       return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));
     }
     return 1.5;
   }, [waterfallHeight]);
+  const lookAheadTime = lookAheadOverride ?? autoLookAheadTime;
 
   const audio = usePianoAudio(song, { lookAheadTime, initialPlaybackRate: savedRate, initialTick: savedTick });
 
@@ -400,6 +402,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           onSeek={audio.seek}
           playbackRate={audio.playbackRate}
           onSetPlaybackRate={audio.setPlaybackRate}
+          lookAheadTime={lookAheadTime}
+          minLookAheadTime={autoLookAheadTime}
+          onSetLookAheadTime={setLookAheadOverride}
           visualSettings={visualSettings}
           songSettings={songSettingsMemo}
           isLooping={audio.isLooping}

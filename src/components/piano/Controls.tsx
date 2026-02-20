@@ -41,6 +41,9 @@ interface ControlsProps {
     onSeek: (time: number) => void;
     playbackRate: number;
     onSetPlaybackRate: (rate: number) => void;
+    lookAheadTime: number;
+    minLookAheadTime: number;
+    onSetLookAheadTime: (time: number | null) => void;
     visualSettings: VisualSettings;
     songSettings?: SongSettings;
     isLooping: boolean;
@@ -60,6 +63,9 @@ export const Controls = memo(function Controls({
     onSeek,
     playbackRate,
     onSetPlaybackRate,
+    lookAheadTime,
+    minLookAheadTime,
+    onSetLookAheadTime,
     visualSettings,
     songSettings,
     isLooping,
@@ -303,6 +309,36 @@ export const Controls = memo(function Controls({
                                     </div>
                                 </div>
                             )}
+
+                            <div className="pixel-divider" />
+
+                            {/* Note Preview (Look-Ahead) */}
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider">
+                                    <span>Note Preview</span>
+                                    <span className="text-[var(--color-accent-primary)]">{lookAheadTime.toFixed(1)}s</span>
+                                </div>
+                                <div className="pixel-inset p-1">
+                                    <input
+                                        type="range"
+                                        min={minLookAheadTime}
+                                        max={8.0}
+                                        step={0.1}
+                                        value={lookAheadTime}
+                                        onChange={(e) => onSetLookAheadTime(parseFloat(e.target.value))}
+                                        aria-label="Note preview time"
+                                        className={`w-full cursor-pointer bg-transparent appearance-none accent-[var(--color-accent-primary)] touch-none ${isTouch ? 'h-6' : 'h-2'}`}
+                                    />
+                                </div>
+                                {lookAheadTime > minLookAheadTime && (
+                                    <button
+                                        onClick={() => onSetLookAheadTime(null)}
+                                        className="text-[10px] text-[var(--color-subtle)] hover:text-[var(--color-text)] transition-colors"
+                                    >
+                                        Reset to default
+                                    </button>
+                                )}
+                            </div>
 
                             <div className="pixel-divider" />
 
