@@ -50,6 +50,8 @@ interface ControlsProps {
     onSetLoop: (start: number, end: number) => void;
 }
 
+const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
+
 export const Controls = memo(function Controls({
     isPlaying,
     onTogglePlay,
@@ -69,6 +71,14 @@ export const Controls = memo(function Controls({
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
+
+    const cycleSpeed = () => {
+        const currentIndex = SPEED_PRESETS.indexOf(playbackRate);
+        const nextIndex = currentIndex === -1
+            ? SPEED_PRESETS.indexOf(1.0)
+            : (currentIndex + 1) % SPEED_PRESETS.length;
+        onSetPlaybackRate(SPEED_PRESETS[nextIndex]);
+    };
     const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
     const isTouch = useTouchDevice();
     const { theme, setTheme } = useTheme();
@@ -185,6 +195,16 @@ export const Controls = memo(function Controls({
                             </svg>
                         )}
                     </button>
+                    <button
+                        onClick={cycleSpeed}
+                        aria-label={`Playback speed ${playbackRate.toFixed(1)}x — click to cycle`}
+                        title={`Speed: ${playbackRate.toFixed(1)}x (click to cycle)`}
+                        className={`flex-shrink-0 flex items-center justify-center pixel-btn ${playbackRate !== 1.0 ? 'pixel-btn-primary' : ''} ${isTouch ? 'h-12 px-3' : 'h-8 md:h-10 px-2'}`}
+                    >
+                        <span className={`font-mono font-bold ${isTouch ? 'text-sm' : 'text-[11px]'}`}>
+                            {parseFloat(playbackRate.toFixed(2))}x
+                        </span>
+                    </button>
                 </div>
 
                 {/* Right: Duration + Progress + Settings */}
@@ -295,9 +315,9 @@ export const Controls = memo(function Controls({
                                 <div className="pixel-inset p-1">
                                     <input
                                         type="range"
-                                        min={0.1}
-                                        max={2.0}
-                                        step={0.1}
+                                        min={0.25}
+                                        max={1.0}
+                                        step={0.05}
                                         value={playbackRate}
                                         onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
                                         aria-label="Playback speed"
