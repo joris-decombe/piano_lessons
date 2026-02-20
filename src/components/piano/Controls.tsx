@@ -306,28 +306,6 @@ export const Controls = memo(function Controls({
 
                             <div className="pixel-divider" />
 
-                            {/* Speed Control */}
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider">
-                                    <span>Speed</span>
-                                    <span className="text-[var(--color-accent-primary)]">{playbackRate.toFixed(1)}x</span>
-                                </div>
-                                <div className="pixel-inset p-1">
-                                    <input
-                                        type="range"
-                                        min={0.25}
-                                        max={1.0}
-                                        step={0.05}
-                                        value={playbackRate}
-                                        onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
-                                        aria-label="Playback speed"
-                                        className={`w-full cursor-pointer bg-transparent appearance-none accent-[var(--color-accent-primary)] touch-none ${isTouch ? 'h-6' : 'h-2'}`}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="pixel-divider" />
-
                             {/* Visual Settings */}
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider">Appearance</label>
