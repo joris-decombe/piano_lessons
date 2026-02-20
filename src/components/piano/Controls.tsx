@@ -41,6 +41,9 @@ interface ControlsProps {
     onSeek: (time: number) => void;
     playbackRate: number;
     onSetPlaybackRate: (rate: number) => void;
+    lookAheadTime: number;
+    minLookAheadTime: number;
+    onSetLookAheadTime: (time: number | null) => void;
     visualSettings: VisualSettings;
     songSettings?: SongSettings;
     isLooping: boolean;
@@ -50,6 +53,8 @@ interface ControlsProps {
     onSetLoop: (start: number, end: number) => void;
 }
 
+const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
+
 export const Controls = memo(function Controls({
     isPlaying,
     onTogglePlay,
@@ -58,6 +63,9 @@ export const Controls = memo(function Controls({
     onSeek,
     playbackRate,
     onSetPlaybackRate,
+    lookAheadTime,
+    minLookAheadTime,
+    onSetLookAheadTime,
     visualSettings,
     songSettings,
     isLooping,
@@ -69,6 +77,14 @@ export const Controls = memo(function Controls({
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isSongMenuOpen, setIsSongMenuOpen] = useState(false);
+
+    const cycleSpeed = () => {
+        const currentIndex = SPEED_PRESETS.indexOf(playbackRate);
+        const nextIndex = currentIndex === -1
+            ? SPEED_PRESETS.indexOf(1.0)
+            : (currentIndex + 1) % SPEED_PRESETS.length;
+        onSetPlaybackRate(SPEED_PRESETS[nextIndex]);
+    };
     const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
     const isTouch = useTouchDevice();
     const { theme, setTheme } = useTheme();
@@ -185,6 +201,16 @@ export const Controls = memo(function Controls({
                             </svg>
                         )}
                     </button>
+                    <button
+                        onClick={cycleSpeed}
+                        aria-label={`Playback speed ${parseFloat(playbackRate.toFixed(2))}x — click to slow down`}
+                        title={`Speed: ${parseFloat(playbackRate.toFixed(2))}x (click to slow down)`}
+                        className={`flex-shrink-0 flex items-center justify-center pixel-btn ${playbackRate !== 1.0 ? 'pixel-btn-primary' : ''} ${isTouch ? 'h-12 px-3' : 'h-8 md:h-10 px-2'}`}
+                    >
+                        <span className={`font-mono font-bold ${isTouch ? 'text-sm' : 'text-[11px]'}`}>
+                            {parseFloat(playbackRate.toFixed(2))}x
+                        </span>
+                    </button>
                 </div>
 
                 {/* Right: Duration + Progress + Settings */}
@@ -286,24 +312,32 @@ export const Controls = memo(function Controls({
 
                             <div className="pixel-divider" />
 
-                            {/* Speed Control */}
+                            {/* Note Preview (Look-Ahead) */}
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center text-[10px] font-bold text-[var(--color-muted)] uppercase tracking-wider">
-                                    <span>Speed</span>
-                                    <span className="text-[var(--color-accent-primary)]">{playbackRate.toFixed(1)}x</span>
+                                    <span>Note Preview</span>
+                                    <span className="text-[var(--color-accent-primary)]">{lookAheadTime.toFixed(1)}s</span>
                                 </div>
                                 <div className="pixel-inset p-1">
                                     <input
                                         type="range"
-                                        min={0.1}
-                                        max={2.0}
+                                        min={minLookAheadTime}
+                                        max={8.0}
                                         step={0.1}
-                                        value={playbackRate}
-                                        onChange={(e) => onSetPlaybackRate(parseFloat(e.target.value))}
-                                        aria-label="Playback speed"
+                                        value={lookAheadTime}
+                                        onChange={(e) => onSetLookAheadTime(parseFloat(e.target.value))}
+                                        aria-label="Note preview time"
                                         className={`w-full cursor-pointer bg-transparent appearance-none accent-[var(--color-accent-primary)] touch-none ${isTouch ? 'h-6' : 'h-2'}`}
                                     />
                                 </div>
+                                {lookAheadTime > minLookAheadTime && (
+                                    <button
+                                        onClick={() => onSetLookAheadTime(null)}
+                                        className="text-[10px] text-[var(--color-subtle)] hover:text-[var(--color-text)] transition-colors"
+                                    >
+                                        Reset to default
+                                    </button>
+                                )}
                             </div>
 
                             <div className="pixel-divider" />
