@@ -197,8 +197,8 @@ export const Controls = memo(function Controls({
                     </button>
                     <button
                         onClick={cycleSpeed}
-                        aria-label={`Playback speed ${playbackRate.toFixed(1)}x — click to cycle`}
-                        title={`Speed: ${playbackRate.toFixed(1)}x (click to cycle)`}
+                        aria-label={`Playback speed ${parseFloat(playbackRate.toFixed(2))}x — click to slow down`}
+                        title={`Speed: ${parseFloat(playbackRate.toFixed(2))}x (click to slow down)`}
                         className={`flex-shrink-0 flex items-center justify-center pixel-btn ${playbackRate !== 1.0 ? 'pixel-btn-primary' : ''} ${isTouch ? 'h-12 px-3' : 'h-8 md:h-10 px-2'}`}
                     >
                         <span className={`font-mono font-bold ${isTouch ? 'text-sm' : 'text-[11px]'}`}>
