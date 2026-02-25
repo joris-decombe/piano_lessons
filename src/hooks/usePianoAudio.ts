@@ -417,7 +417,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     // We need to ensure state reflects the jump
                     setState(prev => ({
                         ...prev,
-                        currentTime: Tone.Transport.seconds,
+                        currentTime: loopStartTick / (Tone.Transport.PPQ * (baseBpmRef.current / 60)),
                         currentTick: loopStartTick,
                         activeNotes: Array.from(activeNotesRef.current.values())
                     }));
@@ -551,8 +551,11 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
 
     const seek = (time: number) => {
-        Tone.Transport.seconds = Math.max(0, time);
-        // Use Tone's internal tick calculation which respects the tempo map
+        // Convert song-seconds to ticks using base BPM so seeking is
+        // correct at any playback rate (Transport.seconds = real seconds,
+        // not song-seconds, when BPM is scaled).
+        const targetTick = Math.round(Math.max(0, time) * (baseBpmRef.current / 60) * Tone.Transport.PPQ);
+        Tone.Transport.ticks = targetTick;
         const newTick = Tone.Transport.ticks;
         lastProcessedTickRef.current = newTick;
 
@@ -628,7 +631,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         setPlaybackRate: changeSpeed,
         togglePlay,
         seek,
-        currentTime: Tone.Transport.seconds,
+        currentTime: state.currentTime, // BPM-invariant song-seconds (not real elapsed seconds)
         duration: state.duration, // Revert to state.duration for safety
         toggleLoop,
         setLoop,

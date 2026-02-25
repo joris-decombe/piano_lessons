@@ -1,7 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatTime } from "@/lib/utils";
-import { useFullscreen } from "@/hooks/useFullscreen";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
 import { useTheme, THEMES, Theme } from "@/hooks/useTheme";
 import { Timeline } from "./Timeline";
@@ -85,7 +84,6 @@ export const Controls = memo(function Controls({
             : (currentIndex + 1) % SPEED_PRESETS.length;
         onSetPlaybackRate(SPEED_PRESETS[nextIndex]);
     };
-    const { isFullscreen, toggleFullscreen, isSupported } = useFullscreen();
     const isTouch = useTouchDevice();
     const { theme, setTheme } = useTheme();
 
@@ -125,7 +123,7 @@ export const Controls = memo(function Controls({
     }, [songSettings]);
 
     // Progress percentage
-    const progressPercent = duration > 0 ? Math.round((currentTime / duration) * 100) : 0;
+    const progressPercent = duration > 0 ? Math.min(100, Math.round((currentTime / duration) * 100)) : 0;
 
     return (
         <div className="relative w-full">
@@ -223,25 +221,6 @@ export const Controls = memo(function Controls({
                             {progressPercent}%
                         </span>
                     </div>
-                    {isSupported && (
-                        <button
-                            onClick={toggleFullscreen}
-                            data-testid="fullscreen-button"
-                            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                            className={`flex items-center justify-center pixel-btn ${isTouch ? 'w-12 h-12' : 'w-8 h-8'}`}
-                        >
-                            {isFullscreen ? (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-                                </svg>
-                            ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                                </svg>
-                            )}
-                        </button>
-                    )}
                     <button
                         onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                         aria-label="Settings"
