@@ -165,7 +165,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
   // Restore persisted song position (per-song); playback rate is global
-  const savedRate = useMemo(() => getSavedPlaybackRate(), [song.id]); // re-read on song switch
+  const [savedRate] = useState(() => getSavedPlaybackRate());
   const savedTick = useMemo(() => getSavedSongPosition(song.id), [song.id]);
   const currentTickRef = useRef(0);
 
@@ -192,15 +192,15 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
   // Dynamic LookAhead calculation based on Height (Constant Speed)
   // Target: 180px per second. User can override via settings (reset per song).
-  const [lookAheadOverride, setLookAheadOverride] = useState<number | null>(null);
-  useEffect(() => { setLookAheadOverride(null); }, [song.id]);
+  const [lookAheadOverride, setLookAheadOverride] = useState<{ songId: string; value: number } | null>(null);
+  const effectiveLookAheadOverride = lookAheadOverride?.songId === song.id ? lookAheadOverride.value : null;
   const autoLookAheadTime = useMemo(() => {
     if (waterfallHeight > 0) {
       return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));
     }
     return 1.5;
   }, [waterfallHeight]);
-  const lookAheadTime = lookAheadOverride ?? autoLookAheadTime;
+  const lookAheadTime = effectiveLookAheadOverride ?? autoLookAheadTime;
 
   const audio = usePianoAudio(song, { lookAheadTime, initialPlaybackRate: savedRate, initialTick: savedTick });
 
@@ -419,7 +419,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           onSetPlaybackRate={audio.setPlaybackRate}
           lookAheadTime={lookAheadTime}
           minLookAheadTime={autoLookAheadTime}
-          onSetLookAheadTime={setLookAheadOverride}
+          onSetLookAheadTime={(time) => setLookAheadOverride(time != null ? { songId: song.id, value: time } : null)}
           visualSettings={visualSettings}
           songSettings={songSettingsMemo}
           isLooping={audio.isLooping}
