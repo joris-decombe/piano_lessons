@@ -163,7 +163,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [containerPxHeight, setContainerPxHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
-  const { isFullscreen, toggleFullscreen, isSupported: isFullscreenSupported } = useFullscreen();
+  const { isFullscreen } = useFullscreen();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
   // Restore persisted playback rate and song position
@@ -225,11 +225,33 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     };
   }, [song.id]);
 
+  // When in fullscreen, Escape should exit fullscreen only — not the lesson.
+  // The browser fires fullscreenchange which exits fullscreen first, but our
+  // keydown handler also fires synchronously. We check fullscreenElement to
+  // decide which action to take before the browser has had a chance to update.
+  const handleEscapeExit = useCallback(() => {
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element;
+      mozFullScreenElement?: Element;
+      msFullscreenElement?: Element;
+    };
+    const inFullscreen = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+    if (!inFullscreen) {
+      stableOnExit();
+    }
+    // If in fullscreen, the browser exits it via Escape natively — no action needed here.
+  }, [stableOnExit]);
+
   // Keyboard shortcuts: Space=play/pause, arrows=seek, Escape=back
   useKeyboardShortcuts({
     onTogglePlay: audio.togglePlay,
     onSeek: audio.seek,
-    onExit: stableOnExit,
+    onExit: handleEscapeExit,
     currentTime: audio.currentTime,
     duration: audio.duration,
     isPlaying: audio.isPlaying,
@@ -301,9 +323,10 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         <p className="pixel-text-muted">Piano Lessons works best in landscape mode.</p>
       </div>
 
+      {/* Hidden in fullscreen — Safari shows its own exit-fullscreen button at top-left */}
       <button
         onClick={onExit}
-        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 px-3 py-2 pixel-btn-primary hover:scale-105 group flex items-center gap-2"
+        className={`absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 px-3 py-2 pixel-btn-primary hover:scale-105 group flex items-center gap-2 transition-opacity ${isFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
         aria-label="Return to Song List"
         title="Back to songs (Esc)"
       >
@@ -312,27 +335,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         </svg>
         <span className="hidden md:inline text-xs font-bold uppercase tracking-tight landscape:hidden">Songs</span>
       </button>
-
-      {/* Fullscreen toggle — top-right corner, opposite the back button */}
-      {isFullscreenSupported && (
-        <button
-          onClick={toggleFullscreen}
-          data-testid="fullscreen-button"
-          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          title={isFullscreen ? "Exit fullscreen (F)" : "Enter fullscreen (F)"}
-          className="absolute top-4 right-[calc(1rem+env(safe-area-inset-right))] z-50 flex items-center justify-center pixel-btn w-10 h-10"
-        >
-          {isFullscreen ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-            </svg>
-          )}
-        </button>
-      )}
 
       {/* Header / Title - Hidden in mobile landscape to save space */}
       <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
