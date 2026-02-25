@@ -59,27 +59,25 @@ const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
 function ScrollingText({ text, className, testId }: { text: string; className?: string; testId?: string }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const textRef = useRef<HTMLSpanElement>(null);
-    const [overflows, setOverflows] = useState(false);
 
     useEffect(() => {
         const container = containerRef.current;
         const textEl = textRef.current;
         if (!container || !textEl) return;
+        // Direct DOM manipulation — no setState needed, no cascading renders
         const overflow = textEl.offsetWidth - container.clientWidth;
         if (overflow > 0) {
             textEl.style.setProperty('--marquee-offset', `-${overflow}px`);
-            setOverflows(true);
+            textEl.classList.add('animate-marquee-bounce');
         } else {
-            setOverflows(false);
+            textEl.style.removeProperty('--marquee-offset');
+            textEl.classList.remove('animate-marquee-bounce');
         }
     }, [text]);
 
     return (
         <div ref={containerRef} className={`overflow-hidden ${className ?? ''}`} data-testid={testId}>
-            <span
-                ref={textRef}
-                className={`inline-block whitespace-nowrap ${overflows ? 'animate-marquee-bounce' : ''}`}
-            >
+            <span ref={textRef} className="inline-block whitespace-nowrap">
                 {text}
             </span>
         </div>
