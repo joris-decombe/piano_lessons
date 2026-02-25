@@ -64,16 +64,29 @@ function ScrollingText({ text, className, testId }: { text: string; className?: 
         const container = containerRef.current;
         const textEl = textRef.current;
         if (!container || !textEl) return;
-        // scrollWidth is the unclipped content width; clientWidth is the visible area.
-        // Using scrollWidth avoids integer-rounding issues from offsetWidth.
-        const overflow = container.scrollWidth - container.clientWidth;
-        if (overflow > 0) {
-            textEl.style.setProperty('--marquee-offset', `-${overflow}px`);
-            textEl.classList.add('animate-marquee-bounce');
-        } else {
+
+        const updateOverflow = () => {
+            const overflow = container.scrollWidth - container.clientWidth;
+            if (overflow > 0) {
+                textEl.style.setProperty('--marquee-offset', `-${overflow}px`);
+                textEl.classList.add('animate-marquee-bounce');
+            } else {
+                textEl.style.removeProperty('--marquee-offset');
+                textEl.classList.remove('animate-marquee-bounce');
+            }
+        };
+
+        updateOverflow();
+
+        // Recalculate on resize (e.g. fullscreen toggle, device rotation)
+        const ro = new ResizeObserver(updateOverflow);
+        ro.observe(container);
+
+        return () => {
+            ro.disconnect();
             textEl.style.removeProperty('--marquee-offset');
             textEl.classList.remove('animate-marquee-bounce');
-        }
+        };
     }, [text]);
 
     return (
