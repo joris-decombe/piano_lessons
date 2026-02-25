@@ -164,9 +164,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const { theme } = useTheme();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
-  // Restore persisted playback rate and song position
-  const [savedRate] = useState(() => getSavedPlaybackRate());
-  const [savedTick] = useState(() => getSavedSongPosition(song.id));
+  // Restore persisted song position (per-song); playback rate is global
+  const savedRate = useMemo(() => getSavedPlaybackRate(), [song.id]); // re-read on song switch
+  const savedTick = useMemo(() => getSavedSongPosition(song.id), [song.id]);
   const currentTickRef = useRef(0);
 
   // Track unified container size: width → scale, height → pixel-based compensation (avoids % quirks on iOS Safari)
@@ -191,8 +191,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, []);
 
   // Dynamic LookAhead calculation based on Height (Constant Speed)
-  // Target: 180px per second. User can override via settings.
+  // Target: 180px per second. User can override via settings (reset per song).
   const [lookAheadOverride, setLookAheadOverride] = useState<number | null>(null);
+  useEffect(() => { setLookAheadOverride(null); }, [song.id]);
   const autoLookAheadTime = useMemo(() => {
     if (waterfallHeight > 0) {
       return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));

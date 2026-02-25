@@ -78,6 +78,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const [playbackRate, setPlaybackRate] = useState(initialPlaybackRate ?? 1);
     const playbackRateRef = useRef(initialPlaybackRate ?? 1);
     const initialTickRef = useRef(initialTick ?? 0);
+    initialTickRef.current = initialTick ?? 0;
     const baseBpmRef = useRef<number>(120);
 
     // Keep ref in sync
