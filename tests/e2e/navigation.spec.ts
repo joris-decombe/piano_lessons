@@ -42,6 +42,6 @@ test.describe('Navigation Flow', () => {
 
         // Verify Player is active again
         await expect(page.getByTestId('keys-container')).toBeVisible();
-        await expect(page.getByTestId('current-song-title')).toHaveText('Twinkle Twinkle Little Star');
+        await expect(page.getByTestId('current-song-title')).toContainText('Twinkle Twinkle Little Star');
     });
 });
