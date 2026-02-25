@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-26
+
+### Added
+- Configurable note preview (look-ahead) setting — adjustable in settings, auto-calculated from waterfall height
+- Screen wake lock to prevent device sleep during playback (iOS 16.4+, Chrome)
+- Auto-scrolling song title (marquee bounce) in the controls bar when text overflows
+- Speed badge in controls bar with click-to-cycle presets (1x → 0.75x → 0.5x → 0.25x)
+- SEO metadata, structured data (JSON-LD), and AI agent discovery files (`llms.txt`, `agents.json`)
+
+### Fixed
+- Progress bar accuracy: seeking and progress now use tick-based calculations, correct at any playback speed
+- Look-ahead ticks computed directly from base BPM, eliminating floating-point drift after speed changes
+- Saved song position and note preview properly re-read on song switch (was stale due to `useState` initializer)
+- Note preview override now resets per-song instead of persisting across songs
+- Back button moved into controls bar to avoid overlap with Safari's native fullscreen exit button
+- Fullscreen Escape key handling: Escape now only exits fullscreen (not the lesson) when in fullscreen mode
+- Gnossienne No.1 tempo corrected
+- Menu sounds replaced with raw Web Audio API for cross-browser reliability (Tone.js caused issues on some browsers)
+- ScrollingText marquee recalculates on resize (fullscreen, rotation) via ResizeObserver
+
+### Changed
+- Controls bar layout rationalized: uniform button sizes, consistent touch/desktop sizing
+- Redundant speed slider removed from settings popover (replaced by speed badge)
+- Fullscreen button moved from floating header position into the controls bar
+
 ## [0.6.0] - 2026-02-18
 
 ### Added
