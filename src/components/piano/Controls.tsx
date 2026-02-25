@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatTime } from "@/lib/utils";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
@@ -55,6 +55,36 @@ interface ControlsProps {
 }
 
 const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
+
+function ScrollingText({ text, className, testId }: { text: string; className?: string; testId?: string }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const textRef = useRef<HTMLSpanElement>(null);
+    const [overflows, setOverflows] = useState(false);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        const textEl = textRef.current;
+        if (!container || !textEl) return;
+        const overflow = textEl.offsetWidth - container.clientWidth;
+        if (overflow > 0) {
+            textEl.style.setProperty('--marquee-offset', `-${overflow}px`);
+            setOverflows(true);
+        } else {
+            setOverflows(false);
+        }
+    }, [text]);
+
+    return (
+        <div ref={containerRef} className={`overflow-hidden ${className ?? ''}`} data-testid={testId}>
+            <span
+                ref={textRef}
+                className={`inline-block whitespace-nowrap ${overflows ? 'animate-marquee-bounce' : ''}`}
+            >
+                {text}
+            </span>
+        </div>
+    );
+}
 
 export const Controls = memo(function Controls({
     isPlaying,
@@ -163,11 +193,11 @@ export const Controls = memo(function Controls({
                         </button>
                     )}
                     {songSettings && (
-                        <div className="text-xs truncate max-w-[150px] md:max-w-[200px]">
-                            <span className="font-semibold text-[var(--color-text)]" data-testid="current-song-title">{songSettings.currentSong.title}</span>
-                            <span className="hidden md:inline text-[var(--color-muted)] mx-1">/</span>
-                            <span className="hidden md:inline text-[var(--color-subtle)]">{songSettings.currentSong.artist}</span>
-                        </div>
+                        <ScrollingText
+                            text={`${songSettings.currentSong.title} / ${songSettings.currentSong.artist}`}
+                            className="text-xs font-semibold text-[var(--color-text)] max-w-[150px] md:max-w-[200px]"
+                            testId="current-song-title"
+                        />
                     )}
                     <span className="text-[10px] font-mono text-[var(--color-muted)] w-8" data-testid="current-time">
                         {formatTime(currentTime)}
