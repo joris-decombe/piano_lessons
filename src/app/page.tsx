@@ -13,6 +13,7 @@ import { validateMusicXMLFile } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useWakeLock } from "@/hooks/useWakeLock";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { EffectsCanvas, EffectsNote } from "@/components/piano/EffectsCanvas";
 import { abcToMidiBuffer } from "@/lib/abc-loader";
@@ -163,9 +164,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const { theme } = useTheme();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
-  // Restore persisted playback rate and song position
+  // Restore persisted song position (per-song); playback rate is global
   const [savedRate] = useState(() => getSavedPlaybackRate());
-  const [savedTick] = useState(() => getSavedSongPosition(song.id));
+  const savedTick = useMemo(() => getSavedSongPosition(song.id), [song.id]);
   const currentTickRef = useRef(0);
 
   // Track unified container size: width → scale, height → pixel-based compensation (avoids % quirks on iOS Safari)
@@ -190,17 +191,21 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }, []);
 
   // Dynamic LookAhead calculation based on Height (Constant Speed)
-  // Target: 180px per second. User can override via settings.
-  const [lookAheadOverride, setLookAheadOverride] = useState<number | null>(null);
+  // Target: 180px per second. User can override via settings (reset per song).
+  const [lookAheadOverride, setLookAheadOverride] = useState<{ songId: string; value: number } | null>(null);
+  const effectiveLookAheadOverride = lookAheadOverride?.songId === song.id ? lookAheadOverride.value : null;
   const autoLookAheadTime = useMemo(() => {
     if (waterfallHeight > 0) {
       return Math.max(0.8, Math.min(4.0, waterfallHeight / 180));
     }
     return 1.5;
   }, [waterfallHeight]);
-  const lookAheadTime = lookAheadOverride ?? autoLookAheadTime;
+  const lookAheadTime = effectiveLookAheadOverride ?? autoLookAheadTime;
 
   const audio = usePianoAudio(song, { lookAheadTime, initialPlaybackRate: savedRate, initialTick: savedTick });
+
+  // Prevent screen sleep on iOS/iPad while a score is playing
+  useWakeLock(audio.isPlaying);
 
   // Persist playback rate on change
   useEffect(() => {
@@ -219,11 +224,33 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     };
   }, [song.id]);
 
+  // When in fullscreen, Escape should exit fullscreen only — not the lesson.
+  // The browser fires fullscreenchange which exits fullscreen first, but our
+  // keydown handler also fires synchronously. We check fullscreenElement to
+  // decide which action to take before the browser has had a chance to update.
+  const handleEscapeExit = useCallback(() => {
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element;
+      mozFullScreenElement?: Element;
+      msFullscreenElement?: Element;
+    };
+    const inFullscreen = !!(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+    if (!inFullscreen) {
+      stableOnExit();
+    }
+    // If in fullscreen, the browser exits it via Escape natively — no action needed here.
+  }, [stableOnExit]);
+
   // Keyboard shortcuts: Space=play/pause, arrows=seek, Escape=back
   useKeyboardShortcuts({
     onTogglePlay: audio.togglePlay,
     onSeek: audio.seek,
-    onExit: stableOnExit,
+    onExit: handleEscapeExit,
     currentTime: audio.currentTime,
     duration: audio.duration,
     isPlaying: audio.isPlaying,
@@ -295,20 +322,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         <p className="pixel-text-muted">Piano Lessons works best in landscape mode.</p>
       </div>
 
-      <button
-        onClick={onExit}
-        className="absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 px-3 py-2 pixel-btn-primary hover:scale-105 group flex items-center gap-2"
-        aria-label="Return to Song List"
-        title="Back to songs (Esc)"
-      >
-        <svg className="w-4 h-4 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="hidden md:inline text-xs font-bold uppercase tracking-tight landscape:hidden">Songs</span>
-      </button>
-
       {/* Header / Title - Hidden in mobile landscape to save space */}
-      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
+      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0">
         <h1 className="text-xl font-bold text-[var(--color-text-bright)]">{song.title}</h1>
         <div className="text-xs pixel-text-muted">{song.artist}</div>
       </header>
@@ -404,7 +419,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           onSetPlaybackRate={audio.setPlaybackRate}
           lookAheadTime={lookAheadTime}
           minLookAheadTime={autoLookAheadTime}
-          onSetLookAheadTime={setLookAheadOverride}
+          onSetLookAheadTime={(time) => setLookAheadOverride(time != null ? { songId: song.id, value: time } : null)}
           visualSettings={visualSettings}
           songSettings={songSettingsMemo}
           isLooping={audio.isLooping}
@@ -412,6 +427,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           loopEnd={audio.loopEnd}
           onToggleLoop={audio.toggleLoop}
           onSetLoop={audio.setLoop}
+          onExit={onExit}
         />
       </footer>
       <HelpModal isOpen={false} onClose={() => { }} />

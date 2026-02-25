@@ -328,6 +328,15 @@
   animation: scroll var(--scroll-duration, 0.5s) linear infinite;
 }
 
+@keyframes marquee-bounce {
+  0%, 15%   { transform: translateX(0); }
+  85%, 100% { transform: translateX(var(--marquee-offset, 0px)); }
+}
+
+.animate-marquee-bounce {
+  animation: marquee-bounce 5s ease-in-out infinite alternate;
+}
+
 [data-playing="false"] .animate-scroll {
   animation-play-state: paused;
 }

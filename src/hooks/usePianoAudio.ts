@@ -78,6 +78,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     const [playbackRate, setPlaybackRate] = useState(initialPlaybackRate ?? 1);
     const playbackRateRef = useRef(initialPlaybackRate ?? 1);
     const initialTickRef = useRef(initialTick ?? 0);
+    initialTickRef.current = initialTick ?? 0;
     const baseBpmRef = useRef<number>(120);
 
     // Keep ref in sync
@@ -417,7 +418,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     // We need to ensure state reflects the jump
                     setState(prev => ({
                         ...prev,
-                        currentTime: Tone.Transport.seconds,
+                        currentTime: loopStartTick / (Tone.Transport.PPQ * (baseBpmRef.current / 60)),
                         currentTick: loopStartTick,
                         activeNotes: Array.from(activeNotesRef.current.values())
                     }));
@@ -441,9 +442,10 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                 const shouldRecalcPreview = notesChanged || Math.abs(currentTick - lastProcessedTick) > 10 || lastPreview.length === 0;
 
                 if (shouldRecalcPreview && state.midi) {
-                    const baseLookAhead = lookAheadTime;
-                    const adjustedLookAhead = Math.max(0, baseLookAhead * (1 / (playbackRate || 1)));
-                    const lookAheadTicks = Tone.Time(adjustedLookAhead).toTicks();
+                    // Convert look-ahead seconds to ticks using base BPM directly,
+                    // bypassing Tone.Time which uses the scaled Transport BPM and
+                    // can drift across speed changes due to floating-point error.
+                    const lookAheadTicks = Math.round(lookAheadTime * (baseBpmRef.current / 60) * Tone.Transport.PPQ);
                     const previewEndOfWindow = currentTick + lookAheadTicks;
 
                     const newPreviewNotes: PreviewNote[] = [];
@@ -551,8 +553,11 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
 
     const seek = (time: number) => {
-        Tone.Transport.seconds = Math.max(0, time);
-        // Use Tone's internal tick calculation which respects the tempo map
+        // Convert song-seconds to ticks using base BPM so seeking is
+        // correct at any playback rate (Transport.seconds = real seconds,
+        // not song-seconds, when BPM is scaled).
+        const targetTick = Math.round(Math.max(0, time) * (baseBpmRef.current / 60) * Tone.Transport.PPQ);
+        Tone.Transport.ticks = targetTick;
         const newTick = Tone.Transport.ticks;
         lastProcessedTickRef.current = newTick;
 
@@ -615,12 +620,13 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         };
     }, [state.isLooping, state.loopStartTick, state.loopEndTick]);
 
-    // Calculate current lookahead in ticks for UI visualization
+    // Calculate current lookahead in ticks for UI visualization.
+    // Uses base BPM directly to avoid floating-point drift from Tone.Time
+    // when Transport BPM is scaled by playbackRate.
     const currentLookAheadTicks = useMemo(() => {
         if (typeof window === 'undefined') return 0;
-        const adjusted = Math.max(0, (lookAheadTime || 0) * (1 / (playbackRate || 1)));
-        return Tone.Time(adjusted).toTicks();
-    }, [lookAheadTime, playbackRate]);
+        return Math.round((lookAheadTime || 0) * (baseBpmRef.current / 60) * Tone.Transport.PPQ);
+    }, [lookAheadTime]);
 
     return {
         ...state,
@@ -628,7 +634,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         setPlaybackRate: changeSpeed,
         togglePlay,
         seek,
-        currentTime: Tone.Transport.seconds,
+        currentTime: state.currentTime, // BPM-invariant song-seconds (not real elapsed seconds)
         duration: state.duration, // Revert to state.duration for safety
         toggleLoop,
         setLoop,

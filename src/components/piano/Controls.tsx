@@ -1,8 +1,8 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatTime } from "@/lib/utils";
-import { useFullscreen } from "@/hooks/useFullscreen";
 import { useTouchDevice } from "@/hooks/useTouchDevice";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { useTheme, THEMES, Theme } from "@/hooks/useTheme";
 import { Timeline } from "./Timeline";
 
@@ -51,9 +51,52 @@ interface ControlsProps {
     loopEnd: number;
     onToggleLoop: () => void;
     onSetLoop: (start: number, end: number) => void;
+    onExit?: () => void;
 }
 
 const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
+
+function ScrollingText({ text, className, testId }: { text: string; className?: string; testId?: string }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        const textEl = textRef.current;
+        if (!container || !textEl) return;
+
+        const updateOverflow = () => {
+            const overflow = container.scrollWidth - container.clientWidth;
+            if (overflow > 0) {
+                textEl.style.setProperty('--marquee-offset', `-${overflow}px`);
+                textEl.classList.add('animate-marquee-bounce');
+            } else {
+                textEl.style.removeProperty('--marquee-offset');
+                textEl.classList.remove('animate-marquee-bounce');
+            }
+        };
+
+        updateOverflow();
+
+        // Recalculate on resize (e.g. fullscreen toggle, device rotation)
+        const ro = new ResizeObserver(updateOverflow);
+        ro.observe(container);
+
+        return () => {
+            ro.disconnect();
+            textEl.style.removeProperty('--marquee-offset');
+            textEl.classList.remove('animate-marquee-bounce');
+        };
+    }, [text]);
+
+    return (
+        <div ref={containerRef} className={`overflow-hidden ${className ?? ''}`} data-testid={testId}>
+            <span ref={textRef} className="inline-block whitespace-nowrap">
+                {text}
+            </span>
+        </div>
+    );
+}
 
 export const Controls = memo(function Controls({
     isPlaying,
@@ -72,7 +115,8 @@ export const Controls = memo(function Controls({
     loopStart,
     loopEnd,
     onToggleLoop,
-    onSetLoop
+    onSetLoop,
+    onExit
 }: ControlsProps) {
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -124,9 +168,6 @@ export const Controls = memo(function Controls({
         }
     }, [songSettings]);
 
-    // Progress percentage
-    const progressPercent = duration > 0 ? Math.round((currentTime / duration) * 100) : 0;
-
     return (
         <div className="relative w-full">
 
@@ -146,29 +187,41 @@ export const Controls = memo(function Controls({
                     />
                 </div>
 
-                {/* Left: Song Info (Compact) */}
-                <div className="flex-1 min-w-0 pr-2 flex items-center gap-3">
-                    {songSettings && (
-                        <div className="text-xs truncate max-w-[150px] md:max-w-[200px]">
-                            <span className="font-semibold text-[var(--color-text)]" data-testid="current-song-title">{songSettings.currentSong.title}</span>
-                            <span className="hidden md:inline text-[var(--color-muted)] mx-1">/</span>
-                            <span className="hidden md:inline text-[var(--color-subtle)]">{songSettings.currentSong.artist}</span>
-                        </div>
+                {/* Left: Back + Song Info — grows to fill available space */}
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                    {onExit && (
+                        <button
+                            onClick={onExit}
+                            aria-label="Return to Song List"
+                            title="Back to songs (Esc)"
+                            className={`flex-shrink-0 flex items-center justify-center pixel-btn group ${isTouch ? 'w-10 h-10' : 'w-8 h-8'}`}
+                        >
+                            <svg className="w-4 h-4 transform transition-transform group-hover:-translate-x-0.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </button>
                     )}
-                    <span className="text-[10px] font-mono text-[var(--color-muted)] w-8" data-testid="current-time">
+                    {songSettings && (
+                        <ScrollingText
+                            text={`${songSettings.currentSong.title} / ${songSettings.currentSong.artist}`}
+                            className="flex-1 min-w-0 text-xs font-semibold text-[var(--color-text)]"
+                            testId="current-song-title"
+                        />
+                    )}
+                    <span className="flex-shrink-0 text-[10px] font-mono text-[var(--color-muted)] w-8" data-testid="current-time">
                         {formatTime(currentTime)}
                     </span>
                 </div>
 
-                {/* Center: Play/Pause & Rewind */}
-                <div className="flex items-center gap-2">
+                {/* Center: Playback controls — fixed width, uniform button sizes */}
+                <div className="flex-shrink-0 flex items-center gap-1.5">
                     <button
                         onClick={onToggleLoop}
                         aria-label="Toggle Loop"
                         title="Toggle loop"
-                        className={`flex-shrink-0 flex items-center justify-center pixel-btn ${isLooping ? 'pixel-btn-primary' : ''} ${isTouch ? 'w-12 h-12' : 'w-10 h-10'}`}
+                        className={`flex items-center justify-center pixel-btn ${isLooping ? 'pixel-btn-primary' : ''} ${isTouch ? 'w-10 h-10' : 'w-8 h-8'}`}
                     >
-                        <svg className={`${isTouch ? 'w-5 h-5' : 'w-4 h-4'} pointer-events-none`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     </button>
 
                     <button
@@ -178,58 +231,55 @@ export const Controls = memo(function Controls({
                         }}
                         aria-label="Return to start"
                         title="Return to start (Home)"
-                        className={`flex-shrink-0 flex items-center justify-center pixel-btn ${isTouch ? 'w-12 h-12' : 'w-8 h-8 md:w-10 md:h-10'}`}
+                        className={`flex items-center justify-center pixel-btn ${isTouch ? 'w-10 h-10' : 'w-8 h-8'}`}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`${isTouch ? 'w-5 h-5' : 'w-4 h-4 md:w-5 md:h-5'}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                         </svg>
                     </button>
+
                     <button
                         onClick={onTogglePlay}
                         data-testid="play-button"
                         aria-label={isPlaying ? "Pause" : "Play"}
                         title={isPlaying ? "Pause (Space)" : "Play (Space)"}
-                        className={`flex-shrink-0 flex items-center justify-center pixel-btn-primary ${isTouch ? 'w-16 h-16' : 'w-10 h-10 md:w-12 md:h-12'}`}
+                        className={`flex items-center justify-center pixel-btn-primary ${isTouch ? 'w-12 h-12' : 'w-10 h-10'}`}
                     >
                         {isPlaying ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`${isTouch ? 'w-7 h-7' : 'w-5 h-5'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                             </svg>
                         ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`${isTouch ? 'w-7 h-7' : 'w-5 h-5 ml-0.5'}`}>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 ml-0.5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
                             </svg>
                         )}
                     </button>
+
                     <button
                         onClick={cycleSpeed}
                         aria-label={`Playback speed ${parseFloat(playbackRate.toFixed(2))}x — click to slow down`}
                         title={`Speed: ${parseFloat(playbackRate.toFixed(2))}x (click to slow down)`}
-                        className={`flex-shrink-0 flex items-center justify-center pixel-btn ${playbackRate !== 1.0 ? 'pixel-btn-primary' : ''} ${isTouch ? 'h-12 px-3' : 'h-8 md:h-10 px-2'}`}
+                        className={`flex items-center justify-center pixel-btn ${playbackRate !== 1.0 ? 'pixel-btn-primary' : ''} ${isTouch ? 'h-10 px-3' : 'h-8 px-2'}`}
                     >
-                        <span className={`font-mono font-bold ${isTouch ? 'text-sm' : 'text-[11px]'}`}>
+                        <span className="font-mono font-bold text-[11px]">
                             {parseFloat(playbackRate.toFixed(2))}x
                         </span>
                     </button>
                 </div>
 
-                {/* Right: Duration + Progress + Settings */}
-                <div className="flex-1 flex justify-end items-center gap-2 min-w-0">
-                    <div className="flex items-center gap-1">
-                        <span className="text-[10px] font-mono text-[var(--color-muted)] w-8 text-right" data-testid="duration">
-                            {formatTime(duration)}
-                        </span>
-                        <span className="hidden md:inline text-[10px] font-mono text-[var(--color-accent-primary)]">
-                            {progressPercent}%
-                        </span>
-                    </div>
+                {/* Right: Duration + Fullscreen + Settings — fixed width */}
+                <div className="flex-shrink-0 flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono text-[var(--color-muted)] w-8 text-right" data-testid="duration">
+                        {formatTime(duration)}
+                    </span>
                     {isSupported && (
                         <button
                             onClick={toggleFullscreen}
                             data-testid="fullscreen-button"
                             aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                            className={`flex items-center justify-center pixel-btn ${isTouch ? 'w-12 h-12' : 'w-8 h-8'}`}
+                            className={`flex items-center justify-center pixel-btn ${isTouch ? 'w-10 h-10' : 'w-8 h-8'}`}
                         >
                             {isFullscreen ? (
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,9 +297,9 @@ export const Controls = memo(function Controls({
                         aria-label="Settings"
                         aria-expanded={isSettingsOpen}
                         title="Settings"
-                        className={`flex items-center justify-center ${isSettingsOpen ? 'pixel-btn-primary' : 'pixel-btn'} ${isTouch ? 'w-12 h-12' : 'w-8 h-8'}`}
+                        className={`flex items-center justify-center ${isSettingsOpen ? 'pixel-btn-primary' : 'pixel-btn'} ${isTouch ? 'w-10 h-10' : 'w-8 h-8'}`}
                     >
-                        <svg className={`${isTouch ? 'w-5 h-5' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
                 </div>
             </div>

@@ -77,7 +77,7 @@ export function Timeline({
         };
     }, [isDragging, duration, safeStart, safeEnd, onSeek, onSetLoop]);
 
-    const progressPercent = (currentTime / (duration || 1)) * 100;
+    const progressPercent = Math.min(100, Math.max(0, (currentTime / (duration || 1)) * 100));
     const loopStartPercent = (safeStart / (duration || 1)) * 100;
     const loopEndPercent = (safeEnd / (duration || 1)) * 100;
 
