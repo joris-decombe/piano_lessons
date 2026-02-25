@@ -51,6 +51,7 @@ interface ControlsProps {
     loopEnd: number;
     onToggleLoop: () => void;
     onSetLoop: (start: number, end: number) => void;
+    onExit?: () => void;
 }
 
 const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
@@ -72,7 +73,8 @@ export const Controls = memo(function Controls({
     loopStart,
     loopEnd,
     onToggleLoop,
-    onSetLoop
+    onSetLoop,
+    onExit
 }: ControlsProps) {
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -146,8 +148,20 @@ export const Controls = memo(function Controls({
                     />
                 </div>
 
-                {/* Left: Song Info (Compact) */}
+                {/* Left: Back + Song Info (Compact) */}
                 <div className="flex-1 min-w-0 pr-2 flex items-center gap-3">
+                    {onExit && (
+                        <button
+                            onClick={onExit}
+                            aria-label="Return to Song List"
+                            title="Back to songs (Esc)"
+                            className={`flex-shrink-0 flex items-center justify-center pixel-btn group ${isTouch ? 'w-12 h-12' : 'w-8 h-8'}`}
+                        >
+                            <svg className={`${isTouch ? 'w-5 h-5' : 'w-4 h-4'} transform transition-transform group-hover:-translate-x-0.5 pointer-events-none`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </button>
+                    )}
                     {songSettings && (
                         <div className="text-xs truncate max-w-[150px] md:max-w-[200px]">
                             <span className="font-semibold text-[var(--color-text)]" data-testid="current-song-title">{songSettings.currentSong.title}</span>

@@ -13,7 +13,6 @@ import { validateMusicXMLFile } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useFullscreen } from "@/hooks/useFullscreen";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { ToastContainer, showToast } from "@/components/Toast";
 import { EffectsCanvas, EffectsNote } from "@/components/piano/EffectsCanvas";
@@ -163,7 +162,6 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [containerPxHeight, setContainerPxHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
-  const { isFullscreen } = useFullscreen();
   const stableOnExit = useCallback(() => onExit(), [onExit]);
 
   // Restore persisted playback rate and song position
@@ -323,21 +321,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         <p className="pixel-text-muted">Piano Lessons works best in landscape mode.</p>
       </div>
 
-      {/* Hidden in fullscreen — Safari shows its own exit-fullscreen button at top-left */}
-      <button
-        onClick={onExit}
-        className={`absolute top-4 left-[calc(1rem+env(safe-area-inset-left))] z-50 px-3 py-2 pixel-btn-primary hover:scale-105 group flex items-center gap-2 transition-opacity ${isFullscreen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        aria-label="Return to Song List"
-        title="Back to songs (Esc)"
-      >
-        <svg className="w-4 h-4 transform transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="hidden md:inline text-xs font-bold uppercase tracking-tight landscape:hidden">Songs</span>
-      </button>
-
       {/* Header / Title - Hidden in mobile landscape to save space */}
-      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0 pl-16">
+      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0">
         <h1 className="text-xl font-bold text-[var(--color-text-bright)]">{song.title}</h1>
         <div className="text-xs pixel-text-muted">{song.artist}</div>
       </header>
@@ -441,6 +426,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           loopEnd={audio.loopEnd}
           onToggleLoop={audio.toggleLoop}
           onSetLoop={audio.setLoop}
+          onExit={onExit}
         />
       </footer>
       <HelpModal isOpen={false} onClose={() => { }} />
