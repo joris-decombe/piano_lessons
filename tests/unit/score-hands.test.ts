@@ -36,3 +36,28 @@ describe('Gymnopédie No. 1 hand assignment', () => {
         expect(right.events.every((e) => parseInt(e.pitch.slice(-1)) >= 4)).toBe(true);
     });
 });
+
+describe('Gnossienne No. 1 hand assignment', () => {
+    const score = parseScore('gnossienne1.xml');
+    const right = score.tracks.find((t) => t.id === 'P1-staff1')!;
+    const left = score.tracks.find((t) => t.id === 'P1-staff2')!;
+
+    it('keeps the whole Ab3-C4-F4 chord with the left hand', () => {
+        // The MIDI this replaced split the chord across both hands, which is
+        // unplayable: the right hand also has to reach the melody above it.
+        const chord = left.events.filter((e) => e.startTick === 128);
+        expect(chord.map((e) => e.pitch).sort()).toEqual(['Ab3', 'C4', 'F4']);
+        // Bass sits below the chord, also left hand.
+        expect(left.events.find((e) => e.startTick === 0)!.pitch).toBe('F2');
+    });
+
+    it('leaves the right hand entirely above the left', () => {
+        const lowestRight = Math.min(...right.events.map((e) => pitchOctave(e.pitch)));
+        expect(lowestRight).toBeGreaterThanOrEqual(4);
+        expect(right.events.length + left.events.length).toBe(872);
+    });
+});
+
+function pitchOctave(pitch: string): number {
+    return parseInt(pitch.slice(-1));
+}

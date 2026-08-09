@@ -59,6 +59,27 @@ function getAttr(el: OrderedElement, attr: string): string | undefined {
     return attrs[`@_${attr}`];
 }
 
+/** Ticks a single grace note steals from its principal (a 16th at 128 ticks/quarter) */
+const GRACE_TICKS = 32;
+
+/** Build the pitch string ("C#4", "Bb3") for a note, or undefined if it has none */
+function parsePitch(noteChildren: OrderedElement[]): string | undefined {
+    const pitchChildren = getChild(noteChildren, 'pitch');
+    if (!pitchChildren) return undefined;
+    const step = getVal(pitchChildren, 'step') || 'C';
+    const octave = getVal(pitchChildren, 'octave') || '4';
+    const alterVal = getVal(pitchChildren, 'alter');
+    const alter = alterVal ? parseInt(alterVal) : 0;
+
+    let accidental = '';
+    if (alter === 1) accidental = '#';
+    else if (alter === -1) accidental = 'b';
+    else if (alter === 2) accidental = '##';
+    else if (alter === -2) accidental = 'bb';
+
+    return `${step}${accidental}${octave}`;
+}
+
 /**
  * Read <notations><technical><fingering> off a note.
  * Substitutions are written as "4-3"; we keep the finger the note is struck with.
@@ -119,6 +140,8 @@ export class MusicXMLParser {
             const eventsByStaff = new Map<number, NoteEvent[]>();
             // Track the last event pushed per staff for chord lookback
             const lastEventByStaff = new Map<number, NoteEvent>();
+            // Grace notes awaiting the principal note that will pay for them
+            const pendingGraces = new Map<number, { pitch: string; finger?: number }[]>();
             let currentTick = 0;
             let divisions = 24;
             let staveCount = 1; // Track how many staves this part has
@@ -174,9 +197,22 @@ export class MusicXMLParser {
                             continue;
                         }
 
-                        // Grace notes have no duration — skip them entirely
+                        // Grace notes carry no <duration>. Buffer them and let the
+                        // principal note that follows give up the time they need.
                         const isGrace = getChild(noteChildren, 'grace') !== undefined;
                         if (isGrace) {
+                            const gracePitch = parsePitch(noteChildren);
+                            if (gracePitch) {
+                                const graceStaffVal = getVal(noteChildren, 'staff');
+                                const graceStaff = graceStaffVal ? parseInt(graceStaffVal) : 1;
+                                if (!pendingGraces.has(graceStaff)) {
+                                    pendingGraces.set(graceStaff, []);
+                                }
+                                pendingGraces.get(graceStaff)!.push({
+                                    pitch: gracePitch,
+                                    finger: parseFingering(noteChildren),
+                                });
+                            }
                             continue;
                         }
 
@@ -203,27 +239,45 @@ export class MusicXMLParser {
                             }
                         }
 
+                        // Ornaments belong to the note they lead into; anything else
+                        // (a rest, a chord member) means they were never resolved.
+                        const graces = pendingGraces.get(staff);
+                        let noteStart = startTick;
+                        let noteDuration = durationTicks;
+                        if (graces && graces.length > 0) {
+                            if (!isRest && !isChord) {
+                                const perGrace = Math.max(1, Math.min(
+                                    GRACE_TICKS,
+                                    Math.floor(durationTicks / 2 / graces.length)
+                                ));
+                                graces.forEach((grace, i) => {
+                                    const graceEvent: NoteEvent = {
+                                        pitch: grace.pitch,
+                                        duration: 'T' + perGrace,
+                                        startTick: startTick + i * perGrace,
+                                        durationTicks: perGrace,
+                                        velocity: 80,
+                                    };
+                                    if (grace.finger !== undefined) {
+                                        graceEvent.finger = grace.finger;
+                                    }
+                                    staffEvents.push(graceEvent);
+                                });
+                                const steal = perGrace * graces.length;
+                                noteStart = startTick + steal;
+                                noteDuration = Math.max(1, durationTicks - steal);
+                            }
+                            pendingGraces.set(staff, []);
+                        }
+
                         if (!isRest) {
-                            const pitchChildren = getChild(noteChildren, 'pitch');
-                            if (pitchChildren) {
-                                const step = getVal(pitchChildren, 'step') || 'C';
-                                const octave = getVal(pitchChildren, 'octave') || '4';
-                                const alterVal = getVal(pitchChildren, 'alter');
-                                const alter = alterVal ? parseInt(alterVal) : 0;
-
-                                let accidental = '';
-                                if (alter === 1) accidental = '#';
-                                else if (alter === -1) accidental = 'b';
-                                else if (alter === 2) accidental = '##';
-                                else if (alter === -2) accidental = 'bb';
-
-                                const pitch = `${step}${accidental}${octave}`;
-
+                            const pitch = parsePitch(noteChildren);
+                            if (pitch) {
                                 const event: NoteEvent = {
                                     pitch,
-                                    duration: 'T' + durationTicks,
-                                    startTick,
-                                    durationTicks,
+                                    duration: 'T' + noteDuration,
+                                    startTick: noteStart,
+                                    durationTicks: noteDuration,
                                     velocity: 80,
                                 };
                                 const finger = parseFingering(noteChildren);

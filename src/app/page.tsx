@@ -122,7 +122,7 @@ const defaultSongs: Song[] = [
   // Advanced
   { id: 'clair_de_lune', title: 'Clair de Lune', artist: 'Claude Debussy', url: `${BASE_PATH}/scores/clair_de_lune.xml`, type: 'musicxml', difficulty: 'advanced' },
   { id: 'arabesque_1', title: 'Arabesque No. 1', artist: 'Claude Debussy', url: `${BASE_PATH}/scores/arabesque_1.xml`, type: 'musicxml', difficulty: 'advanced' },
-  { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/gnossienne1.mid`, type: 'midi', difficulty: 'advanced' },
+  { id: 'gnossienne1', title: 'Gnossienne No. 1', artist: 'Erik Satie', url: `${BASE_PATH}/scores/gnossienne1.xml`, type: 'musicxml', difficulty: 'advanced' },
 ];
 
 function HelpModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
