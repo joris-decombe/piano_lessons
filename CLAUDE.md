@@ -15,9 +15,18 @@ npm run lint         # ESLint
 npm test             # Vitest unit tests (runs in watch mode)
 npm test -- --run    # Vitest unit tests (single run, no watch)
 npx vitest tests/unit/validation.test.ts        # Run a single unit test file
+npx vitest bench --run                           # Performance benchmarks (tests/performance/)
 npx playwright test                              # All E2E tests (starts dev server automatically)
 npx playwright test tests/e2e/navigation.spec.ts # Single E2E test
+npx playwright test --workers=1                  # Full E2E suite the way CI runs it (see below)
 npm run screenshots  # Generate UI screenshots (requires dev server running)
+```
+
+There is also a `uv`-managed Python toolchain for score wrangling (`pyproject.toml`, deps: `mido`, `music21`, `requests`; `ruff` for lint). It is not part of the build or CI:
+
+```bash
+uv run scripts/fetch_score.py <url> <name>   # Download a MusicXML/MXL score into public/scores/
+uv run analyze_midi.py <file.mid>            # Dump track/tempo/note structure of a MIDI file
 ```
 
 ## Architecture
@@ -58,22 +67,36 @@ Local `useState` for UI state, refs for mutable Tone.js references, `useSyncExte
 - **`.pixel-panel` must not set `position: relative` in CSS**: The settings popover and other panels use Tailwind's `absolute` class for positioning. Un-layered CSS (`position: relative`) overrides Tailwind utilities, breaking layout. Dithering uses `background-image` layers instead of pseudo-elements to avoid needing positioning.
 - **Sub-pixel-scale effects need dark surfaces**: Effects smaller than ~4px need adequate contrast to be visible. Specular highlights work on black keys (dark surface) but not white keys. Dithering works on `.pixel-panel` (dark mid-tone) but not on the keyboard cavity (hidden behind keys).
 - **MusicXML parser requires `preserveOrder: true`**: Without it, `fast-xml-parser` groups same-named elements by tag and loses document order, silently dropping `<backup>`/`<forward>` elements. This makes all multi-voice/grand-staff piano pieces play with completely wrong timing. The `preserveOrder` output format is verbose (ordered arrays instead of grouped objects) — use the helper functions (`getVal`, `getChild`, `getAllChildren`, `getAttr`, `tagName`) in `parser.ts`.
-- **Fingerings travel beside the MIDI, not inside it**: MIDI has no per-note fingering field, so `MIDIGenerator.generate()` returns a `FingeringMap` alongside the bytes (`src/lib/fingering.ts`), keyed by `trackName:ticks:midiNumber` — the three values that survive the MusicXML → MIDI → `@tonejs/midi` round-trip. `usePianoAudio` carries it in state; `Waterfall` looks each note up while building its render list. Uploaded MusicXML is converted to a data-URL MIDI up front, so its map is stashed on the `Song` object and passed back in via `SongSource.fingerings`. Grace notes are dropped by the parser, so their fingerings never reach the map.
+- **Fingerings travel beside the MIDI, not inside it**: MIDI has no per-note fingering field, so `MIDIGenerator.generate()` returns a `FingeringMap` alongside the bytes (`src/lib/fingering.ts`), keyed by `trackName:ticks:midiNumber` — the three values that survive the MusicXML → MIDI → `@tonejs/midi` round-trip. `usePianoAudio` carries it in state; `Waterfall` looks each note up while building its render list. Uploaded MusicXML is converted to a data-URL MIDI up front, so its map is stashed on the `Song` object and passed back in via `SongSource.fingerings`.
+- **Grace notes steal time from the note they lead into**: `<grace>` elements carry no `<duration>`, so the parser buffers them per staff and pays for them out of the following principal note — each takes `GRACE_TICKS` (32, a 16th), capped at half the principal split across the run. The principal's onset shifts later by that much and its duration shrinks to match; `currentTick` still advances by the full written duration, so nothing downstream drifts. Ornaments were dropped entirely before this, which cost Gnossienne No. 1 a third of its melody (100 of 305 notes).
 - **Staff assignment is engraving, not always hands**: MusicXML editions routinely notate a left-hand figure on the treble staff (Gymnopédie No. 1 put the whole beat-2 accompaniment chord there). Since hand color derives from `<staff>`, such scores need the notes reassigned in the XML — `tests/unit/score-hands.test.ts` guards the Gymnopédie split.
 - **Hand color uses track names, not indices**: The MIDI generator splits parsed tracks into non-overlapping layers, creating multiple MIDI tracks per staff. Color assignment (right/left hand) must use the `-staff1`/`-staff2` suffix in track names, not raw `trackIndex`. Both `Waterfall.tsx` and `usePianoAudio.ts` extract staff number via `/-staff(\d+)/` regex, falling back to track index for regular MIDI files.
+- **`npm run lint` reports pre-existing errors locally that CI never sees**: `eslint.config.mjs` ignores `.venv/**` but not `scripts/.venv/**`, so a local uv venv leaks vendored Python-package JS (matplotlib's `mpl.js`) into the lint run — currently 5 `no-this-alias` errors and ~18 warnings. The venvs are git-ignored, so CI is clean. Check the file paths before assuming you broke lint.
 - **Git workflow**: Never amend commits — always fix forward. This is a multi-PR plan; preserve history across PRs.
 - **Path alias**: `@/*` maps to `./src/*`
 - **Playwright baseURL**: `http://localhost:3000/piano_lessons`
+- **`AGENTS.md` is a separate doc for other AI agents and is stale** (it describes the app as a single-song Gnossienne trainer). Treat this file as authoritative; the one thing worth carrying over is the admin-merge escape hatch, already noted under Conventions.
 
 ## Testing
 
-- **Unit tests** (`tests/unit/`): Vitest with node environment
-- **E2E tests** (`tests/e2e/`): Playwright, Chromium only. Auto-starts dev server.
-- **Performance benchmarks** (`tests/performance/`): `waterfall.bench.ts`
+- **Unit tests** (`tests/unit/`): Vitest, node environment. `vitest.config.ts` maps the `@` alias, so tests can import either `@/lib/…` or relative paths.
+- **E2E tests** (`tests/e2e/`): Playwright, Chromium only. Auto-starts the dev server (reuses one already on :3000).
+  - **`page.goto('')`, not `page.goto('/')`** — `baseURL` already includes the `/piano_lessons` path, so `'/'` navigates to the site root and every locator times out.
+  - Song cards on the landing page are addressable as `data-testid="song-<song.id>"`; the lesson view exposes `play-button`, `waterfall-container`, `keys-container`, `current-time`, `duration`, `fullscreen-button`.
+  - **Local runs are flaky, CI is not.** `workers` is unset locally (unbounded parallelism against a single dev server), so the full suite intermittently fails an unrelated spec on a slow machine. CI pins `workers: 1` with 2 retries. Reproduce CI with `npx playwright test --workers=1` before concluding a change broke something.
+- **Performance benchmarks** (`tests/performance/waterfall.bench.ts`): `npx vitest bench --run`. The `include` in `vitest.config.ts` only covers `tests/unit/`, so benchmarks never run as part of `npm test`.
 
-## Active Plans
+## Adding Scores
 
-- **Waterfall animation upgrade**: See `docs/waterfall-animation-plan.md` and `docs/dead-cells-style-plan.md` — Hybrid Canvas overlay for particle effects, glow, bloom, and theme-specific VFX. All 3 phases complete: Phase 1 (Atmosphere & Parallax), Phase 2 (Lighting, Texture & Color Identity), Phase 3 (Post-Processing & Juice — vignette, dithering, specular, particle physics).
+`ADD_SONGS.md` is the reference. Two things are worth verifying by hand on any new MusicXML score, because both are silent when wrong:
+
+- **Hands** — see the staff-assignment note under Critical Configuration.
+- **Finger numbers** — render automatically if the score has `<fingering>` markings, and the settings toggle only appears for scores that do. Nocturne Op. 9 No. 2 is currently the only bundled score with them.
+
+## Background Reading
+
+- **Waterfall animation upgrade** (complete, all 3 phases): `docs/waterfall-animation-plan.md` and `docs/dead-cells-style-plan.md` — the design rationale behind the Canvas overlay, particle effects, glow/bloom and per-theme VFX. Read these before changing `EffectsCanvas.tsx` or `src/lib/vfx-constants.ts`.
+- **Pixel-art constraints**: `docs/Pixel_Art_Techniques.md`, `docs/Pixel_Piano_Specs.md`.
 
 ## Conventions
 

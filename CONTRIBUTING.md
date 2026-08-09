@@ -33,13 +33,14 @@ npm run lint
 └── .github/              # GitHub workflows and screenshots
 ```
 
-## Working with MIDI
+## Working with Scores
 
-The application relies on MIDI files located in `public/`.
-- **Primary Test File:** `gnossienne1.mid`
-- **Helper Script:** Use `../download_midi.py` (requires Python/uv) if you need to fetch the original source file again.
+Most of the library is MusicXML in `public/scores/`; see [ADD_SONGS.md](ADD_SONGS.md) for how to add one and what to check afterwards. Plain MIDI lives in `public/` — `twinkle.mid` is the remaining example and the one to test the `@tonejs/midi` path against.
 
-When adding new features that depend on MIDI parsing, ensure you test with multiple MIDI files to verify compatibility with `@tonejs/midi`.
+- **Fetch a score:** `uv run scripts/fetch_score.py <url> <name>` (requires Python/uv).
+- **Inspect a MIDI file:** `uv run analyze_midi.py <file.mid>` dumps tracks, tempo and note structure.
+
+When changing the MusicXML importer, test against several scores — they differ widely in how they use voices, staves, ties and grace notes.
 
 ## Updating Screenshots
 

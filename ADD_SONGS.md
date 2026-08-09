@@ -96,5 +96,6 @@ The following MusicXML scores are bundled with the application. The underlying c
 | Moonlight Sonata (1st mvt) | Beethoven | [musetrainer/library](https://github.com/musetrainer/library) |
 | Maple Leaf Rag | Scott Joplin | [musetrainer/library](https://github.com/musetrainer/library) |
 | Nocturne Op. 9 No. 2 | Chopin | [musetrainer/library](https://github.com/musetrainer/library) |
+| Gnossienne No. 1 | Erik Satie | [musetrainer/library](https://github.com/musetrainer/library) — exported via MuseScore 2.2.0 |
 
 Thank you to the MuseScore community and the [musetrainer/library](https://github.com/musetrainer/library) contributors for making these transcriptions freely available.

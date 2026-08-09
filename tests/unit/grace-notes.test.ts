@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
 import { MusicXMLParser } from '@/lib/musicxml/parser';
 
 const TICKS_PER_QUARTER = 128;
@@ -58,5 +59,14 @@ describe('Grace notes', () => {
         const graces = events.slice(0, 3);
         expect(graces.every((g) => g.durationTicks === 21)).toBe(true);
         expect(events[3].durationTicks).toBeGreaterThan(0);
+    });
+
+    it('recovers every ornament in Gnossienne No. 1', () => {
+        const xml = fs.readFileSync('public/scores/gnossienne1.xml', 'utf8');
+        const score = new MusicXMLParser().parse(xml);
+        const total = score.tracks.reduce((n, t) => n + t.events.length, 0);
+        // 872 pitched notes in the source, 100 of them grace notes — a third of
+        // the melody, which the parser used to drop on the floor.
+        expect(total).toBe(872);
     });
 });

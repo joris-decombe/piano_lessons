@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Finger numbers on falling notes, read from MusicXML `<fingering>` markings, with a "Finger Numbers" toggle that appears only for scores that carry them (currently Nocturne Op. 9 No. 2)
+- Grace note playback: ornaments now sound, taking their time from the note they lead into. They were silently dropped before, which cost Gnossienne No. 1 a third of its melody and Nocturne Op. 9 No. 2 two of its fingered notes
+
+### Changed
+- Gnossienne No. 1 now ships as MusicXML instead of MIDI. The MIDI split the A♭3–C4–F4 accompaniment chord across both tracks, so two of its three notes were coloured as right hand — impossible to play, since the right hand also has the melody above it. The MusicXML edition keeps the whole chord with the left hand. It also plays faster (3:11 vs 4:58) because the transcription is marked ♩=102
 
 ### Fixed
 - Gymnopédie No. 1 hand colors: the beat-2 accompaniment chord was notated on the treble staff and coloured as right hand for bars 1–18 and 32–45, then flipped to left hand in bars 19–31 where the same figure is engraved in the bass staff. It is now left hand throughout, and the right hand correctly enters at bar 5
