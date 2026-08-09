@@ -64,6 +64,13 @@ You can now add MusicXML files as permanent entries in the song list.
 }
 ```
 
+### Hands and finger numbers
+
+Two things the importer reads straight from the score, both worth checking after you add one:
+
+- **Hands** come from the `<staff>` element: staff 1 is coloured as the right hand, staff 2 as the left. Engravers sometimes put a left-hand figure on the treble staff for readability (Gymnopédie No. 1 did this with its accompaniment chord), which shows up as the wrong colour. The fix is to move those notes to `<staff>2</staff>` in the XML — pitches and timing are untouched, only the hand grouping changes.
+- **Finger numbers** come from `<notations><technical><fingering>`. If a score has them they render on the falling notes and a "Finger Numbers" toggle appears in settings; scores without them simply don't show the option. Fingerings on grace notes are ignored, since grace notes aren't played back.
+
 ## 4. Uploading MusicXML Files (In-App)
 
 You can upload MusicXML files (`.xml`, `.musicxml`) directly through the application interface.

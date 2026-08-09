@@ -851,6 +851,28 @@ body {
   display: none;
 }
 
+/* Finger number — sits on the leading (lower) edge, where the note meets the key */
+.waterfall-note-finger {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  z-index: 2;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  color: #fff;
+  /* 1px dark outline so the digit reads on every theme's note colors */
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.9),
+    0 -1px 0 rgba(0, 0, 0, 0.9),
+    1px 0 0 rgba(0, 0, 0, 0.9),
+    -1px 0 0 rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  user-select: none;
+}
+
 /* Black key notes — slightly darker for depth */
 .waterfall-note--black {
   filter: brightness(0.8);

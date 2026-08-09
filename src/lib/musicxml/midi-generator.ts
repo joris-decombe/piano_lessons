@@ -1,17 +1,27 @@
 import MidiWriter from 'midi-writer-js';
 import { ParsedScore, NoteEvent } from './types';
+import { FingeringMap, fingeringKey, pitchToMidi } from '@/lib/fingering';
 
 interface ChordGroup {
     startTick: number;
     durationTicks: number;
     pitches: string[];
+    /** Parallel to `pitches` — undefined where the score gave no fingering */
+    fingers: (number | undefined)[];
     velocity: number;
 }
 
+export interface GeneratedMidi {
+    base64: string;
+    /** Empty when the score carries no <fingering> markings */
+    fingerings: FingeringMap;
+}
+
 export class MIDIGenerator {
-    generate(score: ParsedScore): string {
+    generate(score: ParsedScore): GeneratedMidi {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const allTracks: any[] = [];
+        const fingerings: FingeringMap = {};
 
         score.tracks.forEach(parsedTrack => {
             // 1. Group notes by (startTick, durationTicks) into chord groups
@@ -25,10 +35,12 @@ export class MIDIGenerator {
                         startTick: e.startTick,
                         durationTicks: e.durationTicks,
                         pitches: [],
+                        fingers: [],
                         velocity: e.velocity || 80,
                     });
                 }
                 groupMap.get(key)!.pitches.push(e.pitch);
+                groupMap.get(key)!.fingers.push(e.finger);
             });
 
             const groups = Array.from(groupMap.values())
@@ -54,14 +66,19 @@ export class MIDIGenerator {
             // 3. One MidiWriter track per layer
             layers.forEach((layerGroups, i) => {
                 const track = new MidiWriter.Track();
+                const trackName = layers.length > 1 ? `${parsedTrack.id}-${i}` : parsedTrack.id;
                 track.setTempo(score.tempo);
-                track.addTrackName(
-                    layers.length > 1 ? `${parsedTrack.id}-${i}` : parsedTrack.id
-                );
+                track.addTrackName(trackName);
 
                 let cursor = 0;
                 layerGroups.forEach(group => {
                     const wait = group.startTick - cursor;
+                    group.fingers.forEach((finger, pitchIdx) => {
+                        if (finger === undefined) return;
+                        const midiNumber = pitchToMidi(group.pitches[pitchIdx]);
+                        if (midiNumber === null) return;
+                        fingerings[fingeringKey(trackName, group.startTick, midiNumber)] = finger;
+                    });
                     const noteEvent = new MidiWriter.NoteEvent({
                         pitch: group.pitches,
                         duration: 'T' + group.durationTicks,
@@ -77,6 +94,6 @@ export class MIDIGenerator {
         });
 
         const writer = new MidiWriter.Writer(allTracks);
-        return writer.base64();
+        return { base64: writer.base64(), fingerings };
     }
 }

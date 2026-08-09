@@ -5,6 +5,10 @@ import { Midi } from "@tonejs/midi";
 import { twMerge } from "tailwind-merge";
 import { getKeyPosition, getTotalKeyboardWidth } from "./geometry";
 import { getColorByTrack } from "@/lib/note-colors";
+import { FingeringMap, fingeringKey } from "@/lib/fingering";
+
+/** Below this pixel height a note block is too short to hold a legible digit */
+const MIN_HEIGHT_FOR_FINGER = 16;
 
 interface WaterfallProps {
     midi: Midi | null;
@@ -19,17 +23,20 @@ interface WaterfallProps {
     };
     lookAheadTicks?: number;
     showGrid?: boolean;
+    fingerings?: FingeringMap | null;
+    showFingerings?: boolean;
     containerHeight: number; // New: Pixel height of the container
 }
 
-export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, lookAheadTicks = 0, showGrid = true, containerHeight }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, lookAheadTicks = 0, showGrid = true, fingerings = null, showFingerings = false, containerHeight }: WaterfallProps) {
 
     const totalWidth = getTotalKeyboardWidth();
 
     const { allNotes, maxDuration } = useMemo(() => {
         if (!midi) return { allNotes: [], maxDuration: 0 };
-        const notes: { ticks: number; durationTicks: number; midi: number; name: string; color: string; }[] = [];
+        const notes: { ticks: number; durationTicks: number; midi: number; name: string; color: string; finger?: number; }[] = [];
         let maxDur = 0;
+        const fingerLookup = showFingerings ? fingerings : null;
 
         const colors = activeColors ?? { 
             split: true, 
@@ -60,11 +67,12 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                     midi: note.midi,
                     name: note.name,
                     color: noteColor,
+                    finger: fingerLookup?.[fingeringKey(track.name, note.ticks, note.midi)],
                 });
             });
         });
         return { allNotes: notes.sort((a, b) => a.ticks - b.ticks), maxDuration: maxDur };
-    }, [midi, activeColors]);
+    }, [midi, activeColors, fingerings, showFingerings]);
 
     const visibleNotes = useMemo(() => {
         if (!midi || allNotes.length === 0) return [];
@@ -93,7 +101,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
             renderStartIdx--;
         }
 
-        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; proximity: number; isActive: boolean; }[] = [];
+        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; proximity: number; isActive: boolean; finger?: number; }[] = [];
 
         for (let i = renderStartIdx; i < allNotes.length; i++) {
             const note = allNotes[i];
@@ -122,6 +130,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                     color: note.color,
                     proximity,
                     isActive: bottomPx <= 0,
+                    finger: heightPx >= MIN_HEIGHT_FOR_FINGER ? note.finger : undefined,
                 });
             }
         }
@@ -212,6 +221,9 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                         {/* Note Capitals for pixel art block feel */}
                         <div className="waterfall-note-cap waterfall-note-cap--top" />
                         <div className="waterfall-note-cap waterfall-note-cap--bottom" />
+                        {note.finger !== undefined && (
+                            <span className="waterfall-note-finger">{note.finger}</span>
+                        )}
                     </div>
                 ))}
             </div>
