@@ -6,6 +6,8 @@ export interface NoteEvent {
     durationTicks: number;
     velocity: number;
     channel?: number;
+    /** Finger number from <notations><technical><fingering>: 1 = thumb … 5 = little finger */
+    finger?: number;
 }
 
 export interface ParsedTrack {

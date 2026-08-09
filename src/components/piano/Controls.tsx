@@ -15,6 +15,10 @@ interface VisualSettings {
     setSplitPoint: (val: number) => void;
     showGrid: boolean;
     setShowGrid: (val: boolean) => void;
+    showFingerings: boolean;
+    setShowFingerings: (val: boolean) => void;
+    /** False when the loaded score has no fingering markings — the toggle is hidden */
+    hasFingerings: boolean;
 }
 
 interface Song {
@@ -408,6 +412,21 @@ export const Controls = memo(function Controls({
                                         <div className="pixel-toggle-thumb" />
                                     </div>
                                 </label>
+
+                                {visualSettings.hasFingerings && (
+                                    <label className={`flex items-center justify-between cursor-pointer ${isTouch ? 'py-2' : 'py-1'}`}>
+                                        <span className="text-sm text-[var(--color-text)]">Finger Numbers</span>
+                                        <div className={`pixel-toggle ${visualSettings.showFingerings ? 'pixel-toggle-on' : ''}`} role="switch" aria-checked={visualSettings.showFingerings}>
+                                            <input
+                                                type="checkbox"
+                                                checked={visualSettings.showFingerings}
+                                                onChange={(e) => visualSettings.setShowFingerings(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className="pixel-toggle-thumb" />
+                                        </div>
+                                    </label>
+                                )}
 
                                 <label className={`flex items-center justify-between cursor-pointer ${isTouch ? 'py-2' : 'py-1'}`}>
                                     <span className="text-sm text-[var(--color-text)]">Split Hands</span>

@@ -67,11 +67,13 @@ describe('Client-Side MusicXML Conversion', () => {
         const score = parser.parse(SAMPLE_XML);
 
         const generator = new MIDIGenerator();
-        const base64 = generator.generate(score);
+        const { base64, fingerings } = generator.generate(score);
 
         expect(typeof base64).toBe('string');
         expect(base64.length).toBeGreaterThan(0);
         // Basic check for MIDI header MThd (Base64 'TVRoZA' start)
         expect(base64.startsWith('TVRoZA')).toBe(true);
+        // No <fingering> markings in the sample
+        expect(fingerings).toEqual({});
     });
 });

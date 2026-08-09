@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Finger numbers on falling notes, read from MusicXML `<fingering>` markings, with a "Finger Numbers" toggle that appears only for scores that carry them (currently Nocturne Op. 9 No. 2)
+
+### Fixed
+- Gymnopédie No. 1 hand colors: the beat-2 accompaniment chord was notated on the treble staff and coloured as right hand for bars 1–18 and 32–45, then flipped to left hand in bars 19–31 where the same figure is engraved in the bass staff. It is now left hand throughout, and the right hand correctly enters at bar 5
+
 ## [0.7.0] - 2026-02-26
 
 ### Added

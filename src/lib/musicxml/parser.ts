@@ -59,6 +59,23 @@ function getAttr(el: OrderedElement, attr: string): string | undefined {
     return attrs[`@_${attr}`];
 }
 
+/**
+ * Read <notations><technical><fingering> off a note.
+ * Substitutions are written as "4-3"; we keep the finger the note is struck with.
+ */
+function parseFingering(noteChildren: OrderedElement[]): number | undefined {
+    const notations = getChild(noteChildren, 'notations');
+    if (!notations) return undefined;
+    const technical = getChild(notations, 'technical');
+    if (!technical) return undefined;
+    const raw = getVal(technical, 'fingering');
+    if (!raw) return undefined;
+    const digit = /\d/.exec(raw);
+    if (!digit) return undefined;
+    const finger = parseInt(digit[0], 10);
+    return finger >= 1 && finger <= 5 ? finger : undefined;
+}
+
 export class MusicXMLParser {
     private parser: XMLParser;
 
@@ -209,6 +226,10 @@ export class MusicXMLParser {
                                     durationTicks,
                                     velocity: 80,
                                 };
+                                const finger = parseFingering(noteChildren);
+                                if (finger !== undefined) {
+                                    event.finger = finger;
+                                }
                                 staffEvents.push(event);
                                 lastEventByStaff.set(staff, event);
                             }

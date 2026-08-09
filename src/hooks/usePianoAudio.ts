@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
 import { validatePlaybackRate } from "@/lib/audio-logic";
+import { FingeringMap } from "@/lib/fingering";
 
 export interface ActiveNote {
     note: string;
@@ -26,6 +27,8 @@ export interface PianoAudioState {
     currentTick: number; // Add this
     duration: number;
     midi: Midi | null;
+    /** Finger numbers for the loaded score, or null when it carries none */
+    fingerings: FingeringMap | null;
     activeNotes: ActiveNote[];
     previewNotes: PreviewNote[];
     isLooping: boolean;
@@ -45,6 +48,8 @@ export interface SongSource {
     url?: string;
     abc?: string;
     type: 'midi' | 'abc' | 'musicxml';
+    /** Pre-computed fingerings, for sources already converted to MIDI (uploads) */
+    fingerings?: FingeringMap;
 }
 
 export interface PianoAudioSettings {
@@ -62,6 +67,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
         currentTick: 0,
         duration: 0,
         midi: null,
+        fingerings: null,
         activeNotes: [],
         previewNotes: [],
         isLooping: false,
@@ -189,6 +195,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
             // 2. Load MIDI or Parse ABC
             let arrayBuffer: ArrayBuffer | Uint8Array;
+            let fingerings: FingeringMap | null = source.fingerings ?? null;
 
             if (source.type === 'abc' && source.abc) {
                 const { abcToMidiBuffer } = await import('@/lib/abc-loader');
@@ -206,10 +213,13 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                     const parser = new MusicXMLParser();
                     const score = parser.parse(text);
                     const generator = new MIDIGenerator();
-                    const midiBase64 = generator.generate(score);
+                    const generated = generator.generate(score);
+                    fingerings = Object.keys(generated.fingerings).length > 0
+                        ? generated.fingerings
+                        : null;
 
                     // Convert base64 to Uint8Array
-                    const binaryString = atob(midiBase64);
+                    const binaryString = atob(generated.base64);
                     const bytes = new Uint8Array(binaryString.length);
                     for (let i = 0; i < binaryString.length; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
@@ -323,6 +333,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
                 isLoaded: true,
                 duration: midi.duration,
                 midi: midi,
+                fingerings,
                 currentTick: restoreTick,
                 currentTime: restoreTick > 0 ? restoreTick / ((midi.header.ppq || 480) * (initialBpm / 60)) : 0,
                 activeNotes: restoredNotes,

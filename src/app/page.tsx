@@ -12,6 +12,7 @@ import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
+import { FingeringMap } from "@/lib/fingering";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { ToastContainer, showToast } from "@/components/Toast";
@@ -32,6 +33,8 @@ interface Song {
   abc?: string;
   type: 'midi' | 'abc' | 'musicxml';
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  /** Uploads are converted to MIDI up front, so their fingerings ride along here */
+  fingerings?: FingeringMap;
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -260,6 +263,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const [splitStrategy, setSplitStrategy] = useState<'tracks' | 'point'>('tracks');
   const [splitPoint, setSplitPoint] = useState(60); // Middle C (C4)
   const [showGrid, setShowGrid] = useState(true);
+  const [showFingerings, setShowFingerings] = useState(true);
+  const hasFingerings = audio.fingerings !== null;
 
   // Auto-detect strategy on song load
   useEffect(() => {
@@ -301,8 +306,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     splitHands, setSplitHands,
     splitStrategy, setSplitStrategy,
     splitPoint, setSplitPoint,
-    showGrid, setShowGrid
-  }), [splitHands, splitStrategy, splitPoint, showGrid]);
+    showGrid, setShowGrid,
+    showFingerings, setShowFingerings, hasFingerings
+  }), [splitHands, splitStrategy, splitPoint, showGrid, showFingerings, hasFingerings]);
 
   const songSettingsMemo = useMemo(() => ({
     songs: allSongs,
@@ -373,6 +379,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   }}
                   lookAheadTicks={audio.lookAheadTicks}
                   showGrid={showGrid}
+                  fingerings={audio.fingerings}
+                  showFingerings={showFingerings}
                   containerHeight={waterfallHeight}
                 />
               </div>
@@ -534,7 +542,7 @@ export default function Home() {
             const parser = new MusicXMLParser();
             const score = parser.parse(text);
             const generator = new MIDIGenerator();
-            const midiBase64 = generator.generate(score);
+            const { base64: midiBase64 } = generator.generate(score);
             const binary = atob(midiBase64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -582,7 +590,7 @@ export default function Home() {
 
       // 2. Generate MIDI
       const generator = new MIDIGenerator();
-      const midiBase64 = generator.generate(score);
+      const { base64: midiBase64, fingerings } = generator.generate(score);
       const midiUrl = `data:audio/midi;base64,${midiBase64}`;
 
       const newSong: Song = {
@@ -590,7 +598,8 @@ export default function Home() {
         title: score.title || file.name.replace(/\.(xml|musicxml)$/i, ''),
         artist: 'Uploaded (MusicXML)',
         url: midiUrl,
-        type: 'midi'
+        type: 'midi',
+        ...(Object.keys(fingerings).length > 0 ? { fingerings } : {})
       };
 
       setAllSongs(prev => [...prev, newSong]);
