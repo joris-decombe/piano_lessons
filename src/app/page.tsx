@@ -501,7 +501,11 @@ export default function Home() {
         const defaultIds = new Set(defaultSongs.map(s => s.id));
         const newUploads = uploadedSongs.filter(u => !defaultIds.has(u.id));
         if (newUploads.length > 0) {
-          setAllSongs((prev: Song[]) => [...prev, ...newUploads]);
+          // Deferred like the other localStorage hydration below: a static
+          // export has no window at prerender, so this cannot move into a lazy
+          // useState initializer, and setting state synchronously in an effect
+          // cascades renders.
+          setTimeout(() => setAllSongs((prev: Song[]) => [...prev, ...newUploads]), 0);
         }
       }
     } catch (e: unknown) {
@@ -514,12 +518,14 @@ export default function Home() {
     const progress = getProgress();
     const songIds = Object.keys(progress);
     if (songIds.length > 0) {
-      setIsFirstTimer(false);
       // Find most recently played song
       const mostRecent = songIds.reduce((a, b) =>
         progress[a].lastPlayedAt > progress[b].lastPlayedAt ? a : b
       );
-      setLastPlayedSongId(mostRecent);
+      setTimeout(() => {
+        setIsFirstTimer(false);
+        setLastPlayedSongId(mostRecent);
+      }, 0);
     }
   }, []);
 
