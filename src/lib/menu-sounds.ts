@@ -10,7 +10,8 @@ function ensureContext(): AudioContext | null {
       return null;
     }
   }
-  if (ctx.state === 'suspended') {
+  // iOS uses a non-standard 'interrupted' state after a screen lock or call.
+  if (ctx.state !== 'running') {
     ctx.resume().catch(() => {});
   }
   return ctx.state === 'running' ? ctx : null;

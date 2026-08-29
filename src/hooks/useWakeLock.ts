@@ -1,45 +1,80 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 /**
- * Requests a screen Wake Lock while `active` is true to prevent the device
- * from dimming or sleeping during playback (iOS 16.4+, iPadOS 16.4+, Chrome).
- * Automatically re-acquires the lock when the page becomes visible again
- * (the browser releases wake locks on page hide).
+ * Holds a screen Wake Lock while `active` is true, so the device does not dim
+ * or sleep mid-practice (iOS/iPadOS 16.4+, Chrome).
+ *
+ * iOS makes this harder than it looks:
+ *  - The lock is dropped whenever the page is hidden — locking the screen once
+ *    is enough to lose it for good unless it is re-acquired on return.
+ *  - Safari also drops it on its own (entering fullscreen, a transient
+ *    backgrounding). The sentinel fires `release` when that happens, which is
+ *    the only reliable signal that the lock is gone.
+ *  - A request outside a user gesture can be refused outright, so a re-acquire
+ *    on `visibilitychange` alone is not dependable. Retrying on the next touch
+ *    costs nothing and is usually what gets the lock back.
  */
-export function useWakeLock(active: boolean) {
-    const wakeLockRef = useRef<{ release(): Promise<void> } | null>(null);
 
+interface WakeLockSentinel extends EventTarget {
+    released: boolean;
+    release(): Promise<void>;
+}
+
+export function useWakeLock(active: boolean) {
     useEffect(() => {
         if (!active || typeof navigator === 'undefined' || !('wakeLock' in navigator)) {
             return;
         }
 
-        let mounted = true;
+        let cancelled = false;
+        let sentinel: WakeLockSentinel | null = null;
+        // visibilitychange and pointerdown can land together; without this both
+        // would see a null sentinel and take out a lock, leaking one of them.
+        let acquiring = false;
 
-        const requestWakeLock = async () => {
+        const handleRelease = () => {
+            sentinel = null;
+        };
+
+        const acquire = async () => {
+            // Already held or in flight, or the page is hidden and the request
+            // would be refused anyway.
+            if (cancelled || sentinel || acquiring) return;
+            if (document.visibilityState !== 'visible') return;
+            acquiring = true;
             try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+                const lock: WakeLockSentinel = await (navigator as any).wakeLock.request('screen');
+                if (cancelled) {
+                    lock.release().catch(() => {});
+                    return;
+                }
+                sentinel = lock;
+                lock.addEventListener('release', handleRelease);
             } catch {
-                // Silently ignore — e.g. document not visible, or permission denied
+                // Refused (no user gesture, low power mode, unsupported). The
+                // listeners below will try again at the next opportunity.
+            } finally {
+                acquiring = false;
             }
         };
 
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible' && mounted) {
-                requestWakeLock();
-            }
-        };
+        void acquire();
 
-        requestWakeLock();
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        // Returning to the app, and any touch, are both chances to get it back.
+        document.addEventListener('visibilitychange', acquire);
+        window.addEventListener('pageshow', acquire);
+        window.addEventListener('pointerdown', acquire);
 
         return () => {
-            mounted = false;
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            if (wakeLockRef.current) {
-                wakeLockRef.current.release().catch(() => {});
-                wakeLockRef.current = null;
+            cancelled = true;
+            document.removeEventListener('visibilitychange', acquire);
+            window.removeEventListener('pageshow', acquire);
+            window.removeEventListener('pointerdown', acquire);
+            if (sentinel) {
+                sentinel.removeEventListener('release', handleRelease);
+                sentinel.release().catch(() => {});
+                sentinel = null;
             }
         };
     }, [active]);
