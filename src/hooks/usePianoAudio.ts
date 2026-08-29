@@ -3,6 +3,7 @@ import * as Tone from "tone";
 import { Midi } from "@tonejs/midi";
 import { validatePlaybackRate } from "@/lib/audio-logic";
 import { FingeringMap } from "@/lib/fingering";
+import { ensureAudioContext, isContextParked } from "@/lib/audio-context";
 
 export interface ActiveNote {
     note: string;
@@ -543,12 +544,9 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
     // Controls
     const togglePlay = async () => {
         try {
-            await Tone.start();
-
-            // Explicitly resume context if suspended (iOS fix)
-            if (Tone.context.state === 'suspended') {
-                await Tone.context.resume();
-            }
+            // Handles iOS's 'interrupted' state and never blocks on a resume()
+            // that Safari refuses to settle.
+            await ensureAudioContext();
 
             if (Tone.Transport.state === "started") {
                 Tone.Transport.pause();
@@ -630,6 +628,27 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
             loopEndTick: state.loopEndTick
         };
     }, [state.isLooping, state.loopStartTick, state.loopEndTick]);
+
+    // iOS parks the audio context when the screen locks or a call arrives, and
+    // freezes the transport with it. Coming back, the transport still claims to
+    // be "started" while nothing is audible — so the next tap on play would
+    // pause instead of playing. Settle both back to a paused, playable state.
+    useEffect(() => {
+        const handleReturn = () => {
+            if (document.visibilityState !== 'visible') return;
+            if (!isContextParked()) return;
+            Tone.Transport.pause();
+            setState((prev) => (prev.isPlaying ? { ...prev, isPlaying: false } : prev));
+            void ensureAudioContext();
+        };
+
+        document.addEventListener('visibilitychange', handleReturn);
+        window.addEventListener('pageshow', handleReturn);
+        return () => {
+            document.removeEventListener('visibilitychange', handleReturn);
+            window.removeEventListener('pageshow', handleReturn);
+        };
+    }, []);
 
     // Calculate current lookahead in ticks for UI visualization.
     // Uses base BPM directly to avoid floating-point drift from Tone.Time

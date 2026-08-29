@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- iOS: playback could not be resumed after a screen lock or incoming call. Safari parks the AudioContext in a non-standard `interrupted` state that the `suspended`-only check missed, and its `resume()` promise can hang forever, leaving the play button dead. The context is now revived through a timeout-guarded helper, and returning to the app re-syncs the transport with the UI
+- iOS: the screen slept during a lesson. The wake lock was only held while the transport was running, and was never recovered after the system took it away — it is now held for the whole lesson and re-acquired on return, on page show, and on the next touch
+
 ### Added
 - Finger numbers on falling notes, read from MusicXML `<fingering>` markings, with a "Finger Numbers" toggle that appears only for scores that carry them (currently Nocturne Op. 9 No. 2)
 - Grace note playback: ornaments now sound, taking their time from the note they lead into. They were silently dropped before, which cost Gnossienne No. 1 a third of its melody and Nocturne Op. 9 No. 2 two of its fingered notes

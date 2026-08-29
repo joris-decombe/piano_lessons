@@ -13,6 +13,7 @@ import { validateMusicXMLFile } from "@/lib/validation";
 import { calculateKeyboardScale } from "@/lib/audio-logic";
 import { getNoteColor } from "@/lib/note-colors";
 import { FingeringMap } from "@/lib/fingering";
+import { ensureAudioContext } from "@/lib/audio-context";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { ToastContainer, showToast } from "@/components/Toast";
@@ -207,8 +208,10 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
 
   const audio = usePianoAudio(song, { lookAheadTime, initialPlaybackRate: savedRate, initialTick: savedTick });
 
-  // Prevent screen sleep on iOS/iPad while a score is playing
-  useWakeLock(audio.isPlaying);
+  // Hold the screen awake for the whole lesson, not just while the transport is
+  // running — practice means pausing to work out a passage, and the screen going
+  // dark mid-bar is exactly as disruptive as it going dark mid-playback.
+  useWakeLock(true);
 
   // Persist playback rate on change
   useEffect(() => {
@@ -639,11 +642,7 @@ export default function Home() {
 
   const selectSong = useCallback(async (song: Song) => {
     try {
-      const Tone = await import('tone');
-      await Tone.start();
-      if (Tone.context.state === 'suspended') {
-        await Tone.context.resume();
-      }
+      await ensureAudioContext();
     } catch (e) {
       console.error('Failed to start audio context:', e);
     }
