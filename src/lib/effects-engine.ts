@@ -182,6 +182,14 @@ export class EffectsEngine {
     private noteActivationTimes = new Map<string, number>();
 
     private totalKeyboardWidth: number;
+    /**
+     * The slice of the stage actually on screen, in stage pixels. Ambient
+     * effects — god rays, drifting dust, the rails — are placed against this
+     * rather than the whole keyboard, so a narrowed stage on a phone doesn't
+     * put two of the three rays off screen.
+     */
+    viewLeft = 0;
+    viewWidth = 0;
 
     // Track bloom canvas dimensions so we only resize when needed
     private lastCanvasW = 0;
@@ -199,6 +207,7 @@ export class EffectsEngine {
 
         this.particles = new ParticleSystem();
         this.totalKeyboardWidth = getTotalKeyboardWidth();
+        this.viewWidth = this.totalKeyboardWidth;
     }
 
     // ------------------------------------------------------------------
@@ -500,9 +509,9 @@ export class EffectsEngine {
         // Render 3 distinct diagonal rays
         const rayWidth = GOD_RAY_WIDTH;
         const rays = [
-            { x: this.totalKeyboardWidth * 0.2, angle: Math.PI * 0.2 },
-            { x: this.totalKeyboardWidth * 0.5, angle: Math.PI * 0.15 },
-            { x: this.totalKeyboardWidth * 0.8, angle: Math.PI * 0.25 }
+            { x: this.viewLeft + this.viewWidth * 0.2, angle: Math.PI * 0.2 },
+            { x: this.viewLeft + this.viewWidth * 0.5, angle: Math.PI * 0.15 },
+            { x: this.viewLeft + this.viewWidth * 0.8, angle: Math.PI * 0.25 }
         ];
 
         rays.forEach((ray, i) => {
@@ -530,7 +539,7 @@ export class EffectsEngine {
         const behavior = THEME_PARTICLE_BEHAVIORS[this.theme] || THEME_PARTICLE_BEHAVIORS.cool;
         if (Math.random() > (1 - behavior.ambientRate)) {
             const atmosphereColor = THEME_ATMOSPHERE[this.theme] || THEME_ATMOSPHERE.cool;
-            const x = Math.random() * this.totalKeyboardWidth;
+            const x = this.viewLeft + Math.random() * this.viewWidth;
             const y = Math.random() * this.containerHeight;
             const z = Math.random() * 2; // Random depth tier
             const sizeMin = behavior.sizeRange[0];
@@ -801,11 +810,11 @@ export class EffectsEngine {
 
         // 1. Base Rail (Glassy etched groove following theme color)
         ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.15)`;
-        ctx.fillRect(0, Math.round(y), this.totalKeyboardWidth, railHeight);
+        ctx.fillRect(this.viewLeft, Math.round(y), this.viewWidth, railHeight);
 
         // Top highlight line (sharp luminous edge)
         ctx.fillStyle = `rgba(${parsedTheme.r}, ${parsedTheme.g}, ${parsedTheme.b}, 0.4)`;
-        ctx.fillRect(0, Math.round(y), this.totalKeyboardWidth, 1);
+        ctx.fillRect(this.viewLeft, Math.round(y), this.viewWidth, 1);
 
         // 2. Active Segments (Intense glow only under active notes)
         ctx.globalCompositeOperation = "lighter";

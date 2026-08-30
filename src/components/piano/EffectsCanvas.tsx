@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 import { EffectsEngine, type EffectsNote } from "@/lib/effects-engine";
 export type { EffectsNote } from "@/lib/effects-engine";
-import { getTotalKeyboardWidth } from "./geometry";
+import { getRangeMetrics, FULL_RANGE, KeyRange } from "./geometry";
 
 interface EffectsCanvasProps {
     activeNotes: EffectsNote[];
@@ -12,6 +12,8 @@ interface EffectsCanvasProps {
     /** Current theme id for theme-specific effects */
     theme?: string;
     isPlaying?: boolean;
+    /** Slice of the keyboard on screen; defaults to all 88 keys */
+    range?: KeyRange;
 }
 
 export function EffectsCanvas({
@@ -19,9 +21,17 @@ export function EffectsCanvas({
     containerHeight,
     theme = "cool",
     isPlaying = false,
+    range = FULL_RANGE,
 }: EffectsCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<EffectsEngine | null>(null);
+
+    // The engine draws in full-keyboard coordinates; sliding the canvas left is
+    // cheaper and safer than threading an offset through every draw call.
+    const metrics = getRangeMetrics(range);
+    const viewLeft = metrics.offset;
+    const viewWidth = metrics.width;
+    const canvasW = metrics.offset + metrics.width;
 
     // 1. Initialize engine on mount
     useEffect(() => {
@@ -37,6 +47,8 @@ export function EffectsCanvas({
         engine.theme = theme;
         engine.isPlaying = isPlaying;
         engine.activeNotes = activeNotes;
+        engine.viewLeft = viewLeft;
+        engine.viewWidth = viewWidth;
         engine.start();
 
         return () => {
@@ -55,7 +67,9 @@ export function EffectsCanvas({
         engine.theme = theme;
         engine.isPlaying = isPlaying;
         engine.activeNotes = activeNotes;
-    }, [containerHeight, theme, isPlaying, activeNotes]);
+        engine.viewLeft = viewLeft;
+        engine.viewWidth = viewWidth;
+    }, [containerHeight, theme, isPlaying, activeNotes, viewLeft, viewWidth]);
 
     // 3. Trigger note-on effects
     useEffect(() => {
@@ -72,7 +86,6 @@ export function EffectsCanvas({
         }
     }, [containerHeight]);
 
-    const canvasW = getTotalKeyboardWidth();
     const canvasH = Math.round(containerHeight);
 
     return (
@@ -80,8 +93,9 @@ export function EffectsCanvas({
             ref={canvasRef}
             width={canvasW}
             height={canvasH}
-            className="absolute top-0 left-0 pointer-events-none"
+            className="absolute top-0 pointer-events-none"
             style={{
+                left: `${-metrics.offset}px`,
                 width: `${canvasW}px`,
                 height: `${canvasH}px`,
                 imageRendering: "pixelated",
