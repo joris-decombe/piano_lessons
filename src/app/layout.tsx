@@ -94,6 +94,7 @@ const jsonLd = {
     "ABC notation support",
     "MusicXML support",
     "Falling-note waterfall visualization",
+    "Scrolling sheet music view synchronized with playback",
     "Speed control",
     "Loop sections",
     "Left/right hand color coding",

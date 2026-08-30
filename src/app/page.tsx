@@ -978,7 +978,7 @@ export default function Home() {
               className="z-10 mt-8 text-center"
             >
               <p className="text-[11px] pixel-text-muted">
-                <span className="hidden md:inline">Keyboard: <kbd className="pixel-kbd">Space</kbd> play/pause &middot; <kbd className="pixel-kbd">&larr;</kbd><kbd className="pixel-kbd">&rarr;</kbd> seek &middot; <kbd className="pixel-kbd">Esc</kbd> back</span>
+                <span className="hidden md:inline">Keyboard: <kbd className="pixel-kbd">Space</kbd> play/pause &middot; <kbd className="pixel-kbd">&larr;</kbd><kbd className="pixel-kbd">&rarr;</kbd> seek &middot; <kbd className="pixel-kbd">V</kbd> sheet music &middot; <kbd className="pixel-kbd">Esc</kbd> back</span>
               </p>
             </motion.div>
 
