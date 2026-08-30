@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Stand-in for Tone's context, so we can drive it through the states iOS uses.
 const tone = vi.hoisted(() => ({
     state: 'running' as string,
-    start: vi.fn<[], Promise<void>>(() => Promise.resolve()),
+    start: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }));
 
 vi.mock('tone', () => ({

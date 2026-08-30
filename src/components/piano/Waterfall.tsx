@@ -4,11 +4,9 @@ import { useMemo } from "react";
 import { Midi } from "@tonejs/midi";
 import { twMerge } from "tailwind-merge";
 import { getKeyPosition, getTotalKeyboardWidth } from "./geometry";
-import { getColorByTrack } from "@/lib/note-colors";
+import { getColorByTrack, getHandIndexByTrack } from "@/lib/note-colors";
 import { FingeringMap, fingeringKey } from "@/lib/fingering";
-
-/** Below this pixel height a note block is too short to hold a legible digit */
-const MIN_HEIGHT_FOR_FINGER = 16;
+import { calculateVisibleNotes, proximityToAttr } from "@/lib/waterfall-logic";
 
 interface WaterfallProps {
     midi: Midi | null;
@@ -45,15 +43,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
             unified: "var(--color-note-unified)" 
         };
 
-        // Build a hand index per MIDI track: tracks from the same MusicXML staff
-        // share the same hand color, even when split into multiple MIDI layers.
-        // Track names like "P1-staff1-0", "P1-staff2" encode the staff number.
-        // For regular MIDI files (no staff info), fall back to track index.
-        const handIndexByTrack: number[] = midi.tracks.map((track, trackIndex) => {
-            const staffMatch = track.name.match(/-staff(\d+)/);
-            if (staffMatch) return parseInt(staffMatch[1]) - 1; // staff1→0, staff2→1
-            return trackIndex;
-        });
+        const handIndexByTrack = getHandIndexByTrack(midi.tracks);
 
         midi.tracks.forEach((track, trackIndex) => {
             if (track.notes.length === 0 || track.instrument.percussion) return;
@@ -80,61 +70,13 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
         const PPQ = midi.header.ppq;
         // Use lookAheadTicks if provided, otherwise default to 6 beats
         const windowSizeTicks = (lookAheadTicks && lookAheadTicks > 0) ? lookAheadTicks : 6 * PPQ;
-        const endTime = currentTick + windowSizeTicks;
 
-        let startIdx = 0;
-        let leftIdx = 0;
-        let rightIdx = allNotes.length - 1;
-
-        while (leftIdx <= rightIdx) {
-            const mid = Math.floor((leftIdx + rightIdx) / 2);
-            if (allNotes[mid].ticks < currentTick) {
-                leftIdx = mid + 1;
-            } else {
-                startIdx = mid;
-                rightIdx = mid - 1;
-            }
-        }
-
-        let renderStartIdx = startIdx;
-        while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - maxDuration) {
-            renderStartIdx--;
-        }
-
-        const active: { id: string; left: number; width: number; bottom: number; height: number; isBlack: boolean; color: string; proximity: number; isActive: boolean; finger?: number; }[] = [];
-
-        for (let i = renderStartIdx; i < allNotes.length; i++) {
-            const note = allNotes[i];
-            if (note.ticks > endTime) break;
-
-            if (note.ticks + note.durationTicks > currentTick) {
-                // Calculate pixel positions (Snapped to grid)
-                const bottomPx = Math.round(((note.ticks - currentTick) / windowSizeTicks) * containerHeight);
-                const heightPx = Math.round((note.durationTicks / windowSizeTicks) * containerHeight);
-
-                const { left, width, isBlack } = getKeyPosition(note.midi);
-
-                // Proximity: 0 = far from keyboard, 1 = at keyboard line
-                // Based on how close the note's bottom edge is to y=0 (keyboard line)
-                const proximity = containerHeight > 0
-                    ? Math.max(0, Math.min(1, 1 - bottomPx / containerHeight))
-                    : 0;
-
-                active.push({
-                    id: `${note.name}-${note.ticks}-${i}`,
-                    left,
-                    width,
-                    bottom: bottomPx,
-                    height: heightPx,
-                    isBlack,
-                    color: note.color,
-                    proximity,
-                    isActive: bottomPx <= 0,
-                    finger: heightPx >= MIN_HEIGHT_FOR_FINGER ? note.finger : undefined,
-                });
-            }
-        }
-        return active;
+        return calculateVisibleNotes(allNotes, {
+            currentTick,
+            windowSizeTicks,
+            maxDuration,
+            containerHeight,
+        });
     }, [midi, currentTick, allNotes, maxDuration, lookAheadTicks, containerHeight]);
 
     return (
@@ -207,7 +149,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                             "waterfall-note absolute",
                             note.isBlack ? "z-20 waterfall-note--black" : "z-15",
                         )}
-                        data-proximity={note.proximity > 0.85 ? "near" : note.proximity > 0.6 ? "mid" : undefined}
+                        data-proximity={proximityToAttr(note.proximity)}
                         data-active={note.isActive ? "" : undefined}
                         style={{
                             left: `${note.left}px`,

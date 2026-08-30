@@ -4,6 +4,7 @@ import { Midi } from "@tonejs/midi";
 import { validatePlaybackRate } from "@/lib/audio-logic";
 import { FingeringMap } from "@/lib/fingering";
 import { ensureAudioContext, isContextParked } from "@/lib/audio-context";
+import { getHandIndexByTrack } from "@/lib/note-colors";
 
 export interface ActiveNote {
     note: string;
@@ -293,10 +294,7 @@ export function usePianoAudio(source: SongSource, settings: PianoAudioSettings =
 
             // 4. Pre-compute Note Timeline for efficient active note lookup
             // Map MIDI track indices to hand indices (staff-aware for MusicXML)
-            const handIndex = midi.tracks.map((t, i) => {
-                const m = t.name.match(/-staff(\d+)/);
-                return m ? parseInt(m[1]) - 1 : i;
-            });
+            const handIndex = getHandIndexByTrack(midi.tracks);
             const timeline = new Map<number, { note: string, type: 'start' | 'stop', track: number, velocity: number }[]>();
             midi.tracks.forEach((track, trackIndex) => {
                 const hand = handIndex[trackIndex];
