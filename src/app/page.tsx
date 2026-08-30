@@ -526,6 +526,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         {!audio.isLoaded && (
           <motion.div
             key="piano-loading"
+            data-testid="lesson-loading"
             className="absolute inset-0 z-[80] flex flex-col items-center justify-center bg-[var(--color-void)]"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
