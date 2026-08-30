@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Internal
+- Notation is derived from the loaded MIDI rather than the source file, so the sheet view works the same for MusicXML, MIDI and ABC. `src/lib/score/notation.ts` recovers what MIDI throws away (note values, spelling, rests, beam groups); `src/lib/score/pixel-score-renderer.ts` draws it imperatively, like `EffectsEngine`
+- MusicXML `<key><fifths>` is now parsed, and the generated MIDI carries both the key and the time signature, so the sheet view can print the right signature instead of guessing it from the notes
 - Waterfall render pass extracted to `src/lib/waterfall-logic.ts`; its unit tests and benchmark previously reimplemented the algorithm inside the test files and could not fail when the component changed
 - Staff-to-hand mapping consolidated into `note-colors.ts` (it was duplicated in `Waterfall.tsx` and `usePianoAudio.ts`) and covered by tests, including the layer-split case where track index is not the hand
 - Added end-to-end colour regressions for both Satie scores
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - iOS: the screen slept during a lesson. The wake lock was only held while the transport was running, and was never recovered after the system took it away — it is now held for the whole lesson and re-acquired on return, on page show, and on the next touch
 
 ### Added
+- Pixel-art sheet music view: a grand staff drawn in the app's own pixel style — clefs, key and time signature, bar lines and numbers, note heads, stems, sloped beams, flags, dots, ties, accidentals, ledger lines and rests — scrolling in sync with playback behind a fixed playhead, with hands coloured as in the waterfall, sounding notes lit, and finger numbers where the score has them. Toggle it with the staff button in the controls or the `V` key; the choice is remembered. The score's horizontal zoom follows the existing note-preview setting, so both views read at the same speed
 - Finger numbers on falling notes, read from MusicXML `<fingering>` markings, with a "Finger Numbers" toggle that appears only for scores that carry them (currently Nocturne Op. 9 No. 2)
 - Grace note playback: ornaments now sound, taking their time from the note they lead into. They were silently dropped before, which cost Gnossienne No. 1 a third of its melody and Nocturne Op. 9 No. 2 two of its fingered notes
 

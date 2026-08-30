@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePianoAudio } from "@/hooks/usePianoAudio";
 import { Keyboard } from "@/components/piano/Keyboard";
 import { Waterfall } from "@/components/piano/Waterfall";
+import { PixelScore } from "@/components/piano/PixelScore";
 import { Controls } from "@/components/piano/Controls";
 import { useTheme, THEMES, Theme } from "@/hooks/useTheme";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
@@ -83,6 +84,23 @@ function getSavedPlaybackRate(): number {
 function savePlaybackRate(rate: number) {
   try {
     localStorage.setItem('piano_lessons_playback_rate', String(rate));
+  } catch { /* ignore */ }
+}
+
+// View mode persistence (waterfall vs. pixel sheet music)
+export type ViewMode = 'waterfall' | 'score';
+
+function getSavedViewMode(): ViewMode {
+  try {
+    const raw = localStorage.getItem('piano_lessons_view_mode');
+    if (raw === 'score' || raw === 'waterfall') return raw;
+  } catch { /* ignore */ }
+  return 'waterfall';
+}
+
+function saveViewMode(mode: ViewMode) {
+  try {
+    localStorage.setItem('piano_lessons_view_mode', mode);
   } catch { /* ignore */ }
 }
 
@@ -252,11 +270,21 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
     // If in fullscreen, the browser exits it via Escape natively — no action needed here.
   }, [stableOnExit]);
 
-  // Keyboard shortcuts: Space=play/pause, arrows=seek, Escape=back
+  const [viewMode, setViewMode] = useState<ViewMode>(() => getSavedViewMode());
+  const toggleViewMode = useCallback(() => {
+    setViewMode(prev => {
+      const next = prev === 'waterfall' ? 'score' : 'waterfall';
+      saveViewMode(next);
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcuts: Space=play/pause, arrows=seek, Escape=back, V=view
   useKeyboardShortcuts({
     onTogglePlay: audio.togglePlay,
     onSeek: audio.seek,
     onExit: handleEscapeExit,
+    onToggleView: toggleViewMode,
     currentTime: audio.currentTime,
     duration: audio.duration,
     isPlaying: audio.isPlaying,
@@ -303,6 +331,13 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
       startTick: ck.startTick,
     }));
   }, [coloredKeys]);
+
+  const scoreColors = useMemo(() => ({
+    split: splitHands,
+    left: "var(--color-note-left)",
+    right: "var(--color-note-right)",
+    unified: "var(--color-note-unified)",
+  }), [splitHands]);
 
   // Memoize settings objects to prevent Controls re-renders
   const visualSettings = useMemo(() => ({
@@ -368,42 +403,62 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                   '--playback-rate': audio.playbackRate
                 } as React.CSSProperties}
               >
-                <div className="waterfall-atmosphere" aria-hidden="true" />
-                <Waterfall
-                  midi={audio.midi}
-                  currentTick={audio.currentTick}
-                  isPlaying={audio.isPlaying}
-                  playbackRate={audio.playbackRate}
-                  activeColors={{
-                    split: splitHands,
-                    left: "var(--color-note-left)",
-                    right: "var(--color-note-right)",
-                    unified: "var(--color-note-unified)"
-                  }}
-                  lookAheadTicks={audio.lookAheadTicks}
-                  showGrid={showGrid}
-                  fingerings={audio.fingerings}
-                  showFingerings={showFingerings}
-                  containerHeight={waterfallHeight}
-                />
+                {viewMode === 'waterfall' ? (
+                  <>
+                    <div className="waterfall-atmosphere" aria-hidden="true" />
+                    <Waterfall
+                      midi={audio.midi}
+                      currentTick={audio.currentTick}
+                      isPlaying={audio.isPlaying}
+                      playbackRate={audio.playbackRate}
+                      activeColors={{
+                        split: splitHands,
+                        left: "var(--color-note-left)",
+                        right: "var(--color-note-right)",
+                        unified: "var(--color-note-unified)"
+                      }}
+                      lookAheadTicks={audio.lookAheadTicks}
+                      showGrid={showGrid}
+                      fingerings={audio.fingerings}
+                      showFingerings={showFingerings}
+                      containerHeight={waterfallHeight}
+                    />
+                  </>
+                ) : (
+                  <PixelScore
+                    midi={audio.midi}
+                    currentTick={audio.currentTick}
+                    containerWidth={1248}
+                    containerHeight={waterfallHeight}
+                    colors={scoreColors}
+                    lookAheadTicks={audio.lookAheadTicks}
+                    splitStrategy={splitStrategy}
+                    splitPoint={splitPoint}
+                    fingerings={audio.fingerings}
+                    showFingerings={showFingerings}
+                    theme={theme}
+                  />
+                )}
               </div>
 
               {/* 1b. Effects Canvas Overlay - Particles, glow, trails */}
               {/* Shares waterfall bounds so it never covers the keyboard */}
-              <div
-                className="absolute top-0 z-[42] pointer-events-none"
-                style={{
-                  width: '1248px',
-                  bottom: 'var(--spacing-key-h)'
-                }}
-              >
-                <EffectsCanvas
-                  activeNotes={effectsNotes}
-                  containerHeight={waterfallHeight}
-                  theme={theme}
-                  isPlaying={audio.isPlaying}
-                />
-              </div>
+              {viewMode === 'waterfall' && (
+                <div
+                  className="absolute top-0 z-[42] pointer-events-none"
+                  style={{
+                    width: '1248px',
+                    bottom: 'var(--spacing-key-h)'
+                  }}
+                >
+                  <EffectsCanvas
+                    activeNotes={effectsNotes}
+                    containerHeight={waterfallHeight}
+                    theme={theme}
+                    isPlaying={audio.isPlaying}
+                  />
+                </div>
+              )}
 
               {/* 2. Layout Spacer (Pushes Keyboard to bottom) */}
               <div className="flex-1" />
@@ -433,6 +488,8 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           onSetLookAheadTime={(time) => setLookAheadOverride(time != null ? { songId: song.id, value: time } : null)}
           visualSettings={visualSettings}
           songSettings={songSettingsMemo}
+          viewMode={viewMode}
+          onToggleViewMode={toggleViewMode}
           isLooping={audio.isLooping}
           loopStart={audio.loopStart}
           loopEnd={audio.loopEnd}

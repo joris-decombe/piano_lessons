@@ -56,6 +56,9 @@ interface ControlsProps {
     onToggleLoop: () => void;
     onSetLoop: (start: number, end: number) => void;
     onExit?: () => void;
+    /** Which visualisation the lesson is showing */
+    viewMode?: 'waterfall' | 'score';
+    onToggleViewMode?: () => void;
 }
 
 const SPEED_PRESETS = [1.0, 0.75, 0.5, 0.25];
@@ -119,6 +122,8 @@ export const Controls = memo(function Controls({
     loopStart,
     loopEnd,
     onToggleLoop,
+    viewMode = 'waterfall',
+    onToggleViewMode,
     onSetLoop,
     onExit
 }: ControlsProps) {
@@ -277,6 +282,36 @@ export const Controls = memo(function Controls({
                     <span className="text-[10px] font-mono text-[var(--color-muted)] w-8 text-right" data-testid="duration">
                         {formatTime(duration)}
                     </span>
+                    {onToggleViewMode && (
+                        <button
+                            onClick={onToggleViewMode}
+                            data-testid="view-mode-button"
+                            aria-label={viewMode === 'score' ? "Show falling notes" : "Show sheet music"}
+                            aria-pressed={viewMode === 'score'}
+                            title={viewMode === 'score' ? "Falling notes (V)" : "Sheet music (V)"}
+                            className={`flex items-center justify-center ${viewMode === 'score' ? 'pixel-btn-primary' : 'pixel-btn'} ${isTouch ? 'w-10 h-10' : 'w-8 h-8'}`}
+                        >
+                            {viewMode === 'score' ? (
+                                /* Falling notes: three descending bars */
+                                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor" shapeRendering="crispEdges">
+                                    <rect x="2" y="1" width="3" height="9" />
+                                    <rect x="6.5" y="4" width="3" height="6" />
+                                    <rect x="11" y="2" width="3" height="8" />
+                                    <rect x="1" y="12" width="14" height="2" />
+                                </svg>
+                            ) : (
+                                /* Sheet music: a staff with a note on it */
+                                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor" shapeRendering="crispEdges">
+                                    <rect x="1" y="3" width="14" height="1" />
+                                    <rect x="1" y="6" width="14" height="1" />
+                                    <rect x="1" y="9" width="14" height="1" />
+                                    <rect x="1" y="12" width="14" height="1" />
+                                    <rect x="4" y="7" width="4" height="3" />
+                                    <rect x="8" y="2" width="1" height="6" />
+                                </svg>
+                            )}
+                        </button>
+                    )}
                     {isSupported && (
                         <button
                             onClick={toggleFullscreen}

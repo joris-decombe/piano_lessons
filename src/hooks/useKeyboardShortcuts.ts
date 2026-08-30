@@ -6,6 +6,8 @@ interface KeyboardShortcutOptions {
   onTogglePlay: () => void;
   onSeek: (time: number) => void;
   onExit: () => void;
+  /** Optional: swap between the waterfall and the sheet-music view */
+  onToggleView?: () => void;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
@@ -17,6 +19,7 @@ export function useKeyboardShortcuts({
   onTogglePlay,
   onSeek,
   onExit,
+  onToggleView,
   currentTime,
   duration,
 }: KeyboardShortcutOptions) {
@@ -48,6 +51,12 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           onExit();
           break;
+        case "KeyV":
+          if (onToggleView) {
+            e.preventDefault();
+            onToggleView();
+          }
+          break;
         case "Home":
           e.preventDefault();
           onSeek(0);
@@ -61,5 +70,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onTogglePlay, onSeek, onExit, currentTime, duration]);
+  }, [onTogglePlay, onSeek, onExit, onToggleView, currentTime, duration]);
 }
