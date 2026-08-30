@@ -68,6 +68,13 @@ export class MIDIGenerator {
                 const track = new MidiWriter.Track();
                 const trackName = layers.length > 1 ? `${parsedTrack.id}-${i}` : parsedTrack.id;
                 track.setTempo(score.tempo);
+                // Metre and key go on the first track only. @tonejs/midi
+                // collects these meta events from every track, so repeating
+                // them would report one signature change per layer.
+                if (allTracks.length === 0) {
+                    track.setTimeSignature(score.timeSignature[0], score.timeSignature[1], 24, 8);
+                    track.setKeySignature(score.keyFifths, 0);
+                }
                 track.addTrackName(trackName);
 
                 let cursor = 0;

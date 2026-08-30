@@ -125,6 +125,8 @@ export class MusicXMLParser {
         // Defaults
         let tempo = 120;
         let timeSignature: [number, number] = [4, 4];
+        let keyFifths = 0;
+        let sawKey = false;
 
         // Find all <part> elements
         const partElements = getAllChildren(scoreChildren, 'part');
@@ -166,6 +168,19 @@ export class MusicXMLParser {
                             const beatType = getVal(timeChildren, 'beat-type');
                             if (beats && beatType) {
                                 timeSignature = [parseInt(beats), parseInt(beatType)];
+                            }
+                        }
+                        // The first <key> wins: later ones are the same
+                        // signature restated for the other staff.
+                        if (!sawKey) {
+                            const keyChildren = getChild(attrChildren, 'key');
+                            const fifthsVal = keyChildren && getVal(keyChildren, 'fifths');
+                            if (fifthsVal) {
+                                const parsed = parseInt(fifthsVal, 10);
+                                if (Number.isFinite(parsed) && Math.abs(parsed) <= 7) {
+                                    keyFifths = parsed;
+                                    sawKey = true;
+                                }
                             }
                         }
                         const stavesVal = getVal(attrChildren, 'staves');
@@ -331,6 +346,7 @@ export class MusicXMLParser {
             title,
             tempo,
             timeSignature,
+            keyFifths,
             tracks,
         };
     }

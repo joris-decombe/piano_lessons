@@ -21,5 +21,7 @@ export interface ParsedScore {
     title: string;
     tempo: number; // BPM
     timeSignature: [number, number]; // [numerator, denominator]
+    /** Key signature in fifths: negative = flats, positive = sharps */
+    keyFifths: number;
     tracks: ParsedTrack[];
 }
