@@ -147,6 +147,26 @@ async function takeScreenshots() {
         path: path.join(screenshotDir, `player-active${config.suffix}.png`)
       });
 
+      // 4. Sheet music view — shot on the Nocturne rather than the Gnossienne,
+      //    because it is the score that carries finger numbers, and 12/8 in
+      //    E flat shows the key and time signature doing something
+      console.log(`  - Sheet music (${config.name})...`);
+      await page.getByLabel('Return to Song List').click();
+      const nocturne = page.getByTestId('song-nocturne_op9_no2');
+      await nocturne.scrollIntoViewIfNeeded();
+      await nocturne.click();
+      await page.waitForSelector('footer');
+      await page.getByTestId('view-mode-button').click();
+      await page.waitForSelector('[data-testid="pixel-score"]');
+      await page.getByTestId('play-button').click();
+      // Long enough for the playhead to reach music on both staves
+      await page.waitForTimeout(9000);
+      await hideDevTools(page);
+
+      await page.screenshot({
+        path: path.join(screenshotDir, `player-score${config.suffix}.png`)
+      });
+
       await context.close();
     }
 

@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Internal
+- `AGENTS.md` rewritten. It had gone stale by duplicating CLAUDE.md — it still described the app as a single-song Gnossienne trainer with Tone.js synthesis and no test suite — so it is now a short orientation that defers to CLAUDE.md for detail, keeping only the admin-merge escape hatch that lives nowhere else
+- Screenshots regenerated, and `npm run screenshots` now also captures the sheet music view (on the Nocturne, the score that carries finger numbers)
 - Notation is derived from the loaded MIDI rather than the source file, so the sheet view works the same for MusicXML, MIDI and ABC. `src/lib/score/notation.ts` recovers what MIDI throws away (note values, spelling, rests, beam groups); `src/lib/score/pixel-score-renderer.ts` draws it imperatively, like `EffectsEngine`
 - MusicXML `<key><fifths>` is now parsed, and the generated MIDI carries both the key and the time signature, so the sheet view can print the right signature instead of guessing it from the notes
 - Waterfall render pass extracted to `src/lib/waterfall-logic.ts`; its unit tests and benchmark previously reimplemented the algorithm inside the test files and could not fail when the component changed

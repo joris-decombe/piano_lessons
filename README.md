@@ -53,6 +53,11 @@ Notes fall in sync with the audio. Active keys light up on the virtual keyboard.
 
 ![Active Lesson](.github/screenshots/player-active.png)
 
+### Sheet Music View
+The same piece as a scrolling grand staff, drawn in the same pixel style. Hands keep their colours, the notes being played light up as they pass the playhead, and finger numbers appear on the scores that carry them. Press `V` or the staff button to switch.
+
+![Sheet Music View](.github/screenshots/player-score.png)
+
 ## Getting Started
 
 ### Prerequisites

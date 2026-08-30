@@ -88,7 +88,7 @@ Local `useState` for UI state, refs for mutable Tone.js references, `useSyncExte
 - **Git workflow**: Never amend commits — always fix forward. This is a multi-PR plan; preserve history across PRs.
 - **Path alias**: `@/*` maps to `./src/*`
 - **Playwright baseURL**: `http://localhost:3000/piano_lessons`
-- **`AGENTS.md` is a separate doc for other AI agents and is stale** (it describes the app as a single-song Gnossienne trainer). Treat this file as authoritative; the one thing worth carrying over is the admin-merge escape hatch, already noted under Conventions.
+- **`AGENTS.md` is the short orientation for other AI agents and defers to this file.** It went stale once by duplicating what this file says (it described the app as a single-song Gnossienne trainer long after the library grew), so it is now deliberately thin: an overview, the commands, a map of the directories, and the admin-merge escape hatch, which is the one thing that lives only there. Keep it that way — detail belongs here, not in both.
 
 ## Testing
 
