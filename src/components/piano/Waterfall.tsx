@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Midi } from "@tonejs/midi";
 import { twMerge } from "tailwind-merge";
-import { getKeyPosition, getTotalKeyboardWidth } from "./geometry";
+import { getKeyPosition, getRangeMetrics, FULL_RANGE, KeyRange } from "./geometry";
 import { getColorByTrack, getHandIndexByTrack } from "@/lib/note-colors";
 import { FingeringMap, fingeringKey } from "@/lib/fingering";
 import { calculateVisibleNotes, proximityToAttr } from "@/lib/waterfall-logic";
@@ -24,11 +24,16 @@ interface WaterfallProps {
     fingerings?: FingeringMap | null;
     showFingerings?: boolean;
     containerHeight: number; // New: Pixel height of the container
+    /** Slice of the keyboard on screen; defaults to all 88 keys */
+    range?: KeyRange;
 }
 
-export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, lookAheadTicks = 0, showGrid = true, fingerings = null, showFingerings = false, containerHeight }: WaterfallProps) {
+export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, lookAheadTicks = 0, showGrid = true, fingerings = null, showFingerings = false, containerHeight, range = FULL_RANGE }: WaterfallProps) {
 
-    const totalWidth = getTotalKeyboardWidth();
+    // Note positions stay in full-keyboard coordinates; the layer is simply
+    // shifted so the slice on screen lines up with the keys below it.
+    const metrics = getRangeMetrics(range);
+    const totalWidth = metrics.width;
 
     const { allNotes, maxDuration } = useMemo(() => {
         if (!midi) return { allNotes: [], maxDuration: 0 };
@@ -81,8 +86,8 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
 
     return (
         <div
-            className="absolute inset-0 overflow-hidden pointer-events-none bg-background transition-colors duration-500"
-            style={{ width: `${totalWidth}px` }}
+            className="absolute top-0 bottom-0 overflow-hidden pointer-events-none bg-background transition-colors duration-500"
+            style={{ width: `${totalWidth}px`, left: 0 }}
             data-playing={isPlaying}
         >
             {/* 1. LAYER 5: SKY/DEEP ATMOSPHERE (Static) */}
@@ -125,13 +130,14 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
             {showGrid && Array.from({ length: 9 }).map((_, i) => {
                 const midiC = 24 + (i * 12);
                 if (midiC > 108) return null;
+                if (midiC < metrics.low || midiC > metrics.high) return null;
                 const { left } = getKeyPosition(midiC);
                 return (
                     <div
                         key={`guide-c-${i}`}
                         className="absolute top-0 bottom-0 w-[1px] pointer-events-none z-5"
-                        style={{ 
-                            left: `${left}px`,
+                        style={{
+                            left: `${left - metrics.offset}px`,
                             backgroundImage: 'linear-gradient(to bottom, var(--color-grid-line, var(--color-border)) 50%, transparent 50%)',
                             backgroundSize: '1px 8px',
                             opacity: 0.25
@@ -152,7 +158,7 @@ export function Waterfall({ midi, currentTick, isPlaying = false, activeColors, 
                         data-proximity={proximityToAttr(note.proximity)}
                         data-active={note.isActive ? "" : undefined}
                         style={{
-                            left: `${note.left}px`,
+                            left: `${note.left - metrics.offset}px`,
                             width: `${note.width}px`,
                             bottom: `${note.bottom}px`,
                             height: `${note.height}px`,

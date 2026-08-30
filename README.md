@@ -17,7 +17,7 @@ A modern, interactive piano learning application built with Next.js and Web Audi
 - **16-bit Pixel Art Visuals:** Authentic "Satie-16" palette, strict pixel grid, and "Tetris" block styling.
 - **Octave Grid Lines:** Vertical guidelines at 'C' notes for better keyboard orientation.
 - **Loop & Repeat:** Practice difficult sections with integrated loop controls and visual timeline.
-- **Mobile Optimized:** Fullscreen mode (Android/iPad), PWA installation hints (iOS), and responsive landscape layout.
+- **Mobile Optimized:** Runs on a phone in either orientation — narrow screens show the slice of keyboard the piece actually plays, so the keys stay readable. Fullscreen mode (Android/iPad) and PWA installation hints (iOS).
 - **File Support:** Practice with built-in songs or upload your own MIDI/MusicXML files.
 - **Branding:** Completely custom PWA icons and professional user interface.
 - **Modern Tech Stack:** Built with Next.js 16, React 19, and Tone.js.

@@ -181,7 +181,7 @@ export const Controls = memo(function Controls({
         <div className="relative w-full">
 
             {/* Pixel Art Control Bar */}
-            <div className={`relative w-full pixel-panel px-4 py-2 flex items-center justify-between gap-4 ${isTouch ? 'h-[72px] md:h-[80px]' : 'h-[56px] md:h-[64px]'}`}>
+            <div className={`relative w-full pixel-panel px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-4 ${isTouch ? 'h-[72px] md:h-[80px]' : 'h-[56px] md:h-[64px]'}`}>
 
                 {/* Timeline Area (Elevated when looping to avoid overlap) */}
                 <div className={`absolute top-0 left-4 right-4 w-auto transition-none z-10 ${isLooping ? (isTouch ? '-mt-[32px]' : '-mt-[26px]') : '-mt-[10px]'}`}>
@@ -213,11 +213,11 @@ export const Controls = memo(function Controls({
                     {songSettings && (
                         <ScrollingText
                             text={`${songSettings.currentSong.title} / ${songSettings.currentSong.artist}`}
-                            className="flex-1 min-w-0 text-xs font-semibold text-[var(--color-text)]"
+                            className="hidden sm:flex flex-1 min-w-0 text-xs font-semibold text-[var(--color-text)]"
                             testId="current-song-title"
                         />
                     )}
-                    <span className="flex-shrink-0 text-[10px] font-mono text-[var(--color-muted)] w-8" data-testid="current-time">
+                    <span className="hidden sm:inline flex-shrink-0 text-[10px] font-mono text-[var(--color-muted)] w-8" data-testid="current-time">
                         {formatTime(currentTime)}
                     </span>
                 </div>
@@ -279,7 +279,7 @@ export const Controls = memo(function Controls({
 
                 {/* Right: Duration + Fullscreen + Settings — fixed width */}
                 <div className="flex-shrink-0 flex items-center gap-1.5">
-                    <span className="text-[10px] font-mono text-[var(--color-muted)] w-8 text-right" data-testid="duration">
+                    <span className="hidden sm:inline text-[10px] font-mono text-[var(--color-muted)] w-8 text-right" data-testid="duration">
                         {formatTime(duration)}
                     </span>
                     {onToggleViewMode && (

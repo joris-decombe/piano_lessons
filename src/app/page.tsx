@@ -11,7 +11,7 @@ import { useTheme, THEMES, Theme } from "@/hooks/useTheme";
 import { MusicXMLParser } from "@/lib/musicxml/parser";
 import { MIDIGenerator } from "@/lib/musicxml/midi-generator";
 import { validateMusicXMLFile } from "@/lib/validation";
-import { calculateKeyboardScale } from "@/lib/audio-logic";
+import { KEYBOARD_HEIGHT_PX, chooseKeyRange, getSongRange, getStageLayout } from "@/lib/keyboard-range";
 import { getNoteColor } from "@/lib/note-colors";
 import { FingeringMap } from "@/lib/fingering";
 import { ensureAudioContext } from "@/lib/audio-context";
@@ -180,7 +180,7 @@ interface PianoLessonProps {
 function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps) {
   const [waterfallHeight, setWaterfallHeight] = useState(0);
   const waterfallContainerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [containerPxWidth, setContainerPxWidth] = useState(0);
   const [containerPxHeight, setContainerPxHeight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
@@ -191,11 +191,11 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const savedTick = useMemo(() => getSavedSongPosition(song.id), [song.id]);
   const currentTickRef = useRef(0);
 
-  // Track unified container size: width → scale, height → pixel-based compensation (avoids % quirks on iOS Safari)
+  // Track unified container size: width → stage scale, height → pixel-based compensation (avoids % quirks on iOS Safari)
   useEffect(() => {
     if (!containerRef.current) return;
     const obs = new ResizeObserver((entries) => {
-      setScale(calculateKeyboardScale(entries[0].contentRect.width));
+      setContainerPxWidth(entries[0].contentRect.width);
       setContainerPxHeight(entries[0].contentRect.height);
     });
     obs.observe(containerRef.current);
@@ -225,6 +225,22 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const lookAheadTime = effectiveLookAheadOverride ?? autoLookAheadTime;
 
   const audio = usePianoAudio(song, { lookAheadTime, initialPlaybackRate: savedRate, initialTick: savedTick });
+
+  // On a narrow screen the full 88 keys shrink to a few pixels each, so the
+  // stage narrows to the slice this piece actually plays. Wide screens keep
+  // the whole keyboard and are untouched by this.
+  const songRange = useMemo(() => getSongRange(audio.midi), [audio.midi]);
+  const keyRange = useMemo(
+    () => chooseKeyRange(songRange, containerPxWidth),
+    [songRange, containerPxWidth],
+  );
+  const stage = useMemo(
+    () => getStageLayout(keyRange, containerPxWidth, containerPxHeight),
+    [keyRange, containerPxWidth, containerPxHeight],
+  );
+  const scale = stage.scale;
+  /** Keyboard height on screen, after the stage transform */
+  const keyboardScreenHeight = Math.round(KEYBOARD_HEIGHT_PX * scale);
 
   // Hold the screen awake for the whole lesson, not just while the transport is
   // running — practice means pausing to work out a passage, and the screen going
@@ -355,21 +371,14 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   }), [allSongs, song, onSongChange]);
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-[env(safe-area-inset-left,0px)] py-6 md:px-8 landscape:pt-1 landscape:pb-[env(safe-area-inset-bottom)] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
+    <div className="flex h-[100dvh] w-full flex-col bg-[var(--color-void)] px-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] py-6 md:px-8 landscape:pt-1 landscape:pb-[env(safe-area-inset-bottom)] relative overflow-hidden crt-effect noise-texture" data-theme={theme}>
       {/* Vignette overlay — cinematic edge darkening */}
       <div className="vignette-overlay" aria-hidden="true" />
 
-      {/* Portrait Warning */}
-      <div className="fixed inset-0 z-[100] hidden portrait:flex flex-col items-center justify-center bg-[var(--color-void)]/95 text-center p-8">
-        <div className="text-4xl mb-4">↻</div>
-        <h2 className="text-2xl font-bold text-[var(--color-text-bright)] mb-2 uppercase tracking-tighter">Please Rotate Your Device</h2>
-        <p className="pixel-text-muted">Piano Lessons works best in landscape mode.</p>
-      </div>
-
       {/* Header / Title - Hidden in mobile landscape to save space */}
-      <header className="mb-2 landscape:hidden flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-bold text-[var(--color-text-bright)]">{song.title}</h1>
-        <div className="text-xs pixel-text-muted">{song.artist}</div>
+      <header className="mb-2 landscape:hidden flex items-center justify-between gap-3 shrink-0 min-w-0">
+        <h1 className="text-xl font-bold text-[var(--color-text-bright)] truncate">{song.title}</h1>
+        <div className="text-xs pixel-text-muted truncate shrink-0 max-w-[40%] text-right">{song.artist}</div>
       </header>
 
       {/* Main Visual Area */}
@@ -382,14 +391,14 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
           <div
             className="mx-auto flex flex-col items-center relative transition-transform duration-300 ease-out origin-top-left"
             style={{
-              width: '1296px', // Match BASE_PIANO_WIDTH scaling logic
+              width: `${stage.stageWidth}px`, // Full keyboard, or just this piece's range
               height: scale < 1 && containerPxHeight > 0 ? `${containerPxHeight / scale}px` : '100%',
               transform: `scale(${scale})`,
             }}
           >
 
             {/* Action Area: Waterfall flows BEHIND Keyboard */}
-            {/* Use Flexbox to center the 1248px content within the 1296px container */}
+            {/* Flexbox centres the key area within the padded stage */}
             <div className="relative flex-1 flex flex-col min-h-0 items-center w-full">
 
               {/* 1. Waterfall Layer (z-40) - Interleaves between Nameboard (z-30) and Reflections (z-60) */}
@@ -398,12 +407,12 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 data-testid="waterfall-container"
                 className="absolute top-0 z-40 pointer-events-none"
                 style={{
-                  width: '1248px', // Exact content width
+                  width: `${stage.width}px`, // Exact content width
                   bottom: 'var(--spacing-key-h)',
                   '--playback-rate': audio.playbackRate
                 } as React.CSSProperties}
               >
-                {viewMode === 'waterfall' ? (
+                {viewMode === 'waterfall' && (
                   <>
                     <div className="waterfall-atmosphere" aria-hidden="true" />
                     <Waterfall
@@ -422,22 +431,9 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                       fingerings={audio.fingerings}
                       showFingerings={showFingerings}
                       containerHeight={waterfallHeight}
+                      range={keyRange}
                     />
                   </>
-                ) : (
-                  <PixelScore
-                    midi={audio.midi}
-                    currentTick={audio.currentTick}
-                    containerWidth={1248}
-                    containerHeight={waterfallHeight}
-                    colors={scoreColors}
-                    lookAheadTicks={audio.lookAheadTicks}
-                    splitStrategy={splitStrategy}
-                    splitPoint={splitPoint}
-                    fingerings={audio.fingerings}
-                    showFingerings={showFingerings}
-                    theme={theme}
-                  />
                 )}
               </div>
 
@@ -447,7 +443,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                 <div
                   className="absolute top-0 z-[42] pointer-events-none"
                   style={{
-                    width: '1248px',
+                    width: `${stage.width}px`,
                     bottom: 'var(--spacing-key-h)'
                   }}
                 >
@@ -456,6 +452,7 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
                     containerHeight={waterfallHeight}
                     theme={theme}
                     isPlaying={audio.isPlaying}
+                    range={keyRange}
                   />
                 </div>
               )}
@@ -464,12 +461,36 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
               <div className="flex-1" />
 
               {/* 3. Keyboard Layer - z-50 to render above waterfall and effects */}
-              <div className="relative shrink-0 z-50" style={{ width: '1248px' }}>
-                <Keyboard keys={coloredKeys} />
+              <div className="relative shrink-0 z-50" style={{ width: `${stage.width}px` }}>
+                <Keyboard keys={coloredKeys} range={keyRange} />
               </div>
             </div>
 
           </div>
+
+          {/* Sheet music sits outside the stage transform, in real pixels, so
+              the staves stay at a readable size on a phone and the pixel grid
+              stays crisp — it lines up with time, not with the keys. */}
+          {viewMode === 'score' && (
+            <div
+              className="absolute top-0 left-1 right-1 z-40 pointer-events-none"
+              style={{ bottom: `${keyboardScreenHeight}px` }}
+            >
+              <PixelScore
+                midi={audio.midi}
+                currentTick={audio.currentTick}
+                containerWidth={Math.max(0, containerPxWidth - 8)}
+                containerHeight={Math.max(0, containerPxHeight - keyboardScreenHeight)}
+                colors={scoreColors}
+                lookAheadTicks={audio.lookAheadTicks}
+                splitStrategy={splitStrategy}
+                splitPoint={splitPoint}
+                fingerings={audio.fingerings}
+                showFingerings={showFingerings}
+                theme={theme}
+              />
+            </div>
+          )}
         </div>
       </main>
 
@@ -823,7 +844,7 @@ export default function Home() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="pixel-title text-2xl md:text-4xl mb-4 z-10 text-[var(--color-accent-primary)]"
+              className="pixel-title text-xl sm:text-2xl md:text-4xl mb-4 z-10 text-[var(--color-accent-primary)]"
             >
               Piano Lessons
             </motion.h1>
@@ -863,8 +884,9 @@ export default function Home() {
               className="z-10 w-full max-w-2xl px-4 flex flex-col"
               style={{ maxHeight: 'min(60vh, 480px)' }}
             >
-              {/* Search + sort + filter bar */}
-              <div className="flex gap-2 mb-3 items-center">
+              {/* Search + sort + filter bar — wraps onto a second row on a phone,
+                  where the five filter buttons will not fit beside the search */}
+              <div className="flex flex-wrap gap-2 mb-3 items-center">
                 <div className="relative flex-1">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pixel-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                   <input
@@ -887,7 +909,7 @@ export default function Home() {
                   <option value="duration">Length</option>
                 </select>
                 {showTabs && (
-                  <div className="flex gap-1 shrink-0 overflow-x-auto">
+                  <div className="flex gap-1 shrink-0 overflow-x-auto w-full sm:w-auto">
                     {([
                       { key: 'all', label: 'All' },
                       { key: 'beginner', label: 'Bgn' },

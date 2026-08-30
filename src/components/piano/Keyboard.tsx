@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from "react";
 import { Key } from "./Key";
-import { getKeyPosition, getTotalKeyboardWidth, getKeyCuts } from "./geometry";
+import { getKeyPosition, getKeyCuts, getRangeMetrics, FULL_RANGE, KeyRange } from "./geometry";
 
 interface KeyboardKey {
     note: string;
@@ -9,6 +9,8 @@ interface KeyboardKey {
 
 interface KeyboardProps {
     keys: KeyboardKey[];
+    /** Slice of the keyboard to draw; defaults to all 88 keys */
+    range?: KeyRange;
 }
 
 // Pre-computed note normalization map for O(1) lookups
@@ -24,9 +26,10 @@ for (let i = 21; i <= 108; i++) {
     NOTE_NORMALIZE_MAP[normalized] = normalized; // Also map normalized to itself
 }
 
-export function Keyboard({ keys: activeKeys }: KeyboardProps) {
+export function Keyboard({ keys: activeKeys, range = FULL_RANGE }: KeyboardProps) {
+    const metrics = getRangeMetrics(range);
 
-    // Generate 88 keys from A0 (21) to C8 (108) with pre-computed neighbor indices
+    // Generate the keys in range, with pre-computed neighbor indices
     const keysData = useMemo(() => {
         const k: Array<{
             midi: number;
@@ -47,7 +50,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
         }> = [];
 
         // First pass: create all keys
-        for (let i = 21; i <= 108; i++) {
+        for (let i = metrics.low; i <= metrics.high; i++) {
             const { left, width, isBlack } = getKeyPosition(i);
             const { cutLeft, cutRight } = getKeyCuts(i);
 
@@ -97,7 +100,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
         }
 
         return k;
-    }, []);
+    }, [metrics.low, metrics.high]);
 
     // Build a Map of active keys for O(1) lookups
     const activeKeyMap = useMemo(() => {
@@ -118,7 +121,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
             : { isActive: false, color: undefined };
     }, [activeKeyMap]);
 
-    const totalKeysWidth = getTotalKeyboardWidth();
+    const totalKeysWidth = metrics.width;
     // Case removed: totalPianoWidth is just the keys width
     // const totalPianoWidth = 36 + totalKeysWidth + 36; 
 
@@ -183,7 +186,7 @@ export function Keyboard({ keys: activeKeys }: KeyboardProps) {
                                 activeColor={color}
                                 label={key.label}
                                 style={{
-                                    left: `${key.left}px`,
+                                    left: `${key.left - metrics.offset}px`,
                                     width: `${key.width}px`,
                                     height: `${key.height}px`,
                                     top: key.isBlack ? '2px' : '0px',
