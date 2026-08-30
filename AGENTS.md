@@ -1,25 +1,67 @@
 # AGENTS.md
 
-This file provides guidance to AI agents (like Gemini, Claude, etc.) when working with code in this repository.
+Guidance for AI agents (Claude, Gemini, Codex, and friends) working in this repository.
+
+> **Read [CLAUDE.md](CLAUDE.md) first.** It is the maintained reference: architecture, the
+> critical configuration that silently breaks when changed, testing notes, and the running
+> list of hard-won gotchas. This file is a short orientation plus the few things that live
+> nowhere else. Where the two disagree, CLAUDE.md wins — and the disagreement is a bug worth
+> fixing, since this file went stale once already by duplicating what CLAUDE.md said better.
 
 ## Project Overview
 
-**Piano Lessons** is an interactive web application designed to help users learn to play "Gnossienne: No. 1" by Erik Satie. It provides a real-time, waterfall-style visualization of MIDI notes falling onto a virtual keyboard.
+**Piano Lessons** is an interactive web app for learning piano. It ships a library of a dozen
+classical pieces and shows each one two ways, both synchronised to audio playback:
 
-### Key Features
-- **Visual Learning:** "Falling notes" visualization synced with audio.
-- **Audio Engine:** High-quality playback using Tone.js synthesis.
-- **Interactivity:** Play, pause, restart, and variable playback speed (0.5x to 1.5x).
-- **Responsive Design:** Built with Tailwind CSS for various screen sizes.
+- a Guitar Hero-style waterfall of falling notes onto an 88-key virtual keyboard, and
+- a pixel-art sheet music view — a scrolling grand staff (`V`, or the staff button).
+
+Scores load from MusicXML, MIDI or ABC, and users can upload their own MusicXML in the browser.
+Playback uses real Salamander grand piano samples through Tone.js. Everything runs client-side:
+the app is a Next.js static export with no server, no accounts and no API routes.
+
+## Development Commands
+
+```bash
+npm run dev            # Dev server — http://localhost:3000/piano_lessons
+npm run build          # Production build (static export to ./out)
+npm run lint           # ESLint
+npm test -- --run      # Vitest unit tests, single run
+npx playwright test    # E2E tests (starts the dev server itself)
+npm run screenshots    # Regenerate .github/screenshots (needs a dev server running)
+```
+
+CLAUDE.md has the rest, including the single-file and CI-equivalent invocations, and the
+`uv`-managed Python helpers for wrangling scores.
+
+## Architecture at a Glance
+
+`page.tsx` (landing + lesson) → `usePianoAudio` (Tone.js transport, MIDI parsing, scheduling)
+→ the visual layers: `Waterfall`, `PixelScore`, `Keyboard`, `Controls`.
+
+- `src/hooks/usePianoAudio.ts` — the audio engine and the single source of playback truth
+- `src/components/piano/` — waterfall, keyboard, controls, canvas effects, sheet music
+- `src/lib/musicxml/` — MusicXML parser and MIDI generator
+- `src/lib/score/` — notation model, pixel glyphs and the sheet music renderer
+- `src/lib/` — effects engine, particles, note colours, validation
+- `public/scores/` — the bundled MusicXML library
+
+Two constraints bite immediately and are explained in CLAUDE.md: `basePath` is
+`/piano_lessons`, so every local URL and the Playwright `baseURL` must include it; and the
+React Compiler is enabled, which makes some innocuous-looking edits to effect bodies fail at
+runtime.
 
 ## Administrator Access
 
 The `main` branch protection is configured with `"enforce_admins": false`.
 
-This means that while the rules (reviews, linear history, CI checks) are enforced for standard contributors, **administrators can bypass these checks** when necessary.
+This means that while the rules (reviews, linear history, CI checks) are enforced for standard
+contributors, **administrators can bypass these checks** when necessary.
 
 ### Merging PRs as Admin
-If you are an administrator and need to merge a PR that doesn't satisfy all checks (e.g., your own PR which you cannot approve):
+
+If you are an administrator and need to merge a PR that doesn't satisfy all checks (e.g. your
+own PR, which you cannot approve):
 
 ```bash
 # Use the --admin flag to forcefully merge
@@ -28,78 +70,9 @@ gh pr merge <PR_NUMBER> --squash --delete-branch --admin
 
 No need to disable/re-enable protection rules.
 
-## Development Commands
+## Conventions
 
-```bash
-# Start development server (http://localhost:3000)
-npm run dev
-
-# Build for production (Static Export)
-npm run build
-
-# Start production server (locally serves the built app)
-npm run start
-
-# Lint code
-npm run lint
-```
-
-## Architecture
-
-### Frameworks & Libraries
-- **Next.js 16 (App Router):** Core framework using Server Components where applicable, but primarily Client Components for the interactive UI.
-- **TypeScript:** Strict type safety throughout the codebase.
-- **Tailwind CSS 4:** Utility-first styling with `@tailwindcss/postcss`.
-- **Tone.js:** Audio synthesis and transport scheduling.
-- **@tonejs/midi:** Parsing the `gnossienne1.mid` file.
-- **Framer Motion:** Smooth animations for UI elements.
-
-### Deployment & Build
-- **Static Export:** The project is configured with `output: "export"` in `next.config.ts`.
-- **GitHub Pages:** Deploys automatically to GitHub Pages via GitHub Actions (`.github/workflows/deploy.yml`).
-- **Images:** Unoptimized images configured for static export compatibility.
-
-### Base Path Configuration
-- The application uses `basePath: "/piano_lessons"` in `next.config.ts`.
-- **CRITICAL:** All local development URLs must include this prefix (e.g., `http://localhost:3000/piano_lessons`).
-- Playwright `baseURL` must also include this prefix.
-
-### Key Directories
-- `src/app/`: Next.js App Router pages.
-- `src/components/`: Reusable UI components (Piano, Controls, Visualization).
-- `public/`: Static assets, specifically the MIDI file `gnossienne1.mid`.
-
-## Technical Context
-
-### Audio & MIDI Handling
-- The app fetches `gnossienne1.mid` from the `public` folder at runtime.
-- `@tonejs/midi` converts the binary MIDI data into a JSON structure containing tracks, notes, and timing.
-- `Tone.Transport` is used to schedule note playback and visual events.
-- **Note:** Audio contexts in browsers require user interaction to start. The UI handles this via a "Start" or "Play" button overlay.
-
-### Visual Sync
-- The visualization logic likely maps MIDI note start times and durations to CSS animations or Canvas drawing (check specific implementation in `src/`).
-- `requestAnimationFrame` or Tone.js's `Draw` loop may be used to sync visuals with the audio thread.
-
-## CI/CD Pipeline
-
-1. **CI (`.github/workflows/ci.yml`):** Runs on Push/PR.
-   - Installs dependencies.
-   - Lints code (`npm run lint`).
-   - Builds project (`npm run build`) to ensure type safety and valid static export.
-
-2. **Deploy (`.github/workflows/deploy.yml`):** Runs on Push to `main`.
-   - Builds the application.
-   - Uploads the `out` directory as a GitHub Pages artifact.
-   - Deploys to the `gh-pages` environment.
-
-3. **Release (`.github/workflows/release.yml`):** Runs on Tag `v*`.
-   - Generates a changelog from commit messages.
-   - Creates a GitHub Release with `.zip` and `.tar.gz` archives of the build.
-
-## Code Style & Conventions
-
-- **Components:** Functional components using React Hooks.
-- **Styling:** Tailwind CSS utility classes. Avoid custom CSS files unless necessary for complex animations.
-- **State:** Use React `useState` / `useReducer` for UI state. Avoid global state libraries unless complexity demands it.
-- **Commits:** Follow conventional commit messages (e.g., "feat: add speed control", "fix: mobile layout").
+- TypeScript strict mode; avoid `any`
+- Functional components with React Hooks; Tailwind utility classes
+- Conventional commits (`feat:`, `fix:`, `chore:`, …)
+- Never amend commits — fix forward, so history survives across PRs
