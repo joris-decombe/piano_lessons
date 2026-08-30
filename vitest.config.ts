@@ -10,5 +10,10 @@ export default defineConfig({
     test: {
         environment: 'node',
         include: ['tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+        // Without this, `vitest bench` also picks up bench files in stray git
+        // worktrees under .claude/.
+        benchmark: {
+            include: ['tests/performance/**/*.bench.{js,mjs,cjs,ts,mts,cts}'],
+        },
     },
 });

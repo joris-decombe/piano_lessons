@@ -1,221 +1,139 @@
-
 import { describe, it, expect } from 'vitest';
+import {
+    calculateVisibleNotes,
+    findRenderStartIndex,
+    computeProximity,
+    proximityToAttr,
+    MIN_HEIGHT_FOR_FINGER,
+    type SourceNote,
+} from '@/lib/waterfall-logic';
 
-// Mock types
-interface Note {
-    ticks: number;
-    durationTicks: number;
-    midi: number;
-    name: string;
-    color?: string;
+const CONTAINER_HEIGHT = 600;
+const WINDOW_TICKS = 6 * 480;
+
+function note(overrides: Partial<SourceNote> = {}): SourceNote {
+    return { ticks: 0, durationTicks: 50, midi: 60, name: 'C4', color: 'RIGHT', ...overrides };
 }
 
-interface Track {
-    notes: Note[];
-    instrument: { percussion: boolean; name: string };
-    name: string;
+/** A run of notes 100 ticks apart, as the waterfall receives them: sorted. */
+function notesEvery100(count: number, durationTicks = 50): SourceNote[] {
+    return Array.from({ length: count }, (_, i) => note({ ticks: i * 100, durationTicks }));
 }
 
-interface MidiMock {
-    tracks: Track[];
-    header: { ppq: number };
-}
-
-// Logic copied from Waterfall.tsx (adapted for testing)
-function preProcessNotes(midi: MidiMock) {
-    if (!midi) return { allNotes: [], maxDuration: 0 };
-    const notes: Note[] = [];
-    let maxDur = 0;
-    midi.tracks.forEach((track: Track) => {
-        if (track.notes.length === 0) return;
-        if (track.instrument.percussion) return;
-        const noteColor = "#22d3ee";
-        track.notes.forEach((note: Note) => {
-            if (note.durationTicks > maxDur) maxDur = note.durationTicks;
-            notes.push({
-                ...note,
-                color: noteColor
-            });
-        });
+function visible(allNotes: SourceNote[], currentTick: number, maxDuration?: number) {
+    return calculateVisibleNotes(allNotes, {
+        currentTick,
+        windowSizeTicks: WINDOW_TICKS,
+        maxDuration: maxDuration ?? Math.max(0, ...allNotes.map((n) => n.durationTicks)),
+        containerHeight: CONTAINER_HEIGHT,
     });
-    return { allNotes: notes.sort((a, b) => a.ticks - b.ticks), maxDuration: maxDur };
 }
 
-function calculateVisibleNotesOptimized(allNotes: Note[], maxDuration: number, currentTick: number, windowSizeTicks: number) {
-    if (allNotes.length === 0) return [];
-
-    const endTime = currentTick + windowSizeTicks;
-    let startIdx = 0;
-    let left = 0;
-    let right = allNotes.length - 1;
-
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        if (allNotes[mid].ticks < currentTick) {
-            left = mid + 1;
-        } else {
-            startIdx = mid;
-            right = mid - 1;
-        }
-    }
-
-    let renderStartIdx = startIdx;
-    const lookbackTicks = maxDuration;
-    while (renderStartIdx > 0 && allNotes[renderStartIdx - 1].ticks > currentTick - lookbackTicks) {
-        renderStartIdx--;
-    }
-
-    const active: Note[] = [];
-
-    for (let i = renderStartIdx; i < allNotes.length; i++) {
-        const note = allNotes[i];
-        if (note.ticks > endTime) break;
-
-        if (note.ticks + note.durationTicks > currentTick) {
-            active.push(note);
-        }
-    }
-    return active;
-}
-
-// Generate a large MIDI mock
-const generateMockMidi = (numTracks: number, notesPerTrack: number) => {
-    const tracks = [];
-    for (let i = 0; i < numTracks; i++) {
-        const notes = [];
-        for (let j = 0; j < notesPerTrack; j++) {
-            notes.push({
-                name: "C4",
-                midi: 60,
-                ticks: j * 100,
-                durationTicks: 50
-            });
-        }
-        tracks.push({
-            notes,
-            instrument: { percussion: false, name: "Piano" },
-            name: `Track ${i}`
-        });
-    }
-    return { tracks, header: { ppq: 480 } };
-};
-
-describe('Waterfall Logic Correctness', () => {
-    const windowSizeTicks = 6 * 480;
-
-    it('should correctly render a very long note that started way before currentTick', () => {
-        const longNoteMidi = generateMockMidi(1, 1);
-        // Make the note extremely long
-        longNoteMidi.tracks[0].notes[0].ticks = 0;
-        longNoteMidi.tracks[0].notes[0].durationTicks = 100000; // Very long duration
-
-        const { allNotes, maxDuration } = preProcessNotes(longNoteMidi);
-
-        const currentTick = 50000; // Middle of the note
-        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
-
-        // Should contain the note
-        expect(visible.length).toBe(1);
+describe('visible note selection', () => {
+    it('keeps rendering a long note that started far before the current position', () => {
+        // The reason findRenderStartIndex walks back past the binary search hit:
+        // a note held under the playhead is still on screen.
+        const held = [note({ ticks: 0, durationTicks: 100_000 })];
+        expect(visible(held, 50_000)).toHaveLength(1);
     });
 
-    it('should correctly render normal notes inside window', () => {
-        const midi = generateMockMidi(1, 10);
-        const { allNotes, maxDuration } = preProcessNotes(midi);
-        const currentTick = 0;
-        const visible = calculateVisibleNotesOptimized(allNotes, maxDuration, currentTick, windowSizeTicks);
-        // Notes at 0, 100, 200... should be visible
-        expect(visible.length).toBeGreaterThan(0);
+    it('drops notes that have already finished', () => {
+        const finished = [note({ ticks: 0, durationTicks: 50 })];
+        expect(visible(finished, 50)).toHaveLength(0);
+        expect(visible(finished, 49)).toHaveLength(1);
+    });
+
+    it('stops at the end of the look-ahead window', () => {
+        const notes = notesEvery100(200);
+        const shown = visible(notes, 0);
+        expect(shown.length).toBeGreaterThan(0);
+        // Nothing beyond currentTick + window is built.
+        const lastTick = (shown.length - 1) * 100;
+        expect(lastTick).toBeLessThanOrEqual(WINDOW_TICKS);
+        expect(notes.length).toBeGreaterThan(shown.length);
+    });
+
+    it('returns nothing for an empty score', () => {
+        expect(calculateVisibleNotes([], {
+            currentTick: 0, windowSizeTicks: WINDOW_TICKS, maxDuration: 0, containerHeight: CONTAINER_HEIGHT,
+        })).toEqual([]);
+    });
+
+    it('gives every rendered note a distinct key', () => {
+        // Same pitch and tick in two tracks would collide without the index.
+        const stacked = [note({ ticks: 0 }), note({ ticks: 0 })];
+        const ids = visible(stacked, 0).map((n) => n.id);
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('positions a note by how far ahead it is', () => {
+        const [ahead] = visible([note({ ticks: WINDOW_TICKS / 2, durationTicks: WINDOW_TICKS / 2 })], 0);
+        expect(ahead.bottom).toBe(CONTAINER_HEIGHT / 2);
+        expect(ahead.height).toBe(CONTAINER_HEIGHT / 2);
+        expect(ahead.isActive).toBe(false);
+    });
+
+    it('marks a note active once it reaches the keyboard', () => {
+        const [arriving] = visible([note({ ticks: 0, durationTicks: 500 })], 0);
+        expect(arriving.bottom).toBe(0);
+        expect(arriving.isActive).toBe(true);
+        expect(arriving.proximity).toBe(1);
+    });
+
+    it('hides finger numbers on blocks too short to hold one', () => {
+        const shortTicks = Math.floor((MIN_HEIGHT_FOR_FINGER - 2) * WINDOW_TICKS / CONTAINER_HEIGHT);
+        const longTicks = Math.ceil((MIN_HEIGHT_FOR_FINGER + 2) * WINDOW_TICKS / CONTAINER_HEIGHT);
+
+        const [tooShort] = visible([note({ durationTicks: shortTicks, finger: 3 })], 0);
+        expect(tooShort.height).toBeLessThan(MIN_HEIGHT_FOR_FINGER);
+        expect(tooShort.finger).toBeUndefined();
+
+        const [longEnough] = visible([note({ durationTicks: longTicks, finger: 3 })], 0);
+        expect(longEnough.finger).toBe(3);
+    });
+
+    it('carries the hand colour through untouched', () => {
+        const [left] = visible([note({ color: 'LEFT', durationTicks: 500 })], 0);
+        expect(left.color).toBe('LEFT');
     });
 });
 
-// --- Note visual property computations (proximity, isActive) ---
-// Extracted from Waterfall.tsx for testability
-
-function computeNoteProperties(bottomPx: number, containerHeight: number) {
-    const proximity = containerHeight > 0
-        ? Math.max(0, Math.min(1, 1 - bottomPx / containerHeight))
-        : 0;
-    return {
-        proximity,
-        isActive: bottomPx <= 0,
-    };
-}
-
-function proximityToAttr(proximity: number): string | undefined {
-    if (proximity > 0.85) return "near";
-    if (proximity > 0.6) return "mid";
-    return undefined;
-}
-
-describe('Note Visual Properties', () => {
-    const containerHeight = 600;
-
-    describe('proximity', () => {
-        it('should be 1.0 when note is at keyboard line (bottomPx = 0)', () => {
-            const { proximity } = computeNoteProperties(0, containerHeight);
-            expect(proximity).toBe(1);
-        });
-
-        it('should be 0.0 when note is at top of container (bottomPx = containerHeight)', () => {
-            const { proximity } = computeNoteProperties(containerHeight, containerHeight);
-            expect(proximity).toBe(0);
-        });
-
-        it('should be 0.5 when note is at midpoint', () => {
-            const { proximity } = computeNoteProperties(containerHeight / 2, containerHeight);
-            expect(proximity).toBe(0.5);
-        });
-
-        it('should clamp to 0 when note is above container', () => {
-            const { proximity } = computeNoteProperties(containerHeight + 100, containerHeight);
-            expect(proximity).toBe(0);
-        });
-
-        it('should clamp to 1 when note is below keyboard line', () => {
-            const { proximity } = computeNoteProperties(-50, containerHeight);
-            expect(proximity).toBe(1);
-        });
-
-        it('should be 0 when containerHeight is 0', () => {
-            const { proximity } = computeNoteProperties(100, 0);
-            expect(proximity).toBe(0);
-        });
+describe('findRenderStartIndex', () => {
+    it('starts at the first note that is still relevant', () => {
+        const notes = notesEvery100(10, 50);
+        // At tick 500, notes before 450 have finished; the walk-back stops there.
+        expect(findRenderStartIndex(notes, 500, 50)).toBe(5);
     });
 
-    describe('proximityToAttr', () => {
-        it('should return "near" when proximity > 0.85', () => {
-            expect(proximityToAttr(0.9)).toBe("near");
-            expect(proximityToAttr(1.0)).toBe("near");
-            expect(proximityToAttr(0.86)).toBe("near");
-        });
-
-        it('should return "mid" when proximity > 0.6 but <= 0.85', () => {
-            expect(proximityToAttr(0.7)).toBe("mid");
-            expect(proximityToAttr(0.85)).toBe("mid");
-            expect(proximityToAttr(0.61)).toBe("mid");
-        });
-
-        it('should return undefined when proximity <= 0.6', () => {
-            expect(proximityToAttr(0.6)).toBeUndefined();
-            expect(proximityToAttr(0.3)).toBeUndefined();
-            expect(proximityToAttr(0)).toBeUndefined();
-        });
+    it('walks back far enough to catch anything still sounding', () => {
+        const notes = notesEvery100(10, 400);
+        expect(findRenderStartIndex(notes, 500, 400)).toBeLessThan(5);
     });
 
-    describe('isActive', () => {
-        it('should be true when bottomPx is 0 (note at keyboard line)', () => {
-            const { isActive } = computeNoteProperties(0, containerHeight);
-            expect(isActive).toBe(true);
-        });
+    it('handles a position before every note', () => {
+        expect(findRenderStartIndex(notesEvery100(5), 0, 50)).toBe(0);
+    });
+});
 
-        it('should be true when bottomPx is negative (note below keyboard)', () => {
-            const { isActive } = computeNoteProperties(-10, containerHeight);
-            expect(isActive).toBe(true);
-        });
+describe('proximity', () => {
+    it('runs from 0 at the top of the fall to 1 at the keyboard', () => {
+        expect(computeProximity(0, CONTAINER_HEIGHT)).toBe(1);
+        expect(computeProximity(CONTAINER_HEIGHT / 2, CONTAINER_HEIGHT)).toBe(0.5);
+        expect(computeProximity(CONTAINER_HEIGHT, CONTAINER_HEIGHT)).toBe(0);
+    });
 
-        it('should be false when bottomPx is positive (note above keyboard)', () => {
-            const { isActive } = computeNoteProperties(1, containerHeight);
-            expect(isActive).toBe(false);
-        });
+    it('clamps outside the container and survives a zero height', () => {
+        expect(computeProximity(CONTAINER_HEIGHT + 100, CONTAINER_HEIGHT)).toBe(0);
+        expect(computeProximity(-50, CONTAINER_HEIGHT)).toBe(1);
+        expect(computeProximity(100, 0)).toBe(0);
+    });
+
+    it('maps to the glow tiers CSS expects', () => {
+        expect(proximityToAttr(1.0)).toBe('near');
+        expect(proximityToAttr(0.86)).toBe('near');
+        expect(proximityToAttr(0.85)).toBe('mid');
+        expect(proximityToAttr(0.61)).toBe('mid');
+        expect(proximityToAttr(0.6)).toBeUndefined();
+        expect(proximityToAttr(0)).toBeUndefined();
     });
 });

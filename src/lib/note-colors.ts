@@ -64,3 +64,28 @@ export function getNoteColor(
 
   return getColorByTrack(trackIndex, colors);
 }
+
+/**
+ * Which hand a MIDI track belongs to: 0 = right, 1 = left.
+ *
+ * The MusicXML pipeline splits each staff into however many non-overlapping
+ * layers midi-writer-js needs, so one staff can become several MIDI tracks
+ * ("P1-staff1-0", "P1-staff1-1", "P1-staff2-0", …). Track *index* is therefore
+ * not the hand — those four tracks are hands 0, 0, 1, 1, not 0, 1, 2, 3. The
+ * staff number in the track name is what carries the hand.
+ *
+ * Plain MIDI files have no staff information, so they fall back to the track
+ * index, which is the convention those files follow (track 0 = right hand).
+ */
+export function getHandIndexForTrack(trackName: string, trackIndex: number): number {
+  const staffMatch = /-staff(\d+)/.exec(trackName ?? '');
+  if (!staffMatch) return trackIndex;
+  const staffNumber = parseInt(staffMatch[1], 10);
+  // staff1 → 0 (right), staff2 → 1 (left). A malformed number is not a hand.
+  return Number.isFinite(staffNumber) && staffNumber > 0 ? staffNumber - 1 : trackIndex;
+}
+
+/** Hand index for every track in a MIDI file, in track order. */
+export function getHandIndexByTrack(tracks: { name: string }[]): number[] {
+  return tracks.map((track, index) => getHandIndexForTrack(track.name, index));
+}
