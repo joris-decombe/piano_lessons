@@ -23,7 +23,11 @@ async function openLesson(page: Page, song = 'Ode to Joy') {
     await page.goto('');
     await page.getByRole('button', { name: song }).click();
     await expect(page.getByTestId('play-button')).toBeVisible();
-    await page.waitForTimeout(1200);
+    // The keyboard cannot narrow to the piece until the score has loaded and
+    // its range is known — until then it draws all 88 keys behind the loading
+    // overlay. Waiting a fixed 1200ms here raced a cold CI runner, which
+    // measured the full board at 6.8px a key and failed.
+    await expect(page.getByTestId('lesson-loading')).toBeHidden({ timeout: 30000 });
 }
 
 test.describe('Phone layout', () => {
