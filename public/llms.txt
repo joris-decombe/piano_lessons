@@ -1,12 +1,13 @@
 # Piano Lessons
 
-> Free, open-source interactive piano trainer with a Guitar Hero-style falling-note waterfall, synchronized audio playback, and real Salamander grand piano samples.
+> Free, open-source interactive piano trainer with a Guitar Hero-style falling-note waterfall, a pixel-art sheet music view, synchronized audio playback, and real Salamander grand piano samples.
 
 ## What it does
 
 - Renders MIDI, ABC notation, and MusicXML files as falling-note waterfalls
+- Shows the same piece as scrolling sheet music on a grand staff, in sync with playback
 - Plays back music using real Salamander piano audio samples via Tone.js
-- Supports speed control, section looping, and left/right hand color coding
+- Supports speed control, section looping, left/right hand color coding, and finger numbers where the score has them
 - Includes multiple visual themes (pixel art, neon, classic, etc.)
 - Runs entirely in the browser — no server, no account required
 
