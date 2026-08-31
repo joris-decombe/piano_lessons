@@ -568,10 +568,7 @@ export class PixelScoreRenderer {
                 }
 
                 if (this.showFingerings && note.finger !== undefined) {
-                    // Beside its own head, not above the chord: a fingering
-                    // parked at the stem tip belongs to no note in particular.
-                    const fingerY = chord.staff === 0 ? y - 9 : y + 5;
-                    this.digits(note.finger, x - 1, fingerY, this.palette.accent);
+                    this.drawFinger(note.finger, x, y, chord.staff);
                 }
             }
 
@@ -665,6 +662,25 @@ export class PixelScoreRenderer {
         for (let x = x0; x <= x1; x++) {
             this.ctx.fillRect(x, Math.round(beamTipAt(layout, x) + offset), 1, 2);
         }
+    }
+
+    /**
+     * Finger numbers are the one thing on the staff that isn't notation, and
+     * they were losing that argument: 3x5 pixels in the accent colour, landing
+     * on staff lines and beams, they read as specks rather than as digits. They
+     * are drawn at double size on a knocked-out patch, beside their own note
+     * head — a fingering parked at a chord's stem tip belongs to no note in
+     * particular.
+     */
+    private drawFinger(finger: number, x: number, y: number, staff: StaffId) {
+        const { ctx } = this;
+        const width = this.digitsWidth(finger, true);
+        const height = DIGITS_BIG[0].h;
+        const left = Math.round(x - width / 2);
+        const top = staff === 0 ? y - height - 5 : y + 6;
+        ctx.fillStyle = this.palette.bg;
+        ctx.fillRect(left - 2, top - 1, width + 4, height + 2);
+        this.digits(finger, left, top, this.palette.accent, true);
     }
 
     private drawLedgers(step: number, staff: StaffId, x: number, height: number, color: string) {
