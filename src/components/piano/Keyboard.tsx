@@ -185,6 +185,7 @@ export function Keyboard({ keys: activeKeys, range = FULL_RANGE }: KeyboardProps
                                 rightBlackNeighborColor={rightBlackColor}
                                 activeColor={color}
                                 label={key.label}
+                                isMiddleC={key.midi === 60}
                                 style={{
                                     left: `${key.left - metrics.offset}px`,
                                     width: `${key.width}px`,

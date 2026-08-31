@@ -133,6 +133,51 @@ test.describe('Phone layout', () => {
             expect(await narrowestWhiteKey(page)).toBeGreaterThan(10);
         });
 
+        test('shows enough keyboard to place the piece on it', async ({ page }) => {
+            // Twinkle plays about one octave. Cropping to exactly that left a
+            // thirteen-key island telling a beginner nothing about where their
+            // hands are, so the range grows to fill the width it has.
+            await openLesson(page, 'Twinkle Twinkle Little Star');
+            const shown = await page.evaluate(() => {
+                const container = document.querySelector('[data-testid="keys-container"]')!;
+                const octaves = [...container.querySelectorAll('span')]
+                    .map(s => s.textContent)
+                    .filter(t => t && /^C\d$/.test(t));
+                const stage = container.closest('[style*="scale"]')!.parentElement!;
+                return {
+                    octaves,
+                    fillsWidth:
+                        container.getBoundingClientRect().width /
+                        stage.getBoundingClientRect().width,
+                };
+            });
+            // Several octave landmarks, not a lone one
+            expect(shown.octaves.length).toBeGreaterThanOrEqual(3);
+            // And it uses the room it has rather than floating in the middle
+            expect(shown.fillsWidth).toBeGreaterThan(0.75);
+        });
+
+        test('marks middle C so there is something to navigate from', async ({ page }) => {
+            await openLesson(page);
+            const middleC = await page.evaluate(() => {
+                const key = document.querySelector('[data-testid="keys-container"] [data-note="C4"]');
+                if (!key) return null;
+                const label = [...key.querySelectorAll('span')]
+                    .find(s => s.textContent === 'C4');
+                return label ? getComputedStyle(label).color : null;
+            });
+            const otherC = await page.evaluate(() => {
+                const key = document.querySelector('[data-testid="keys-container"] [data-note="C3"]');
+                if (!key) return null;
+                const label = [...key.querySelectorAll('span')]
+                    .find(s => s.textContent === 'C3');
+                return label ? getComputedStyle(label).color : null;
+            });
+            expect(middleC).not.toBeNull();
+            // Middle C is the landmark: it must not look like every other C
+            expect(middleC).not.toBe(otherC);
+        });
+
         test('centres the stage instead of banking it to one side', async ({ page }) => {
             await openLesson(page);
             // The stage is centred at its unscaled width and then scaled. With a

@@ -21,11 +21,13 @@ interface KeyProps {
     cutLeft?: number;
     cutRight?: number;
     label?: string;
+    /** Middle C: the landmark a beginner finds first */
+    isMiddleC?: boolean;
     activeColor?: string;
     style?: React.CSSProperties;
 }
 
-export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftNeighborColor, rightNeighborColor, leftBlackNeighborState, rightBlackNeighborState, leftBlackNeighborColor, rightBlackNeighborColor, cutLeft = 0, cutRight = 0, label, activeColor, style }: KeyProps) {
+export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborActive, isRightNeighborActive, leftNeighborColor, rightNeighborColor, leftBlackNeighborState, rightBlackNeighborState, leftBlackNeighborColor, rightBlackNeighborColor, cutLeft = 0, cutRight = 0, label, isMiddleC = false, activeColor, style }: KeyProps) {
 
     // --- GEOMETRY & PHYSICS ---
     // Physical dip + squash/stretch for impact feel
@@ -193,7 +195,19 @@ export const Key = memo(function Key({ note, isBlack, isActive, isLeftNeighborAc
                 {getSideIllumination()}
                 {label && (
                     <div className="absolute bottom-4 left-0 w-full text-center pointer-events-none z-10">
-                        <span className="text-[10px] font-sans text-[var(--color-muted)] font-bold block">{label}</span>
+                        {/* Middle C is the one label worth finding at a glance —
+                            on a narrow screen the octave labels are the only
+                            thing saying which part of the keyboard this is. */}
+                        {isMiddleC && (
+                            <span className="block mx-auto mb-[2px] w-[6px] h-[6px] bg-[var(--color-accent-primary)]" />
+                        )}
+                        <span
+                            className={`font-sans font-bold block ${isMiddleC
+                                ? 'text-[11px] text-[var(--color-accent-primary)]'
+                                : 'text-[10px] text-[var(--color-muted)]'}`}
+                        >
+                            {label}
+                        </span>
                     </div>
                 )}
                 {getAOOverlay()}
