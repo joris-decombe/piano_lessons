@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added end-to-end colour regressions for both Satie scores
 
 ### Fixed
+- Rotating a phone into landscape left the stage banked against one edge with a black band down the other. `mx-auto` resolves auto margins before the transform, so the stage was centred at its full width and then shrunk towards its top-left corner; that was invisible while the scale was exactly the width ratio, and appeared as soon as the height cap made the stage narrower than the width alone would have. It is now centred at the width it actually occupies
+- The effects canvas hung past the keyboard on a narrowed stage. It is deliberately wider than the stage — it keeps full-keyboard coordinates — and was slid left into place, which put its left edge outside the keys. The canvas is now exactly the visible slice and the engine shifts its own drawing once per frame instead
 - The keyboard could swallow a short screen: on a phone in landscape the 150px keyboard took two thirds of the stage, leaving the falling notes almost no room. It is now capped at 45% of the height
 - The sheet music view was drawn inside the keyboard's stage transform, so on a phone it was shrunk twice over — once by its own zoom and again by the stage — and the pixel grid was resampled by the fractional scale. It now renders in real pixels, at full width, above the keyboard
 - Narrow screens: the lesson header and the transport bar overflowed at 375px, the landing page's filter buttons were clipped, and the title ran under the settings button

@@ -26,12 +26,12 @@ export function EffectsCanvas({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<EffectsEngine | null>(null);
 
-    // The engine draws in full-keyboard coordinates; sliding the canvas left is
-    // cheaper and safer than threading an offset through every draw call.
+    // The canvas is exactly the visible slice; the engine shifts its own
+    // drawing by `viewLeft` so the routines can keep using stage coordinates.
     const metrics = getRangeMetrics(range);
     const viewLeft = metrics.offset;
     const viewWidth = metrics.width;
-    const canvasW = metrics.offset + metrics.width;
+    const canvasW = metrics.width;
 
     // 1. Initialize engine on mount
     useEffect(() => {
@@ -93,9 +93,8 @@ export function EffectsCanvas({
             ref={canvasRef}
             width={canvasW}
             height={canvasH}
-            className="absolute top-0 pointer-events-none"
+            className="absolute top-0 left-0 pointer-events-none"
             style={{
-                left: `${-metrics.offset}px`,
                 width: `${canvasW}px`,
                 height: `${canvasH}px`,
                 imageRendering: "pixelated",
