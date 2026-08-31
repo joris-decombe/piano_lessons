@@ -241,6 +241,11 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
   const scale = stage.scale;
   /** Keyboard height on screen, after the stage transform */
   const keyboardScreenHeight = Math.round(KEYBOARD_HEIGHT_PX * scale);
+  /** Centres the stage at the width it actually occupies once scaled */
+  const stageMarginLeft = Math.max(
+    0,
+    Math.round((containerPxWidth - stage.stageWidth * scale) / 2),
+  );
 
   // Hold the screen awake for the whole lesson, not just while the transport is
   // running — practice means pausing to work out a passage, and the screen going
@@ -387,13 +392,24 @@ function PianoLesson({ song, allSongs, onSongChange, onExit }: PianoLessonProps)
         {/* Unified Container */}
         <div ref={containerRef} className="flex-1 w-full overflow-hidden relative" style={{ scrollbarWidth: 'none' }}>
 
-          {/* Centered Content Wrapper — 1296px Base Width for symmetric scaling */}
+          {/* Centred content wrapper.
+
+              The margin centres the stage at its *scaled* width, which `mx-auto`
+              cannot: auto margins are resolved before the transform, so the
+              stage was centred at full width and then shrunk towards its
+              top-left corner, banking the whole difference onto the right edge
+              as a black band. That never showed while the scale was exactly the
+              width ratio — the scaled stage filled the container either way —
+              and appeared as soon as the height cap made the stage narrower
+              than the width alone would have, which is what rotating a phone
+              into landscape does. */}
           <div
-            className="mx-auto flex flex-col items-center relative transition-transform duration-300 ease-out origin-top-left"
+            className="flex flex-col items-center relative transition-transform duration-300 ease-out origin-top-left"
             style={{
               width: `${stage.stageWidth}px`, // Full keyboard, or just this piece's range
               height: scale < 1 && containerPxHeight > 0 ? `${containerPxHeight / scale}px` : '100%',
               transform: `scale(${scale})`,
+              marginLeft: `${stageMarginLeft}px`,
             }}
           >
 

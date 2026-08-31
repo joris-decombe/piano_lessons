@@ -409,10 +409,18 @@ export class EffectsEngine {
 
         const { canvas, ctx } = this;
 
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Ensure bloom canvas matches main canvas
         this.syncBloomCanvas();
+
+        // Every draw routine below works in full-keyboard stage coordinates,
+        // where a key's x never changes. When the stage shows only a slice of
+        // the keyboard the canvas is only that slice wide, so shift the whole
+        // frame once here rather than offsetting each of the routines.
+        ctx.save();
+        ctx.translate(-this.viewLeft, 0);
 
         // 1. Atmosphere & Background Effects
         this.drawGodRays(ctx, time);
@@ -435,6 +443,10 @@ export class EffectsEngine {
 
         // 3. Phosphor persistence (all themes, theme-colored)
         this.drawPhosphor(ctx, time);
+
+        // Back to canvas space: the passes below composite whole frames, and
+        // would smear by the slice offset if they ran shifted.
+        ctx.restore();
 
         // 4. Bloom pass (all themes)
         if (this.bloomCtx && (this.activeNotes.length > 0 || this.particles.activeBurstCount > BLOOM_BURST_THRESHOLD)) {

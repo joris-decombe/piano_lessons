@@ -19,6 +19,19 @@ async function narrowestWhiteKey(page: Page): Promise<number> {
     });
 }
 
+/** Black space between the stage and each edge of the viewport */
+async function stageGaps(page: Page): Promise<{ left: number; right: number }> {
+    return page.evaluate(() => {
+        const keys = document.querySelector('[data-testid="keys-container"]');
+        if (!keys) return { left: -1, right: -1 };
+        const box = keys.getBoundingClientRect();
+        return {
+            left: Math.round(box.left),
+            right: Math.round(window.innerWidth - box.right),
+        };
+    });
+}
+
 async function openLesson(page: Page, song = 'Ode to Joy') {
     await page.goto('');
     await page.getByRole('button', { name: song }).click();
@@ -119,5 +132,26 @@ test.describe('Phone layout', () => {
             await openLesson(page);
             expect(await narrowestWhiteKey(page)).toBeGreaterThan(10);
         });
+
+        test('centres the stage instead of banking it to one side', async ({ page }) => {
+            await openLesson(page);
+            // The stage is centred at its unscaled width and then scaled. With a
+            // top-left origin that leaves every pixel of the shrink on the right,
+            // which reads as a black band down one edge of the screen.
+            const gaps = await stageGaps(page);
+            expect(Math.abs(gaps.left - gaps.right)).toBeLessThanOrEqual(2);
+        });
+    });
+
+    test('stays centred when the phone is rotated into landscape', async ({ page }) => {
+        await page.setViewportSize(PORTRAIT);
+        await openLesson(page);
+        const portrait = await stageGaps(page);
+        expect(Math.abs(portrait.left - portrait.right)).toBeLessThanOrEqual(2);
+
+        await page.setViewportSize(LANDSCAPE);
+        await page.waitForTimeout(600);
+        const landscape = await stageGaps(page);
+        expect(Math.abs(landscape.left - landscape.right)).toBeLessThanOrEqual(2);
     });
 });
