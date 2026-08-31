@@ -12,7 +12,9 @@
 import { calculateKeyboardScale } from '@/lib/audio-logic';
 import {
     FULL_RANGE,
+    HIGHEST_KEY,
     KeyRange,
+    LOWEST_KEY,
     getRangeMetrics,
     getTotalKeyboardWidth,
     snapRangeToWhiteKeys,
@@ -69,21 +71,50 @@ export function stageScale(stageWidth: number, availableWidth: number): number {
 }
 
 /**
- * How much of the keyboard to show. The full board wins whenever it can be
- * drawn at a legible size; only when it can't does the view narrow to the
- * piece's own range, which never hides a note it is about to play.
+ * How much of the keyboard to show: as much as fits at a legible size, centred
+ * on what the piece plays.
+ *
+ * The piece's own range is the floor — a note is never off screen — but it is
+ * only the floor. Twinkle uses about an octave, and cropping to exactly that
+ * left a thirteen-key island adrift on a screen with room for the whole board,
+ * which tells a beginner nothing about where their hands are. So the range
+ * grows outwards from the piece until the keys would drop below a readable
+ * width, or the whole keyboard is on screen.
  */
 export function chooseKeyRange(song: KeyRange | null, availableWidth: number): KeyRange {
+    if (availableWidth <= 0 || !song) return FULL_RANGE;
+
     const fullStageWidth = getTotalKeyboardWidth() + STAGE_PADDING;
-    const fullScale = stageScale(fullStageWidth, availableWidth);
-    if (availableWidth <= 0 || fullScale * WHITE_KEY_WIDTH >= MIN_WHITE_KEY_PX) {
-        return FULL_RANGE;
-    }
-    if (!song) return FULL_RANGE;
-    return snapRangeToWhiteKeys({
+    // The widest stage that still draws a white key at the readable minimum
+    const budget = (availableWidth * WHITE_KEY_WIDTH) / MIN_WHITE_KEY_PX;
+    if (budget >= fullStageWidth) return FULL_RANGE;
+
+    let { low, high } = snapRangeToWhiteKeys({
         low: song.low - RANGE_PADDING,
         high: song.high + RANGE_PADDING,
     });
+    const fits = (l: number, h: number) =>
+        getRangeMetrics({ low: l, high: h }).width + STAGE_PADDING <= budget;
+
+    // Grow a key at a time, alternating sides, so the piece stays centred
+    for (let guard = 0; guard < 128; guard++) {
+        let grew = false;
+        if (low > LOWEST_KEY && fits(low - 1, high)) {
+            low--;
+            grew = true;
+        }
+        if (high < HIGHEST_KEY && fits(low, high + 1)) {
+            high++;
+            grew = true;
+        }
+        if (!grew) break;
+    }
+    return snapRangeToWhiteKeys({ low, high });
+}
+
+/** True when the view is showing less than the whole keyboard */
+export function isCropped(range: KeyRange): boolean {
+    return range.low > LOWEST_KEY || range.high < HIGHEST_KEY;
 }
 
 /** Everything the lesson layout needs to place a stage for a range */

@@ -13,11 +13,19 @@ import {
     chooseKeyRange,
     getSongRange,
     getStageLayout,
+    isCropped,
 } from '@/lib/keyboard-range';
 
 const DESKTOP = 1280;
 const IPHONE_PORTRAIT = 390;
 const IPHONE_LANDSCAPE = 750;
+
+/** White keys inside a range */
+function whiteKeys(range: { low: number; high: number }): number {
+    let n = 0;
+    for (let m = range.low; m <= range.high; m++) if (!isBlackKey(m)) n++;
+    return n;
+}
 
 function midi(...notes: number[]) {
     return { tracks: [{ notes: notes.map(m => ({ midi: m })) }] };
@@ -119,6 +127,52 @@ describe('chooseKeyRange', () => {
             IPHONE_PORTRAIT,
         );
         expect(cropped.scale).toBeGreaterThan(full.scale * 1.8);
+    });
+});
+
+describe('showing enough keyboard to place the piece', () => {
+    /** One octave in the middle, like Twinkle */
+    const TINY = { low: 60, high: 72 };
+
+    it('does not leave a one-octave island on a screen with room to spare', () => {
+        // 876px is the worst case: the full board misses the legible minimum by
+        // a fraction, and the old rule fell all the way back to the piece.
+        const range = chooseKeyRange(TINY, 852);
+        expect(whiteKeys(range)).toBeGreaterThan(40);
+    });
+
+    it('grows outward from the piece rather than off to one side', () => {
+        const range = chooseKeyRange(TINY, 366);
+        expect(range.low).toBeLessThan(TINY.low);
+        expect(range.high).toBeGreaterThan(TINY.high);
+    });
+
+    it('keeps the keys at a readable width while it grows', () => {
+        for (const width of [366, 500, 726, 852]) {
+            const layout = getStageLayout(chooseKeyRange(TINY, width), width);
+            expect(layout.scale * 24, `at ${width}px`).toBeGreaterThanOrEqual(15.9);
+        }
+    });
+
+    it('never shrinks a piece that is already wider than the budget', () => {
+        const wide = { low: 27, high: 97 };  // Clair de Lune
+        const range = chooseKeyRange(wide, 366);
+        expect(range.low).toBeLessThanOrEqual(wide.low);
+        expect(range.high).toBeGreaterThanOrEqual(wide.high);
+    });
+
+    it('shows several octave landmarks wherever it crops', () => {
+        for (const width of [366, 726, 852]) {
+            const range = chooseKeyRange(TINY, width);
+            let landmarks = 0;
+            for (let m = range.low; m <= range.high; m++) if (m % 12 === 0) landmarks++;
+            expect(landmarks, `octave labels at ${width}px`).toBeGreaterThanOrEqual(3);
+        }
+    });
+
+    it('still hands back the whole keyboard when it fits', () => {
+        expect(isCropped(chooseKeyRange(TINY, DESKTOP))).toBe(false);
+        expect(isCropped(chooseKeyRange(TINY, 366))).toBe(true);
     });
 });
 

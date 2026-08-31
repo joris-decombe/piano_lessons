@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Staff-to-hand mapping consolidated into `note-colors.ts` (it was duplicated in `Waterfall.tsx` and `usePianoAudio.ts`) and covered by tests, including the layer-split case where track index is not the hand
 - Added end-to-end colour regressions for both Satie scores
 
+### Changed
+- A narrowed keyboard now grows outwards from the piece until the keys would stop being readable, rather than stopping at the piece's own range. Twinkle plays about an octave, and cropping to exactly that left a thirteen-key island adrift on a screen with room for the whole board — no help at all in working out where your hands go. The piece's range is still the floor, so no note is ever off screen; it is just no longer the ceiling. On an 876px window Twinkle goes from 13 keys and one octave label to 51 keys and eight
+- Middle C is marked on the keyboard, in the accent colour with a tick above it. When the board is cropped the octave labels are the only thing saying which part of the piano is on screen, and a beginner needs one landmark to count from
+
 ### Fixed
 - Finger numbers in the sheet music view were drawn at 3x5 pixels in the accent colour, which put them somewhere between illegible and invisible — on the theme where the accent is close to the left-hand note colour they read as specks of a note rather than as digits. They are now drawn at double size on a knocked-out patch, so they stay readable over staff lines and beams. Bar numbers keep the small dim treatment, which leaves the two telling each other apart
 - Rotating a phone into landscape left the stage banked against one edge with a black band down the other. `mx-auto` resolves auto margins before the transform, so the stage was centred at its full width and then shrunk towards its top-left corner; that was invisible while the scale was exactly the width ratio, and appeared as soon as the height cap made the stage narrower than the width alone would have. It is now centred at the width it actually occupies
